@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>🦜 앵무새 키우기</title>
+<title>Angtopia | Cali Lab</title>
 <style>
 :root {
   --bg:       #fdf6ee;
@@ -482,6 +482,15 @@ body{
   .act-btn{padding:8px 2px;}
   .act-ico{font-size:1.3rem;}
 }
+
+.site-footer{
+  text-align:center;
+  padding:18px 12px 28px;
+  font-size:.72rem;
+  color:rgba(80,50,10,.55);
+  letter-spacing:.3px;
+}
+
 </style>
 </head>
 <body>
@@ -5281,7 +5290,12 @@ function renderBagTab(area){
       return `<div style="display:flex;justify-content:space-between;align-items:center;background:white;padding:10px;border-radius:8px;margin-bottom:8px;border:2px solid ${isActive?'var(--accent)':'var(--border)'};">
         <span style="font-size:.85rem;">${t.data.icon} ${t.data.name} <span style="font-size:.6rem;color:var(--sub);">${t.type==='wallpaper'?'(벽지)':'(바닥)'}</span></span>
         <button class="btn-apply-theme" data-theme-id="${t.id}" data-theme-type="${t.type}" style="background:${isActive?'#ccc':'var(--accent)'};color:white;border:none;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:.72rem;font-weight:700;">${isActive?'적용중':'적용하기'}</button>
-      </div>`;
+      
+<footer class="site-footer">
+  Made by Cali (Age 10) · Published at calilab.art · Version 1.0 · Released 2026
+</footer>
+
+</div>`;
     }).join('');
 
     area.querySelectorAll('.btn-apply-theme').forEach(btn=>{
