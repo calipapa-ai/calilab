@@ -381,6 +381,68 @@ body{
   padding: 4px;
 }
 .link-btn:active{ opacity: 0.6; }
+
+.who-list, .stats-list{
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+  margin: 18px 0 16px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.who-item{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  background: rgba(30,22,64,0.5);
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 16px;
+  cursor:pointer;
+  transition: border-color .15s, transform .15s;
+  text-align:left;
+  width:100%;
+}
+.who-item:active{ transform: scale(0.97); }
+.who-item .who-avatar{
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size: 18px;
+  background: radial-gradient(circle at 32% 28%, var(--gem0-light), var(--gem0) 55%, var(--gem0-dark) 100%);
+}
+.who-item .who-info{ flex:1; min-width:0; }
+.who-item .who-name{ font-size: 14.5px; color: var(--ink); font-weight: 600; }
+.who-item .who-level{ font-size: 11.5px; color: var(--ink-dim); margin-top: 2px; }
+.who-empty{
+  text-align:center;
+  font-size: 12.5px;
+  color: var(--ink-dim);
+  padding: 12px 0;
+}
+
+.stats-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  background: rgba(30,22,64,0.5);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+.stats-item .stats-name{ font-size: 14px; color: var(--ink); font-weight: 600; }
+.stats-item .stats-badge{
+  font-size: 12px;
+  color: var(--gold-bright);
+  background: rgba(232,199,102,0.15);
+  border: 1px solid var(--gold-dim);
+  border-radius: 8px;
+  padding: 3px 10px;
+  white-space:nowrap;
+}
+
 .version-marker{
   margin-top: 18px;
   font-size: 14px;
@@ -914,6 +976,27 @@ body{
   <div class="version-marker">build 2026-06-28-fix3</div>
 </div>
 
+<div class="screen" id="who-screen">
+  <div class="name-card">
+    <div class="name-emblem">🔮</div>
+    <h2 class="name-title mystic-title">누구신가요?</h2>
+    <div class="name-sub">이름을 골라 이어서 플레이하거나,<br>새 이름으로 시작해보세요</div>
+    <div class="who-list" id="who-list"></div>
+    <button class="btn btn-primary" id="btn-who-new" style="width:100%;">새 이름으로 시작</button>
+    <button class="link-btn" id="btn-who-stats">모두의 진행 현황 보기</button>
+  </div>
+</div>
+
+<div class="screen" id="stats-screen">
+  <div class="name-card">
+    <div class="name-emblem">📜</div>
+    <h2 class="name-title mystic-title">모두의 진행 현황</h2>
+    <div class="name-sub">함께 마법의 세계를 탐험하는 사람들</div>
+    <div class="stats-list" id="stats-list"></div>
+    <button class="btn btn-secondary" id="btn-stats-back" style="width:100%;">돌아가기</button>
+  </div>
+</div>
+
 <div class="screen" id="name-screen">
   <div class="name-card">
     <div class="name-emblem">🔮</div>
@@ -1078,6 +1161,55 @@ const ITEMS = [
 
 const STORAGE_KEY = 'ladoku_save_v2';
 
+/* ---------- SHARED PLAYER SYNC (Supabase) ----------
+   Lets multiple people share this same page across different devices/phones, each
+   picking their own name and continuing from their own saved level — without any
+   login system. The "players" table is public (no auth), so this is meant for a
+   small trusted group (e.g. a family), not a public leaderboard with sensitive data. */
+const SUPABASE_URL = 'https://cpxyozkhijzlaukbybrz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Ex7i1023EL3Qmy4ApZzP-A_iExrPqBR';
+
+async function supabaseFetch(path, options){
+  options = options || {};
+  const headers = Object.assign({
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+    'Content-Type': 'application/json'
+  }, options.headers || {});
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, Object.assign({}, options, { headers }));
+  if(!res.ok){
+    const text = await res.text().catch(()=> '');
+    throw new Error('Supabase request failed: ' + res.status + ' ' + text);
+  }
+  if(res.status === 204) return null;
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+async function fetchAllPlayers(){
+  return await supabaseFetch('players?select=*&order=updated_at.desc', { method: 'GET' });
+}
+
+async function fetchPlayer(name){
+  const rows = await supabaseFetch('players?select=*&name=eq.' + encodeURIComponent(name), { method: 'GET' });
+  return rows && rows.length ? rows[0] : null;
+}
+
+async function upsertPlayer(player){
+  // Prefer: replace existing row by primary key (name), or insert a new one.
+  return await supabaseFetch('players?on_conflict=name', {
+    method: 'POST',
+    headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify([{
+      name: player.name,
+      character_id: player.characterId,
+      current_level: player.currentLevel,
+      completed_levels: player.completedLevels,
+      updated_at: new Date().toISOString()
+    }])
+  });
+}
+
 let state = {
   playerName: '',
   characterId: '',
@@ -1109,6 +1241,10 @@ function loadState(){
 }
 function saveState(){
   try{ localStorageSafe.set(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  // fire-and-forget: keep the shared player list in sync, but never block local play on it
+  if(state.playerName){
+    upsertPlayer(state).catch(()=>{ /* offline or sync hiccup — local save above already succeeded */ });
+  }
 }
 
 function showScreen(id){
@@ -2204,12 +2340,11 @@ document.getElementById('btn-restart-all').addEventListener('click', ()=>{
 });
 
 document.getElementById('btn-change-account').addEventListener('click', ()=>{
-  // Reset only identity (name/character), keep level progress intact.
-  state.playerName = '';
-  state.characterId = '';
-  saveState();
-  document.getElementById('name-input').value = '';
-  showScreen('name-screen');
+  // With multiple people sharing this page, "change account" should go back to the
+  // who-screen picker rather than wiping into a blank name screen — that picker is
+  // what keeps each person's level progress from overwriting someone else's.
+  showScreen('who-screen');
+  renderWhoScreen();
 });
 
 function refreshStartScreen(){
@@ -2377,17 +2512,103 @@ async function toggleMusic(){
 
 document.getElementById('music-toggle').addEventListener('click', toggleMusic);
 
+/* ---------- WHO-SCREEN (multi-player picker) ---------- */
+let cachedPlayers = [];
+
+async function renderWhoScreen(){
+  const list = document.getElementById('who-list');
+  list.innerHTML = '<div class="who-empty">목록을 불러오는 중...</div>';
+  try{
+    cachedPlayers = await fetchAllPlayers() || [];
+  }catch(e){
+    cachedPlayers = [];
+  }
+  if(cachedPlayers.length === 0){
+    list.innerHTML = '<div class="who-empty">아직 아무도 없어요. 새 이름으로 시작해보세요!</div>';
+    return;
+  }
+  list.innerHTML = '';
+  cachedPlayers.forEach(p=>{
+    const item = document.createElement('button');
+    item.className = 'who-item';
+    item.innerHTML = `
+      <div class="who-avatar">🔮</div>
+      <div class="who-info">
+        <div class="who-name">${escapeHtml(p.name)}</div>
+        <div class="who-level">${p.current_level}단계 진행 중</div>
+      </div>
+    `;
+    item.addEventListener('click', ()=> selectExistingPlayer(p));
+    list.appendChild(item);
+  });
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function selectExistingPlayer(p){
+  state.playerName = p.name;
+  state.characterId = p.character_id || '';
+  state.currentLevel = p.current_level || 1;
+  state.completedLevels = p.completed_levels || [];
+  localStorageSafe.set(STORAGE_KEY, JSON.stringify(state));
+  localStorageSafe.set('ladoku_account_created', '1');
+  showScreen('start-screen');
+  refreshStartScreen();
+}
+
+async function renderStatsScreen(){
+  const list = document.getElementById('stats-list');
+  list.innerHTML = '<div class="who-empty">불러오는 중...</div>';
+  try{
+    const players = await fetchAllPlayers() || [];
+    if(players.length === 0){
+      list.innerHTML = '<div class="who-empty">아직 진행 기록이 없어요</div>';
+      return;
+    }
+    list.innerHTML = '';
+    players
+      .slice()
+      .sort((a,b)=> (b.current_level||1) - (a.current_level||1))
+      .forEach(p=>{
+        const row = document.createElement('div');
+        row.className = 'stats-item';
+        row.innerHTML = `
+          <span class="stats-name">${escapeHtml(p.name)}</span>
+          <span class="stats-badge">${p.current_level}단계</span>
+        `;
+        list.appendChild(row);
+      });
+  }catch(e){
+    list.innerHTML = '<div class="who-empty">불러오지 못했어요. 인터넷 연결을 확인해주세요.</div>';
+  }
+}
+
+document.getElementById('btn-who-new').addEventListener('click', ()=>{
+  state.playerName = '';
+  state.characterId = '';
+  state.currentLevel = 1;
+  state.completedLevels = [];
+  showScreen('name-screen');
+});
+document.getElementById('btn-who-stats').addEventListener('click', ()=>{
+  showScreen('stats-screen');
+  renderStatsScreen();
+});
+document.getElementById('btn-stats-back').addEventListener('click', ()=>{
+  showScreen('who-screen');
+  renderWhoScreen();
+});
+
 /* ---------- BOOTSTRAP ---------- */
 buildStarfield();
 loadState();
 runLoadingScreen(()=>{
-  const accountCreated = localStorageSafe.get('ladoku_account_created');
-  if(!accountCreated || !state.playerName || !state.characterId){
-    showScreen('name-screen');
-  } else {
-    showScreen('start-screen');
-    refreshStartScreen();
-  }
+  showScreen('who-screen');
+  renderWhoScreen();
 });
 
 </script>
