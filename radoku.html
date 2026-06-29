@@ -1174,7 +1174,8 @@ async function supabaseFetch(path, options){
   const headers = Object.assign({
     'apikey': SUPABASE_KEY,
     'Authorization': 'Bearer ' + SUPABASE_KEY,
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
   }, options.headers || {});
   const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, Object.assign({}, options, { headers }));
   if(!res.ok){
@@ -1201,10 +1202,12 @@ async function upsertPlayer(player){
     method: 'POST',
     headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
     body: JSON.stringify([{
-      name: player.name,
-      character_id: player.characterId,
-      current_level: player.currentLevel,
-      completed_levels: player.completedLevels,
+      // state uses camelCase (playerName), Supabase table uses snake_case (name).
+      // The previous version sent player.name, which is undefined for local state, so rows were never saved.
+      name: player.playerName || player.name,
+      character_id: player.characterId || player.character_id || '',
+      current_level: player.currentLevel || player.current_level || 1,
+      completed_levels: player.completedLevels || player.completed_levels || [],
       updated_at: new Date().toISOString()
     }])
   });
@@ -1243,7 +1246,10 @@ function saveState(){
   try{ localStorageSafe.set(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
   // fire-and-forget: keep the shared player list in sync, but never block local play on it
   if(state.playerName){
-    upsertPlayer(state).catch(()=>{ /* offline or sync hiccup — local save above already succeeded */ });
+    upsertPlayer(state).catch((e)=>{
+      // Local save already succeeded. Keep playing, but expose the real cause in DevTools.
+      console.warn('[Radoku] Supabase sync failed:', e);
+    });
   }
 }
 
@@ -2706,24 +2712,46 @@ let cachedPlayers = [];
 async function renderWhoScreen(){
   const list = document.getElementById('who-list');
   list.innerHTML = '<div class="who-empty">목록을 불러오는 중...</div>';
+  let syncError = null;
   try{
     cachedPlayers = await fetchAllPlayers() || [];
   }catch(e){
     cachedPlayers = [];
+    syncError = e;
+    console.warn('[Radoku] Supabase player list failed:', e);
   }
+
+  // Fallback: even if Supabase is empty/blocked, do not hide the progress saved on this device.
+  if(state.playerName){
+    const exists = cachedPlayers.some(p => (p.name || '').trim() === state.playerName.trim());
+    if(!exists){
+      cachedPlayers.unshift({
+        name: state.playerName,
+        character_id: state.characterId || '',
+        current_level: state.currentLevel || 1,
+        completed_levels: state.completedLevels || [],
+        local_only: true
+      });
+    }
+  }
+
   if(cachedPlayers.length === 0){
-    list.innerHTML = '<div class="who-empty">아직 아무도 없어요. 새 이름으로 시작해보세요!</div>';
+    list.innerHTML = syncError
+      ? '<div class="who-empty">저장 목록을 불러오지 못했어요.<br>새 이름으로 시작하거나 인터넷 연결을 확인해보세요.</div>'
+      : '<div class="who-empty">아직 아무도 없어요. 새 이름으로 시작해보세요!</div>';
     return;
   }
+
   list.innerHTML = '';
   cachedPlayers.forEach(p=>{
     const item = document.createElement('button');
     item.className = 'who-item';
+    const localLabel = p.local_only ? ' · 이 기기 저장' : '';
     item.innerHTML = `
       <div class="who-avatar">🔮</div>
       <div class="who-info">
         <div class="who-name">${escapeHtml(p.name)}</div>
-        <div class="who-level">${p.current_level}단계 진행 중</div>
+        <div class="who-level">${p.current_level || 1}단계 진행 중${localLabel}</div>
       </div>
     `;
     item.addEventListener('click', ()=> selectExistingPlayer(p));
