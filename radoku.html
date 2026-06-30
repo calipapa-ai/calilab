@@ -443,17 +443,7 @@ body{
   white-space:nowrap;
 }
 
-.version-marker{
-  margin-top: 18px;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--gold-bright);
-  letter-spacing: 0.5px;
-  background: rgba(232,199,102,0.15);
-  border: 1px solid var(--gold);
-  border-radius: 8px;
-  padding: 6px 12px;
-}
+.version-marker{ display:none !important; }
 
 /* ============ TUTORIAL SCREEN ============ */
 #tutorial-screen{ padding: 20px; }
@@ -973,7 +963,6 @@ body{
   <div class="loading-sub">신비한 책장이 열리는 중...</div>
   <div class="loading-bar-track"><div class="loading-bar-fill" id="loading-bar"></div></div>
   <div class="loading-sparkles" id="loading-tip"></div>
-  <div class="version-marker">build 2026-06-29-fanfare50</div>
 </div>
 
 <div class="screen" id="who-screen">
@@ -1035,8 +1024,7 @@ body{
       <span id="progress-text">0 / 50단계 완료</span>
     </div>
     <button class="link-btn" id="btn-change-account">이름·모습 다시 정하기</button>
-    <div class="version-marker">build 2026-06-29-fanfare50</div>
-  </div>
+    </div>
 </div>
 
 <div class="screen" id="tutorial-screen">
@@ -1930,6 +1918,59 @@ function spawnBoardDriftGlyph(layer){
   setTimeout(()=>{ g.remove(); }, 5000);
 }
 
+/* ---------- LIGHT GAME SFX ---------- */
+let sfxReady = false;
+let sfxTap = null;
+let sfxItem = null;
+let sfxBad = null;
+
+async function ensureSfx(){
+  if(sfxReady) return true;
+  if(typeof Tone === 'undefined') return false;
+  try{
+    await Tone.start();
+    sfxTap = new Tone.MembraneSynth({
+      pitchDecay: 0.015,
+      octaves: 2,
+      oscillator: { type: 'sine' },
+      envelope: { attack: 0.001, decay: 0.08, sustain: 0, release: 0.04 }
+    }).toDestination();
+    sfxItem = new Tone.PolySynth(Tone.Synth, {
+      oscillator: { type: 'triangle' },
+      envelope: { attack: 0.005, decay: 0.14, sustain: 0.04, release: 0.18 },
+      volume: -8
+    }).toDestination();
+    sfxBad = new Tone.Synth({
+      oscillator: { type: 'sawtooth' },
+      envelope: { attack: 0.002, decay: 0.12, sustain: 0, release: 0.04 },
+      volume: -14
+    }).toDestination();
+    sfxReady = true;
+    return true;
+  }catch(e){
+    console.warn('SFX init failed', e);
+    return false;
+  }
+}
+
+async function playTapSfx(){
+  if(!(await ensureSfx()) || !sfxTap) return;
+  try{ sfxTap.triggerAttackRelease('C5', '32n', Tone.now(), 0.28); }catch(e){}
+}
+
+async function playItemSfx(){
+  if(!(await ensureSfx()) || !sfxItem) return;
+  try{
+    const now = Tone.now();
+    sfxItem.triggerAttackRelease(['G5','B5','D6'], '16n', now, 0.45);
+    sfxItem.triggerAttackRelease(['B5','E6'], '16n', now + 0.08, 0.36);
+  }catch(e){}
+}
+
+async function playBadSfx(){
+  if(!(await ensureSfx()) || !sfxBad) return;
+  try{ sfxBad.triggerAttackRelease('C3', '16n', Tone.now(), 0.22); }catch(e){}
+}
 
 function applyAutoMarksFor(r, c, recordHistory){
   const n = game.size;
@@ -1945,15 +1986,8 @@ function applyAutoMarksFor(r, c, recordHistory){
     changes.push({r:rr, c:cc, prev: game.playerGrid[rr][cc]});
     game.playerGrid[rr][cc] = CELL_X;
   }
-  for(let i=0;i<n;i++){
-    mark(r, i);
-    mark(i, c);
-  }
-  for(let rr=0; rr<n; rr++){
-    for(let cc=0; cc<n; cc++){
-      if(game.regionGrid[rr][cc] === reg) mark(rr, cc);
-    }
-  }
+  // 본 게임에서는 너무 쉽게 풀리지 않도록 자동 X는 대각선 4칸만 표시한다.
+  // 같은 가로줄/세로줄/영역은 플레이어가 직접 판단하고 메모하도록 남겨둔다.
   [[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([dr,dc])=>mark(r+dr, c+dc));
   return changes;
 }
@@ -2057,6 +2091,7 @@ function toggleXMark(r, c, recordHistory){
   const cellEl = getCellEl(r,c);
   game.playerGrid[r][c] = next;
   renderCellContent(cellEl, r, c);
+  if(recordHistory) playTapSfx();
   if(recordHistory){
     game.history.push([{r,c,prev: current}]);
   }
@@ -2072,6 +2107,7 @@ function placeOrRemoveItem(r, c, recordHistory){
     // Already has an item here — double-tapping again removes it.
     game.playerGrid[r][c] = CELL_EMPTY;
     renderCellContent(cellEl, r, c);
+    if(recordHistory) playTapSfx();
     if(recordHistory) game.history.push([{r,c,prev: current}]);
     checkWin();
     return;
@@ -2105,6 +2141,7 @@ function placeOrRemoveItem(r, c, recordHistory){
       game.playerGrid[item.r][item.c] = item.prev;
     });
     renderCellContent(cellEl, r, c);
+    if(recordHistory) playBadSfx();
     return;
   }
 
@@ -2117,6 +2154,7 @@ function placeOrRemoveItem(r, c, recordHistory){
   });
   renderBoard();
   if(recordHistory){
+    playItemSfx();
     const batch = [{r,c,prev: current}, ...existingInRegion, ...autoMarks];
     game.history.push(batch);
   }
