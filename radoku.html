@@ -1972,24 +1972,21 @@ async function playBadSfx(){
   try{ sfxBad.triggerAttackRelease('C3', '16n', Tone.now(), 0.22); }catch(e){}
 }
 
+function haptic(pattern){
+  // Android Chrome 등 일부 모바일 브라우저에서만 동작한다.
+  // iPhone Safari는 navigator.vibrate를 지원하지 않아 조용히 무시된다.
+  try{
+    if(navigator && typeof navigator.vibrate === 'function') navigator.vibrate(pattern);
+  }catch(e){}
+}
+function hapticTap(){ haptic(10); }
+function hapticItem(){ haptic([18, 24, 32]); }
+function hapticBad(){ haptic([45, 30, 45]); }
+
 function applyAutoMarksFor(r, c, recordHistory){
-  const n = game.size;
-  const reg = game.regionGrid[r][c];
-  const changes = [];
-  function mark(rr, cc){
-    if(rr < 0 || rr >= n || cc < 0 || cc >= n) return;
-    if(rr === r && cc === c) return;
-    if(game.lockedCells[rr] && game.lockedCells[rr][cc]) return;
-    if(game.playerGrid[rr][cc] !== CELL_EMPTY) return;
-    // 정답 칸을 자동으로 지워버리는 일은 절대 없게 한다.
-    if(game.solution[rr] === cc) return;
-    changes.push({r:rr, c:cc, prev: game.playerGrid[rr][cc]});
-    game.playerGrid[rr][cc] = CELL_X;
-  }
-  // 본 게임에서는 너무 쉽게 풀리지 않도록 자동 X는 대각선 4칸만 표시한다.
-  // 같은 가로줄/세로줄/영역은 플레이어가 직접 판단하고 메모하도록 남겨둔다.
-  [[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([dr,dc])=>mark(r+dr, c+dc));
-  return changes;
+  // 자동 X 표시는 게임이 너무 쉽게 풀리지 않도록 완전히 끈다.
+  // 유물을 발견해도 플레이어가 직접 가로/세로/영역/대각선 규칙을 보고 판단하게 한다.
+  return [];
 }
 
 function rowHasItem(r){
@@ -2091,7 +2088,7 @@ function toggleXMark(r, c, recordHistory){
   const cellEl = getCellEl(r,c);
   game.playerGrid[r][c] = next;
   renderCellContent(cellEl, r, c);
-  if(recordHistory) playTapSfx();
+  if(recordHistory){ playTapSfx(); hapticTap(); }
   if(recordHistory){
     game.history.push([{r,c,prev: current}]);
   }
@@ -2107,7 +2104,7 @@ function placeOrRemoveItem(r, c, recordHistory){
     // Already has an item here — double-tapping again removes it.
     game.playerGrid[r][c] = CELL_EMPTY;
     renderCellContent(cellEl, r, c);
-    if(recordHistory) playTapSfx();
+    if(recordHistory){ playTapSfx(); hapticTap(); }
     if(recordHistory) game.history.push([{r,c,prev: current}]);
     checkWin();
     return;
@@ -2141,13 +2138,12 @@ function placeOrRemoveItem(r, c, recordHistory){
       game.playerGrid[item.r][item.c] = item.prev;
     });
     renderCellContent(cellEl, r, c);
-    if(recordHistory) playBadSfx();
+    if(recordHistory){ playBadSfx(); hapticBad(); }
     return;
   }
 
-  // Placement is valid — commit the clear of the old item(s), then mark cells that are
-  // automatically ruled out by row/column/region/diagonal rules. This turns the puzzle
-  // into a visible chain of deductions instead of a sequence of blind guesses.
+  // Placement is valid — commit the clear of the old item(s).
+  // 자동 X 표시는 끈다. 게임의 추론은 플레이어가 직접 하게 한다.
   const autoMarks = applyAutoMarksFor(r, c, recordHistory);
   existingInRegion.forEach(item => {
     renderCellContent(getCellEl(item.r, item.c), item.r, item.c);
@@ -2155,6 +2151,7 @@ function placeOrRemoveItem(r, c, recordHistory){
   renderBoard();
   if(recordHistory){
     playItemSfx();
+    hapticItem();
     const batch = [{r,c,prev: current}, ...existingInRegion, ...autoMarks];
     game.history.push(batch);
   }
@@ -2442,6 +2439,8 @@ function useHint(){
   game.hintsLeft--;
   document.getElementById('hint-count').textContent = game.hintsLeft;
   renderBoard();
+  playItemSfx();
+  hapticItem();
   const cellEl = getCellEl(r,c);
   if(cellEl){
     cellEl.classList.add('hint-glow');
