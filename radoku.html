@@ -1458,12 +1458,12 @@ function getCharacterById(id){
 
 /* ---------- INTERACTIVE TUTORIAL ---------- */
 // Each mission gives the player a tiny board and a concrete instruction.
-// Wrong taps give gentle feedback instead of blocking. Placing an item takes
-// a single tap; marking X uses a long press or drag, for better mobile feel.
+// Wrong taps give gentle feedback instead of blocking. On the main board, one tap
+// marks X immediately and a quick second tap on the same cell places an item.
 const tutorialMissions = [
   {
     title: '규칙 1 — 영역마다 유물 1개',
-    instruction: '색깔로 나뉜 <b>영역</b> 하나에는 유물이 <b>딱 하나</b>만 들어가요. 아래 보라색 영역 안에서, 원하는 칸을 <b>한 번 탭</b>해보세요.',
+    instruction: '색깔로 나뉜 <b>영역</b> 하나에는 유물이 <b>딱 하나</b>만 들어가요. 아래 보라색 영역 안에서, 원하는 칸을 <b>빠르게 두 번 탭</b>해보세요.',
     size: 3,
     region: [
       [0,0,1],
@@ -1476,7 +1476,7 @@ const tutorialMissions = [
   },
   {
     title: '규칙 2 — 가로줄·세로줄도 1개씩만',
-    instruction: '이번엔 줄 규칙이에요. 같은 <b>가로줄(행)</b>이나 <b>세로줄(열)</b>에는 유물이 두 개 있을 수 없어요. 왼쪽 위에 이미 유물이 하나 놓여 있으니, <b>그 줄을 피해서</b> 초록 영역을 한 번 탭해보세요.',
+    instruction: '이번엔 줄 규칙이에요. 같은 <b>가로줄(행)</b>이나 <b>세로줄(열)</b>에는 유물이 두 개 있을 수 없어요. 왼쪽 위에 이미 유물이 하나 놓여 있으니, <b>그 줄을 피해서</b> 초록 영역을 빠르게 두 번 탭해보세요.',
     size: 3,
     region: [
       [0,0,1],
@@ -1834,8 +1834,15 @@ function renderBoard(){
   startBoardSparkles();
 }
 
-// Tap -> place/remove item immediately. Long press or drag -> X memo.
-// This avoids the old 350ms double-tap wait, which felt laggy on phones.
+// Fast input model:
+// - One tap marks/removes X immediately.
+// - A quick second tap on the same X converts it into an item.
+// - Tapping an existing item removes it.
+// - Long press erases the cell.
+// This keeps the no-delay feel while matching the puzzle's “mark candidates first” play style.
+let lastTapInfo = { r: -1, c: -1, time: 0 };
+const DOUBLE_TAP_WINDOW_MS = 320;
+
 function attachTapHandlers(cell){
   const r = parseInt(cell.dataset.r);
   const c = parseInt(cell.dataset.c);
@@ -1858,9 +1865,9 @@ function attachTapHandlers(cell){
     pressTimer = setTimeout(()=>{
       pressTimer = null;
       longPressed = true;
-      toggleXMark(r, c, true);
+      eraseCellAt(r, c, true);
       suppressNextClick = true;
-    }, 360);
+    }, 430);
   });
 
   cell.addEventListener('pointermove', (e)=>{
@@ -1874,9 +1881,25 @@ function attachTapHandlers(cell){
     clearPressTimer();
     if(suppressNextClick){ suppressNextClick = false; return; }
     if(moved || longPressed) return;
-    // Mobile-first input: one tap places/removes an item immediately.
-    // Long press or drag is used for X memo marks, so there is no 350ms double-tap delay.
-    onCellDoubleClick(r, c);
+
+    const now = Date.now();
+    const current = game.playerGrid[r][c];
+    const isQuickSecondTap = lastTapInfo.r === r && lastTapInfo.c === c && (now - lastTapInfo.time) <= DOUBLE_TAP_WINDOW_MS;
+
+    if(current >= CELL_ITEM_BASE){
+      placeOrRemoveItem(r, c, true);
+      lastTapInfo = { r: -1, c: -1, time: 0 };
+      return;
+    }
+
+    if(current === CELL_X && isQuickSecondTap){
+      placeOrRemoveItem(r, c, true);
+      lastTapInfo = { r: -1, c: -1, time: 0 };
+      return;
+    }
+
+    toggleXMark(r, c, true);
+    lastTapInfo = { r, c, time: now };
   });
 
   cell.addEventListener('pointercancel', clearPressTimer);
@@ -2146,13 +2169,30 @@ function renderCellContent(cell, r, c){
   }
 }
 
+function eraseCellAt(r, c, recordHistory){
+  if(game.finished) return;
+  if(game.lockedCells[r] && game.lockedCells[r][c]){
+    showToast('이미 풀려있는 칸이에요');
+    return;
+  }
+  const current = game.playerGrid[r][c];
+  if(current === CELL_EMPTY) return;
+  game.playerGrid[r][c] = CELL_EMPTY;
+  renderCellContent(getCellEl(r,c), r, c);
+  if(recordHistory){
+    playTapSfx();
+    hapticTap();
+    game.history.push([{r,c,prev: current}]);
+  }
+}
+
 function onCellClick(r, c){
   if(game.finished) return;
   if(game.lockedCells[r] && game.lockedCells[r][c]){
     showToast('이미 풀려있는 칸이에요');
     return;
   }
-  // Kept for compatibility: X memo action. Main board now uses long press/drag.
+  // Single tap action: X memo mark.
   toggleXMark(r, c, true);
 }
 
@@ -2162,7 +2202,7 @@ function onCellDoubleClick(r, c){
     showToast('이미 풀려있는 칸이에요');
     return;
   }
-  // Double tap places (or removes, if already placed) an item.
+  // Quick second tap places (or removes, if already placed) an item.
   placeOrRemoveItem(r, c, true);
 }
 
