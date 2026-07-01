@@ -476,6 +476,30 @@ body{
 .stats-left{ display:flex; flex-direction:column; gap:2px; min-width:0; }
 .stats-rank{ font-size: 11.5px; color: var(--ink-soft); }
 
+
+.leader-no{
+  width: 32px; height: 32px;
+  border-radius: 10px;
+  flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  color: var(--gold-bright);
+  background: rgba(232,199,102,0.13);
+  border: 1px solid var(--gold-dim);
+  font-size: 12px;
+  font-weight: 800;
+}
+.leader-no.top1{
+  background: radial-gradient(circle at 32% 28%, var(--gold-bright), var(--gold) 58%, var(--gold-dim) 100%);
+  color: var(--night);
+  box-shadow: 0 0 14px rgba(232,199,102,0.35);
+}
+.stats-rank-no{
+  min-width: 36px;
+  color: var(--gold-bright);
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .version-marker{ display:none !important; }
 
 /* ============ TUTORIAL SCREEN ============ */
@@ -1210,7 +1234,7 @@ async function supabaseFetch(path, options){
 }
 
 async function fetchAllPlayers(){
-  return await supabaseFetch('players?select=*&order=updated_at.desc', { method: 'GET' });
+  return await supabaseFetch('players?select=*', { method: 'GET' });
 }
 
 async function fetchPlayer(name){
@@ -2848,6 +2872,32 @@ document.getElementById('music-toggle').addEventListener('click', toggleMusic);
 /* ---------- WHO-SCREEN (multi-player picker) ---------- */
 let cachedPlayers = [];
 
+
+function getLeaderboardScore(p){
+  const completed = getCompletedCountForPlayer(p);
+  const current = p.current_level || p.currentLevel || 1;
+  return Math.max(completed, current - 1);
+}
+
+function sortPlayersByLevel(players){
+  return (players || []).slice().sort((a,b)=>{
+    const scoreDiff = getLeaderboardScore(b) - getLeaderboardScore(a);
+    if(scoreDiff) return scoreDiff;
+    const currentDiff = (b.current_level || b.currentLevel || 1) - (a.current_level || a.currentLevel || 1);
+    if(currentDiff) return currentDiff;
+    const completedDiff = getCompletedCountForPlayer(b) - getCompletedCountForPlayer(a);
+    if(completedDiff) return completedDiff;
+    return String(a.name || a.playerName || '').localeCompare(String(b.name || b.playerName || ''), 'ko');
+  });
+}
+
+function leaderboardLabel(index){
+  if(index === 0) return '1위';
+  if(index === 1) return '2위';
+  if(index === 2) return '3위';
+  return (index + 1) + '위';
+}
+
 async function renderWhoScreen(){
   const list = document.getElementById('who-list');
   list.innerHTML = '<div class="who-empty">목록을 불러오는 중...</div>';
@@ -2881,14 +2931,17 @@ async function renderWhoScreen(){
     return;
   }
 
+  cachedPlayers = sortPlayersByLevel(cachedPlayers);
   list.innerHTML = '';
-  cachedPlayers.forEach(p=>{
+  cachedPlayers.forEach((p, idx)=>{
     const item = document.createElement('button');
     item.className = 'who-item';
     const localLabel = p.local_only ? ' · 이 기기 저장' : '';
     const completed = getCompletedCountForPlayer(p);
     const rank = getRankByCompleted(completed);
+    const leader = leaderboardLabel(idx);
     item.innerHTML = `
+      <div class="leader-no ${idx === 0 ? 'top1' : ''}">${leader}</div>
       <div class="who-avatar">${rank.emoji}</div>
       <div class="who-info">
         <div class="who-name">${escapeHtml(p.name)}</div>
@@ -2928,15 +2981,14 @@ async function renderStatsScreen(){
       return;
     }
     list.innerHTML = '';
-    players
-      .slice()
-      .sort((a,b)=> getCompletedCountForPlayer(b) - getCompletedCountForPlayer(a) || (b.current_level||1) - (a.current_level||1))
-      .forEach(p=>{
+    sortPlayersByLevel(players)
+      .forEach((p, idx)=>{
         const row = document.createElement('div');
         row.className = 'stats-item';
         const completed = getCompletedCountForPlayer(p);
         const rank = getRankByCompleted(completed);
         row.innerHTML = `
+          <span class="stats-rank-no">${leaderboardLabel(idx)}</span>
           <span class="stats-left">
             <span class="stats-name">${escapeHtml(p.name)}</span>
             <span class="stats-rank">${rank.emoji} ${rank.title}</span>
