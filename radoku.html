@@ -1434,12 +1434,12 @@ function getCharacterById(id){
 
 /* ---------- INTERACTIVE TUTORIAL ---------- */
 // Each mission gives the player a tiny board and a concrete instruction.
-// Wrong taps give gentle feedback instead of blocking. Placing an item always takes
-// a double-tap (matching the real game); marking X always takes a single tap.
+// Wrong taps give gentle feedback instead of blocking. Placing an item takes
+// a single tap; marking X uses a long press or drag, for better mobile feel.
 const tutorialMissions = [
   {
     title: '규칙 1 — 영역마다 유물 1개',
-    instruction: '색깔로 나뉜 <b>영역</b> 하나에는 유물이 <b>딱 하나</b>만 들어가요. 아래 보라색 영역 안에서, 원하는 칸을 <b>두 번 빠르게 탭</b>해보세요.',
+    instruction: '색깔로 나뉜 <b>영역</b> 하나에는 유물이 <b>딱 하나</b>만 들어가요. 아래 보라색 영역 안에서, 원하는 칸을 <b>한 번 탭</b>해보세요.',
     size: 3,
     region: [
       [0,0,1],
@@ -1448,11 +1448,11 @@ const tutorialMissions = [
     ],
     isCorrect: (r,c,region)=> region[r][c] === 0,
     successMsg: '맞아요! 영역 안이면 어디든 정답이 될 수 있어요.',
-    failMsg: '그 칸은 보라색 영역 밖이에요. 보라색 칸을 두 번 탭해보세요.'
+    failMsg: '그 칸은 보라색 영역 밖이에요. 보라색 칸을 한 번 탭해보세요.'
   },
   {
     title: '규칙 2 — 가로줄·세로줄도 1개씩만',
-    instruction: '이번엔 줄 규칙이에요. 같은 <b>가로줄(행)</b>이나 <b>세로줄(열)</b>에는 유물이 두 개 있을 수 없어요. 왼쪽 위에 이미 유물이 하나 놓여 있으니, <b>그 줄을 피해서</b> 초록 영역을 두 번 탭해보세요.',
+    instruction: '이번엔 줄 규칙이에요. 같은 <b>가로줄(행)</b>이나 <b>세로줄(열)</b>에는 유물이 두 개 있을 수 없어요. 왼쪽 위에 이미 유물이 하나 놓여 있으니, <b>그 줄을 피해서</b> 초록 영역을 한 번 탭해보세요.',
     size: 3,
     region: [
       [0,0,1],
@@ -1462,11 +1462,11 @@ const tutorialMissions = [
     prefill: [{r:0,c:0}],
     isCorrect: (r,c,region)=> region[r][c] === 2 && r !== 0 && c !== 0,
     successMsg: '정확해요! 첫 줄(행)도, 첫 칸(열)도 피했어요.',
-    failMsg: '그 칸은 이미 유물이 놓인 행 또는 열이에요. 둘 다 비어있는 줄을 찾아 두 번 탭해보세요.'
+    failMsg: '그 칸은 이미 유물이 놓인 행 또는 열이에요. 둘 다 비어있는 줄을 찾아 한 번 탭해보세요.'
   },
   {
     title: '규칙 3 — 대각선도 못 닿아요',
-    instruction: '마지막 규칙이에요. 유물은 <b>바로 대각선으로 맞닿은 칸</b>에도 놓을 수 없어요(행·열 규칙보다 더 좁은 범위예요). 가운데 유물 기준으로, 대각선이 아니면서 초록 영역인 칸을 두 번 탭해보세요.',
+    instruction: '마지막 규칙이에요. 유물은 <b>바로 대각선으로 맞닿은 칸</b>에도 놓을 수 없어요(행·열 규칙보다 더 좁은 범위예요). 가운데 유물 기준으로, 대각선이 아니면서 초록 영역인 칸을 한 번 탭해보세요.',
     size: 3,
     region: [
       [2,1,2],
@@ -1476,11 +1476,11 @@ const tutorialMissions = [
     prefill: [{r:1,c:1}],
     isCorrect: (r,c,region)=> region[r][c] === 2 && !(Math.abs(r-1)===1 && Math.abs(c-1)===1),
     successMsg: '훌륭해요! 이제 세 가지 규칙을 모두 알게 됐어요.',
-    failMsg: '그 칸은 가운데 유물과 대각선 모서리로 맞닿아 있어요. 모서리가 아닌 칸을 두 번 탭해보세요.'
+    failMsg: '그 칸은 가운데 유물과 대각선 모서리로 맞닿아 있어요. 모서리가 아닌 칸을 한 번 탭해보세요.'
   },
   {
     title: '× 표시 — 안 되는 칸을 메모하기',
-    instruction: '<b>은은하게 빛나는 칸</b>(두 번째 줄의 가장 오른쪽 칸)에 이미 책이 놓여 있어요. 그 칸과 <b>같은 세로줄(열)</b>에 있는 칸엔 유물을 놓을 수 없어요. 살짝 깜빡이는 칸을 <b>한 번만 탭</b>해서 ×표시를 남겨보세요.',
+    instruction: '<b>은은하게 빛나는 칸</b>(두 번째 줄의 가장 오른쪽 칸)에 이미 책이 놓여 있어요. 그 칸과 <b>같은 세로줄(열)</b>에 있는 칸엔 유물을 놓을 수 없어요. 살짝 깜빡이는 칸을 <b>길게 눌러서</b> ×표시를 남겨보세요.',
     size: 3,
     region: [
       [0,0,1],
@@ -1491,8 +1491,8 @@ const tutorialMissions = [
     xMarkMode: true,
     targetCell: {r:2, c:2},
     isCorrect: (r,c,region)=> r===2 && c===2,
-    successMsg: '바로 그거예요! ×표시는 "여긴 안 된다"를 기록해두는 메모예요. 한 번 탭은 ×, 두 번 탭은 유물 — 이렇게 구분해서 써보세요.',
-    failMsg: '책이 놓인 칸과 같은 세로줄(열)을 찾아 한 번 탭해보세요. 살짝 깜빡이는 칸이 정답이에요.'
+    successMsg: '바로 그거예요! ×표시는 "여긴 안 된다"를 기록해두는 메모예요. 한 번 탭은 유물, 길게 누르기는 × — 이렇게 구분해서 써보세요.',
+    failMsg: '책이 놓인 칸과 같은 세로줄(열)을 찾아 길게 눌러보세요. 살짝 깜빡이는 칸이 정답이에요.'
   }
 ];
 
@@ -1562,32 +1562,40 @@ function renderTutorialBoard(mission){
       cell.dataset.r = r;
       cell.dataset.c = c;
       if(mission.xMarkMode){
-        // This mission practices the single-tap X action directly.
-        cell.addEventListener('click', ()=> onTutorialCellClick(mission, r, c, cell));
+        // This mission practices the long-press X action directly.
+        attachTutorialLongPress(cell, mission, r, c);
       } else {
-        // Item-placement missions require a double-tap, just like the real game.
-        attachTutorialDoubleTap(cell, mission, r, c);
+        // Item-placement missions use a single tap, just like the real game.
+        cell.addEventListener('click', ()=> onTutorialCellClick(mission, r, c, cell));
       }
       grid.appendChild(cell);
     }
   }
 }
 
-function attachTutorialDoubleTap(cell, mission, r, c){
-  let lastTapTime = 0;
-  cell.addEventListener('click', ()=>{
-    const now = Date.now();
-    const gap = now - lastTapTime;
-    lastTapTime = now;
-    if(gap < 350){
-      lastTapTime = 0;
+function attachTutorialLongPress(cell, mission, r, c){
+  let timer = null;
+  let startX = 0, startY = 0;
+  let moved = false;
+  const clear = ()=>{ if(timer){ clearTimeout(timer); timer = null; } };
+  cell.addEventListener('pointerdown', (e)=>{
+    moved = false;
+    startX = e.clientX; startY = e.clientY;
+    clear();
+    timer = setTimeout(()=>{
+      timer = null;
+      hapticTap();
       onTutorialCellClick(mission, r, c, cell);
-    } else {
-      const feedback = document.getElementById('tut-feedback');
-      feedback.textContent = '두 번 빠르게 탭해서 유물을 놓아보세요';
-      feedback.className = 'tutorial-feedback';
+    }, 360);
+  });
+  cell.addEventListener('pointermove', (e)=>{
+    if(Math.abs(e.clientX-startX) + Math.abs(e.clientY-startY) > 12){
+      moved = true; clear();
     }
   });
+  cell.addEventListener('pointerup', clear);
+  cell.addEventListener('pointercancel', clear);
+  cell.addEventListener('pointerleave', clear);
 }
 
 function onTutorialCellClick(mission, r, c, cellEl){
@@ -1802,31 +1810,53 @@ function renderBoard(){
   startBoardSparkles();
 }
 
-// Single tap -> X mark, double tap -> place item. Native 'dblclick' is unreliable on
-// touchscreens, so we measure the gap between taps ourselves and treat anything under
-// 350ms as a double-tap (and suppress the single-tap action that would otherwise fire).
-// We capture r/c directly rather than holding onto the DOM event object, since the
-// event itself isn't safe to reuse once the original click handler has returned.
-// Dragging (see attachDragMarkHandlers below) takes priority over this: once a drag is
-// detected, the click that the browser still fires afterward is suppressed.
+// Tap -> place/remove item immediately. Long press or drag -> X memo.
+// This avoids the old 350ms double-tap wait, which felt laggy on phones.
 function attachTapHandlers(cell){
   const r = parseInt(cell.dataset.r);
   const c = parseInt(cell.dataset.c);
-  let lastTapTime = 0;
-  let singleTapTimer = null;
-  cell.addEventListener('click', ()=>{
-    if(suppressNextClick){ suppressNextClick = false; return; }
-    const now = Date.now();
-    const gap = now - lastTapTime;
-    lastTapTime = now;
-    if(gap < 350){
-      clearTimeout(singleTapTimer);
-      lastTapTime = 0; // reset so a third quick tap doesn't chain into another double-tap
-      onCellDoubleClick(r, c);
-    } else {
-      singleTapTimer = setTimeout(()=>{ onCellClick(r, c); }, 350);
+  let pressTimer = null;
+  let longPressed = false;
+  let moved = false;
+  let startX = 0, startY = 0;
+
+  const clearPressTimer = ()=>{
+    if(pressTimer){ clearTimeout(pressTimer); pressTimer = null; }
+  };
+
+  cell.addEventListener('pointerdown', (e)=>{
+    if(e.pointerType === 'mouse' && e.button !== 0) return;
+    longPressed = false;
+    moved = false;
+    startX = e.clientX;
+    startY = e.clientY;
+    clearPressTimer();
+    pressTimer = setTimeout(()=>{
+      pressTimer = null;
+      longPressed = true;
+      toggleXMark(r, c, true);
+      suppressNextClick = true;
+    }, 360);
+  });
+
+  cell.addEventListener('pointermove', (e)=>{
+    if(Math.abs(e.clientX - startX) + Math.abs(e.clientY - startY) > 12){
+      moved = true;
+      clearPressTimer();
     }
   });
+
+  cell.addEventListener('pointerup', ()=>{
+    clearPressTimer();
+    if(suppressNextClick){ suppressNextClick = false; return; }
+    if(moved || longPressed) return;
+    // Mobile-first input: one tap places/removes an item immediately.
+    // Long press or drag is used for X memo marks, so there is no 350ms double-tap delay.
+    onCellDoubleClick(r, c);
+  });
+
+  cell.addEventListener('pointercancel', clearPressTimer);
+  cell.addEventListener('pointerleave', clearPressTimer);
 }
 
 // Drag-to-mark: press down on a cell and swipe across the board to paint X marks
@@ -1892,11 +1922,8 @@ function attachDragMarkHandlers(grid){
   });
 
   const endDrag = ()=>{
-    if(isDragging && dragMoved){
-      // a drag just happened — swallow the click event that follows so it doesn't
-      // also trigger the single/double-tap logic on the last cell touched
-      suppressNextClick = true;
-    }
+    // Cell pointerup already ignores moved gestures, so we don't need to suppress
+    // the next tap after a drag.
     isDragging = false;
     dragMoved = false;
     startR = null; startC = null;
@@ -2101,7 +2128,7 @@ function onCellClick(r, c){
     showToast('이미 풀려있는 칸이에요');
     return;
   }
-  // Single tap toggles an X mark (matches the original game's input scheme).
+  // Kept for compatibility: X memo action. Main board now uses long press/drag.
   toggleXMark(r, c, true);
 }
 
