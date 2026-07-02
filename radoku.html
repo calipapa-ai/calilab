@@ -918,154 +918,6 @@ body{
   50%{ box-shadow: 0 0 0 2px var(--gold), 0 0 24px 6px rgba(232,199,102,0.75); }
 }
 
-
-
-/* ============ READABILITY UPGRADE ============ */
-body.gameplay #starfield{
-  opacity: 0.30;
-}
-body.gameplay #music-toggle{
-  opacity: 0.72;
-}
-.game-wrap{
-  max-width: 560px;
-  padding: 10px 14px 14px;
-}
-.game-topbar{
-  margin-bottom: 8px;
-}
-.topbar-btn{
-  width: 44px; height: 44px;
-  border-radius: 14px;
-  border: 1.5px solid rgba(232,199,102,0.28);
-  background: rgba(30,22,64,0.82);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.22);
-}
-.topbar-level{
-  font-size: 20px;
-  line-height: 1.15;
-}
-.topbar-timer{
-  font-size: 12.5px;
-  color: rgba(240,234,255,0.82);
-}
-.mistake-track{
-  margin-bottom: 10px;
-}
-.mistake-track .rune{
-  width: 14px; height: 14px;
-  border-radius: 50%;
-  transform: none;
-  background: #ff6b88;
-  box-shadow: none;
-}
-.mistake-track .rune.lost{
-  transform: none;
-}
-.game-legend{
-  width: min(92vw, 60vh, 470px);
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 10px;
-  flex-shrink: 0;
-}
-.legend-card{
-  min-height: 54px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  padding: 8px 10px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(232,199,102,0.22);
-  border-radius: 14px;
-  color: rgba(240,234,255,0.96);
-  font-size: 12.5px;
-  line-height: 1.35;
-  backdrop-filter: blur(3px);
-}
-.legend-card b{
-  color: var(--gold-bright);
-}
-.board-frame{
-  background: rgba(12,11,26,0.90);
-  border: 2px solid rgba(232,199,102,0.22);
-  border-radius: 24px;
-  box-shadow: 0 8px 28px rgba(0,0,0,0.24);
-  padding: 12px;
-}
-.board-frame.mark-mode-active{
-  border-color: rgba(232,199,102,0.52);
-  box-shadow: 0 10px 28px rgba(0,0,0,0.25);
-}
-.board-sparkle-layer,
-.board-sparkle,
-.board-drift{
-  display:none !important;
-}
-.board-grid{
-  gap: 4px;
-  width: min(92vw, 60vh, 470px);
-  height: min(92vw, 60vh, 470px);
-}
-.cell{
-  border-radius: 8px;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
-}
-.cell:active{
-  transform: scale(0.97);
-}
-.cell .item-emoji{
-  font-size: clamp(20px, 5.8vw, 34px);
-  filter: none;
-}
-.cell .x-strike line{
-  stroke: rgba(255,255,255,0.92) !important;
-  stroke-width: 10 !important;
-  opacity: 1 !important;
-}
-.cell::before,
-.cell::after{
-  display:none !important;
-}
-.cell.region-border-top{ border-top: 3px solid rgba(255,255,255,0.42); }
-.cell.region-border-bottom{ border-bottom: 3px solid rgba(255,255,255,0.42); }
-.cell.region-border-left{ border-left: 3px solid rgba(255,255,255,0.42); }
-.cell.region-border-right{ border-right: 3px solid rgba(255,255,255,0.42); }
-.cell.r0{ background: #8f7bd3; }
-.cell.r1{ background: #7aa3d7; }
-.cell.r2{ background: #74c89a; }
-.cell.r3{ background: #d8ba67; }
-.cell.r4{ background: #db7878; }
-.cell.r5{ background: #d782be; }
-.cell.r6{ background: #77c9ca; }
-.cell.r7{ background: #8fcb68; }
-.cell.r8{ background: #d79263; }
-.controls-row{
-  gap: 10px;
-  width: min(92vw, 60vh, 470px);
-  margin-top: 12px;
-}
-.ctrl-btn{
-  min-height: 82px;
-  border-radius: 18px;
-  border: 1px solid rgba(232,199,102,0.22);
-  background: rgba(26,20,51,0.88);
-  color: rgba(240,234,255,0.95);
-  font-size: 12px;
-  line-height: 1.25;
-  gap: 6px;
-  padding: 10px 4px;
-}
-.ctrl-btn .ctrl-icon{ font-size: 22px; }
-@media (max-width: 420px){
-  .game-legend{ gap: 6px; }
-  .legend-card{ font-size: 11.5px; min-height: 50px; padding: 7px 8px; }
-  .controls-row{ gap: 8px; }
-  .ctrl-btn{ min-height: 76px; font-size: 11px; }
-}
-
 /* ============ CINEMATIC WIN/LOSE OVERLAYS ============ */
 .modal-overlay{
   position:fixed; inset:0;
@@ -1295,11 +1147,6 @@ body.gameplay #music-toggle{
       <button class="topbar-btn" id="btn-info">？</button>
     </div>
     <div class="mistake-track" id="mistake-track"></div>
-    <div class="game-legend">
-      <div class="legend-card">영역마다 <b>유물 1개</b></div>
-      <div class="legend-card">가로·세로 <b>중복 금지</b></div>
-      <div class="legend-card"><b>대각선</b>으로 닿으면 안 돼요</div>
-    </div>
     <div class="board-frame" id="board-frame">
       <div class="board-sparkle-layer" id="board-sparkle-layer"></div>
       <div class="board-grid" id="board-grid"></div>
@@ -1456,7 +1303,6 @@ function saveState(){
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  document.body.classList.toggle('gameplay', id === 'game-screen');
 }
 
 function showToast(msg, duration){
@@ -1471,7 +1317,7 @@ function showToast(msg, duration){
 /* ---------- STARFIELD ---------- */
 function buildStarfield(){
   const field = document.getElementById('starfield');
-  const starCount = 42;
+  const starCount = 70;
   for(let i=0;i<starCount;i++){
     const s = document.createElement('div');
     s.className = 'star';
@@ -2913,29 +2759,25 @@ let musicPlaying = false;
 async function toggleMusic(){
   const btn = document.getElementById('music-toggle');
   const audio = document.getElementById('bgm-audio');
-  if(!audio){
-    showToast('배경음악 파일을 찾을 수 없어요');
-    return;
-  }
+  if(!audio) return;
 
-  // Mobile browsers allow audio only after a user gesture. This function is
-  // called from the music button, so play() is allowed on Android/iOS browsers.
-  try{
-    if(audio.paused){
-      audio.volume = 0.28;
+  audio.volume = 0.34;
+
+  if(audio.paused){
+    try{
       await audio.play();
       musicPlaying = true;
       btn.textContent = '🔊';
       btn.classList.add('playing');
-    }else{
-      audio.pause();
-      musicPlaying = false;
-      btn.textContent = '🔇';
-      btn.classList.remove('playing');
+    }catch(err){
+      console.warn('BGM play blocked or failed:', err);
+      showToast('음악 버튼을 한 번 더 눌러보세요');
     }
-  }catch(err){
-    console.warn('BGM play failed:', err);
-    showToast('음악 버튼을 한 번 더 눌러보세요');
+  }else{
+    audio.pause();
+    musicPlaying = false;
+    btn.textContent = '🔇';
+    btn.classList.remove('playing');
   }
 }
 
