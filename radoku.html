@@ -918,6 +918,154 @@ body{
   50%{ box-shadow: 0 0 0 2px var(--gold), 0 0 24px 6px rgba(232,199,102,0.75); }
 }
 
+
+
+/* ============ READABILITY UPGRADE ============ */
+body.gameplay #starfield{
+  opacity: 0.30;
+}
+body.gameplay #music-toggle{
+  opacity: 0.72;
+}
+.game-wrap{
+  max-width: 560px;
+  padding: 10px 14px 14px;
+}
+.game-topbar{
+  margin-bottom: 8px;
+}
+.topbar-btn{
+  width: 44px; height: 44px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(232,199,102,0.28);
+  background: rgba(30,22,64,0.82);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.22);
+}
+.topbar-level{
+  font-size: 20px;
+  line-height: 1.15;
+}
+.topbar-timer{
+  font-size: 12.5px;
+  color: rgba(240,234,255,0.82);
+}
+.mistake-track{
+  margin-bottom: 10px;
+}
+.mistake-track .rune{
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  transform: none;
+  background: #ff6b88;
+  box-shadow: none;
+}
+.mistake-track .rune.lost{
+  transform: none;
+}
+.game-legend{
+  width: min(92vw, 60vh, 470px);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+.legend-card{
+  min-height: 54px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(232,199,102,0.22);
+  border-radius: 14px;
+  color: rgba(240,234,255,0.96);
+  font-size: 12.5px;
+  line-height: 1.35;
+  backdrop-filter: blur(3px);
+}
+.legend-card b{
+  color: var(--gold-bright);
+}
+.board-frame{
+  background: rgba(12,11,26,0.90);
+  border: 2px solid rgba(232,199,102,0.22);
+  border-radius: 24px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.24);
+  padding: 12px;
+}
+.board-frame.mark-mode-active{
+  border-color: rgba(232,199,102,0.52);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.25);
+}
+.board-sparkle-layer,
+.board-sparkle,
+.board-drift{
+  display:none !important;
+}
+.board-grid{
+  gap: 4px;
+  width: min(92vw, 60vh, 470px);
+  height: min(92vw, 60vh, 470px);
+}
+.cell{
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
+}
+.cell:active{
+  transform: scale(0.97);
+}
+.cell .item-emoji{
+  font-size: clamp(20px, 5.8vw, 34px);
+  filter: none;
+}
+.cell .x-strike line{
+  stroke: rgba(255,255,255,0.92) !important;
+  stroke-width: 10 !important;
+  opacity: 1 !important;
+}
+.cell::before,
+.cell::after{
+  display:none !important;
+}
+.cell.region-border-top{ border-top: 3px solid rgba(255,255,255,0.42); }
+.cell.region-border-bottom{ border-bottom: 3px solid rgba(255,255,255,0.42); }
+.cell.region-border-left{ border-left: 3px solid rgba(255,255,255,0.42); }
+.cell.region-border-right{ border-right: 3px solid rgba(255,255,255,0.42); }
+.cell.r0{ background: #8f7bd3; }
+.cell.r1{ background: #7aa3d7; }
+.cell.r2{ background: #74c89a; }
+.cell.r3{ background: #d8ba67; }
+.cell.r4{ background: #db7878; }
+.cell.r5{ background: #d782be; }
+.cell.r6{ background: #77c9ca; }
+.cell.r7{ background: #8fcb68; }
+.cell.r8{ background: #d79263; }
+.controls-row{
+  gap: 10px;
+  width: min(92vw, 60vh, 470px);
+  margin-top: 12px;
+}
+.ctrl-btn{
+  min-height: 82px;
+  border-radius: 18px;
+  border: 1px solid rgba(232,199,102,0.22);
+  background: rgba(26,20,51,0.88);
+  color: rgba(240,234,255,0.95);
+  font-size: 12px;
+  line-height: 1.25;
+  gap: 6px;
+  padding: 10px 4px;
+}
+.ctrl-btn .ctrl-icon{ font-size: 22px; }
+@media (max-width: 420px){
+  .game-legend{ gap: 6px; }
+  .legend-card{ font-size: 11.5px; min-height: 50px; padding: 7px 8px; }
+  .controls-row{ gap: 8px; }
+  .ctrl-btn{ min-height: 76px; font-size: 11px; }
+}
+
 /* ============ CINEMATIC WIN/LOSE OVERLAYS ============ */
 .modal-overlay{
   position:fixed; inset:0;
@@ -1013,6 +1161,7 @@ body{
 <body>
 <div id="starfield"></div>
 <button id="music-toggle" aria-label="배경음악 켜기/끄기">🔇</button>
+<audio id="bgm-audio" src="assets/audio/chopin-op28-no4.mp3" loop preload="auto"></audio>
 
 <div class="screen active" id="loading-screen">
   <div class="loading-orb"></div>
@@ -1146,6 +1295,11 @@ body{
       <button class="topbar-btn" id="btn-info">？</button>
     </div>
     <div class="mistake-track" id="mistake-track"></div>
+    <div class="game-legend">
+      <div class="legend-card">영역마다 <b>유물 1개</b></div>
+      <div class="legend-card">가로·세로 <b>중복 금지</b></div>
+      <div class="legend-card"><b>대각선</b>으로 닿으면 안 돼요</div>
+    </div>
     <div class="board-frame" id="board-frame">
       <div class="board-sparkle-layer" id="board-sparkle-layer"></div>
       <div class="board-grid" id="board-grid"></div>
@@ -1302,6 +1456,7 @@ function saveState(){
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  document.body.classList.toggle('gameplay', id === 'game-screen');
 }
 
 function showToast(msg, duration){
@@ -1316,7 +1471,7 @@ function showToast(msg, duration){
 /* ---------- STARFIELD ---------- */
 function buildStarfield(){
   const field = document.getElementById('starfield');
-  const starCount = 70;
+  const starCount = 42;
   for(let i=0;i<starCount;i++){
     const s = document.createElement('div');
     s.className = 'star';
@@ -2752,158 +2907,35 @@ function refreshStartScreen(){
   document.getElementById('start-avatar').innerHTML = `<img src="${charData.img}" alt="${charData.name}" draggable="false">`;
 }
 
-/* ---------- MYSTIC BACKGROUND MUSIC (Tone.js) ---------- */
-let musicStarted = false;
+/* ---------- REAL BACKGROUND MUSIC (MP3) ---------- */
 let musicPlaying = false;
-let musicNodes = null;
-
-function buildMysticMusic(){
-  // "Background pad": a thick layered chord drone underneath everything — three
-  // detuned voices stacked together so each chord feels like a wash of sound
-  // rather than a single thin note. This is the "wow" foundation.
-  const padSynth = new Tone.PolySynth(Tone.FMSynth, {
-    harmonicity: 1.5,
-    modulationIndex: 3,
-    oscillator: { type: 'sine' },
-    envelope: { attack: 1.2, decay: 0.4, sustain: 0.85, release: 2.5 },
-    modulation: { type: 'triangle' },
-    modulationEnvelope: { attack: 0.8, decay: 0.3, sustain: 0.6, release: 1.5 }
-  });
-  const padFilter = new Tone.Filter(1400, 'lowpass');
-  const padChorus = new Tone.Chorus({ frequency: 0.8, delayTime: 4, depth: 0.6 }).start();
-  const padVerb = new Tone.Reverb({ decay: 7, wet: 0.5 });
-  padSynth.chain(padFilter, padChorus, padVerb, Tone.getDestination());
-  padSynth.volume.value = -20;
-
-  // "Cello": low sustained root note reinforcing the pad from underneath, giving
-  // the harmony real weight and grounding.
-  const celloSynth = new Tone.MonoSynth({
-    oscillator: { type: 'sawtooth' },
-    envelope: { attack: 0.6, decay: 0.3, sustain: 0.8, release: 1.8 },
-    filterEnvelope: { attack: 0.5, decay: 0.4, sustain: 0.6, release: 1.5, baseFrequency: 200, octaves: 2 }
-  });
-  const celloFilter = new Tone.Filter(700, 'lowpass');
-  const celloVerb = new Tone.Reverb({ decay: 5, wet: 0.4 });
-  celloSynth.chain(celloFilter, celloVerb, Tone.getDestination());
-  celloSynth.volume.value = -20;
-
-  // "Celesta": the star of this arrangement — a bright, bell-like, slightly music-box
-  // tone built from a short FM bell patch. This carries the main waltzing melody,
-  // evoking a dreamy, twinkling music-box feel (without quoting any existing tune).
-  const celestaSynth = new Tone.FMSynth({
-    harmonicity: 3.01,
-    modulationIndex: 14,
-    oscillator: { type: 'sine' },
-    envelope: { attack: 0.005, decay: 1.1, sustain: 0.05, release: 1.0 },
-    modulation: { type: 'sine' },
-    modulationEnvelope: { attack: 0.005, decay: 0.6, sustain: 0, release: 0.3 }
-  });
-  const celestaVerb = new Tone.Reverb({ decay: 4.5, wet: 0.42 });
-  const celestaChorus = new Tone.Chorus({ frequency: 0.5, delayTime: 3, depth: 0.4 }).start();
-  celestaSynth.chain(celestaChorus, celestaVerb, Tone.getDestination());
-  celestaSynth.volume.value = -4;
-
-  // "Harp": plucked-string arpeggios for sparkling ornamentation, now playing a
-  // gentle waltz "boom-chick-chick" accompaniment underneath the celesta melody.
-  const harpSynth = new Tone.PluckSynth({
-    attackNoise: 1,
-    dampening: 2800,
-    resonance: 0.9
-  });
-  const harpVerb = new Tone.Reverb({ decay: 4.5, wet: 0.4 });
-  harpSynth.chain(harpVerb, Tone.getDestination());
-  harpSynth.volume.value = -16;
-
-  const harpLowSynth = new Tone.PluckSynth({
-    attackNoise: 0.8,
-    dampening: 2400,
-    resonance: 0.92
-  });
-  harpLowSynth.chain(harpVerb, Tone.getDestination());
-  harpLowSynth.volume.value = -16;
-
-  // Dreamy, slow 3/4 waltz in a mystic dorian mode. One chord per bar, cycling
-  // through a 4-bar progression — pad + cello hold the harmony, harp plays a
-  // soft "root, fifth, fifth" waltz pulse underneath the celesta's melody.
-  const chordProgression = [
-    { root: 'A2', notes: ['A3','C4','E4'], fifth: 'E3' },
-    { root: 'F2', notes: ['F3','A3','C4'], fifth: 'C3' },
-    { root: 'C3', notes: ['C3','E3','G3'], fifth: 'G2' },
-    { root: 'E2', notes: ['E3','G3','B3'], fifth: 'B2' },
-  ];
-  let chordIndex = 0;
-  const chordLoop = new Tone.Loop((time)=>{
-    const chord = chordProgression[chordIndex % chordProgression.length];
-    celloSynth.triggerAttackRelease(chord.root, '1m', time);
-    padSynth.triggerAttackRelease(chord.notes, '1m', time);
-    // waltz pulse: root on beat 1, fifth (harp) on beats 2 and 3
-    const beat = Tone.Time('4n').toSeconds();
-    harpSynth.triggerAttackRelease(chord.root, '8n', time);
-    harpLowSynth.triggerAttackRelease(chord.fifth, '8n', time + beat);
-    harpLowSynth.triggerAttackRelease(chord.fifth, '8n', time + beat*2);
-    chordIndex++;
-  }, '1m');
-
-  // The celesta's dreamy waltz melody — a slow, swaying 4-bar phrase in 3/4 time
-  // (each bar is 3 quarter notes). Long notes on the downbeats with little twinkling
-  // turns in between, built entirely from scratch for this arrangement.
-  const dorianScale = ['A4','B4','C5','D5','E5','F5','G5','A5','B5','C6'];
-  const melodyEvents = [
-    // bar 0 (over A chord)
-    { time: '0:0:0', note: 4, dur: '2n' },     // long swaying note
-    { time: '0:2:0', note: 3, dur: '4n' },
-    // bar 1 (over F chord)
-    { time: '1:0:0', note: 5, dur: '4n.' },
-    { time: '1:1:2', note: 4, dur: '8n' },
-    { time: '1:2:0', note: 3, dur: '4n' },
-    // bar 2 (over C chord)
-    { time: '2:0:0', note: 2, dur: '2n' },
-    { time: '2:2:0', note: 4, dur: '4n' },
-    // bar 3 (over E chord)
-    { time: '3:0:0', note: 1, dur: '4n.' },
-    { time: '3:1:2', note: 2, dur: '8n' },
-    { time: '3:2:0', note: 0, dur: '4n' },
-  ];
-  const celestaPart = new Tone.Part((time, ev)=>{
-    const note = dorianScale[ev.note];
-    celestaSynth.triggerAttackRelease(note, ev.dur, time);
-  }, melodyEvents.map(ev => [ev.time, ev]));
-  celestaPart.loop = true;
-  celestaPart.loopEnd = '4m';
-
-  // Set the transport to use a real 3/4 time signature so the waltz pulse and
-  // bar-relative timings above land correctly, and slow the tempo down for a
-  // lingering, dreamy feel rather than a brisk dance pace.
-  Tone.getTransport().timeSignature = 3;
-  Tone.getTransport().bpm.value = 100;
-
-  return { padSynth, celloSynth, celestaSynth, harpSynth, harpLowSynth, chordLoop, celestaPart };
-}
 
 async function toggleMusic(){
   const btn = document.getElementById('music-toggle');
-  if(!musicStarted){
-    await Tone.start();
-    musicNodes = buildMysticMusic();
-    musicNodes.chordLoop.start(0);
-    musicNodes.celestaPart.start(0);
-    Tone.getTransport().start();
-    musicStarted = true;
-    musicPlaying = true;
-    btn.textContent = '🔊';
-    btn.classList.add('playing');
+  const audio = document.getElementById('bgm-audio');
+  if(!audio){
+    showToast('배경음악 파일을 찾을 수 없어요');
     return;
   }
-  if(musicPlaying){
-    Tone.getTransport().pause();
-    musicPlaying = false;
-    btn.textContent = '🔇';
-    btn.classList.remove('playing');
-  } else {
-    Tone.getTransport().start();
-    musicPlaying = true;
-    btn.textContent = '🔊';
-    btn.classList.add('playing');
+
+  // Mobile browsers allow audio only after a user gesture. This function is
+  // called from the music button, so play() is allowed on Android/iOS browsers.
+  try{
+    if(audio.paused){
+      audio.volume = 0.28;
+      await audio.play();
+      musicPlaying = true;
+      btn.textContent = '🔊';
+      btn.classList.add('playing');
+    }else{
+      audio.pause();
+      musicPlaying = false;
+      btn.textContent = '🔇';
+      btn.classList.remove('playing');
+    }
+  }catch(err){
+    console.warn('BGM play failed:', err);
+    showToast('음악 버튼을 한 번 더 눌러보세요');
   }
 }
 
