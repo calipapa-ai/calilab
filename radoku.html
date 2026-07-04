@@ -808,6 +808,17 @@ body{
   height: min(92vw, 58vh, 440px);
   touch-action: none;
 }
+
+/* iOS double-tap zoom guard for puzzle board */
+html, body, #game-screen, .game-wrap, .board-frame, .board-grid, .cell{
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+#game-screen, .board-frame, .board-grid, .cell{
+  touch-action: none;
+}
+
 .cell{
   position:relative;
   display:flex; align-items:center; justify-content:center;
@@ -1858,6 +1869,7 @@ function attachTapHandlers(cell){
 
   cell.addEventListener('pointerdown', (e)=>{
     if(e.pointerType === 'mouse' && e.button !== 0) return;
+    if(e.cancelable) e.preventDefault();
     longPressed = false;
     moved = false;
     startX = e.clientX;
@@ -1878,7 +1890,8 @@ function attachTapHandlers(cell){
     }
   });
 
-  cell.addEventListener('pointerup', ()=>{
+  cell.addEventListener('pointerup', (e)=>{
+    if(e && e.cancelable) e.preventDefault();
     clearPressTimer();
     if(suppressNextClick){ suppressNextClick = false; return; }
     if(moved || longPressed) return;
@@ -1913,6 +1926,21 @@ function attachTapHandlers(cell){
 // existing items) and skips cells that already hold an item or are locked clues —
 // matching how the original game's swipe-to-mark behaves.
 let suppressNextClick = false;
+
+// iPhone/Safari sometimes treats quick double taps as page zoom even when the game
+// handles them as puzzle input. Block native touch defaults inside the board only.
+function installBoardTouchZoomGuard(){
+  const board = document.getElementById('board-grid');
+  if(!board || board._touchZoomGuardInstalled) return;
+  board._touchZoomGuardInstalled = true;
+  ['touchstart','touchend','touchmove'].forEach(type=>{
+    board.addEventListener(type, (e)=>{
+      if(e.cancelable) e.preventDefault();
+    }, {passive:false});
+  });
+}
+
+installBoardTouchZoomGuard();
 function attachDragMarkHandlers(grid){
   if(grid.dataset.dragHandlersAttached) return; // #board-grid is reused across renders/levels
   grid.dataset.dragHandlersAttached = '1';
@@ -1939,11 +1967,13 @@ function attachDragMarkHandlers(grid){
     const prev = game.playerGrid[r][c];
     game.playerGrid[r][c] = CELL_X;
     renderCellContent(cellEl, r, c);
+    hapticDragMark();
     game.history.push([{r, c, prev}]);
   }
 
   grid.addEventListener('pointerdown', (e)=>{
     if(e.pointerType === 'mouse' && e.button !== 0) return;
+    if(e.cancelable) e.preventDefault();
     const cellEl = e.target.closest('.cell');
     if(!cellEl) return;
     isDragging = true;
@@ -2062,23 +2092,30 @@ async function ensureSfx(){
   }
 }
 
-async function playTapSfx(){
-  if(!(await ensureSfx()) || !sfxTap) return;
-  try{ sfxTap.triggerAttackRelease('C5', '32n', Tone.now(), 0.28); }catch(e){}
-}
-
-async function playItemSfx(){
-  if(!(await ensureSfx()) || !sfxItem) return;
+async function playUnifiedGameSfx(){
+  // X 표시, 유물 놓기, 오답 모두 같은 소리로 통일한다.
+  if(!(await ensureSfx())) return;
   try{
     const now = Tone.now();
-    sfxItem.triggerAttackRelease(['G5','B5','D6'], '16n', now, 0.45);
-    sfxItem.triggerAttackRelease(['B5','E6'], '16n', now + 0.08, 0.36);
+    if(sfxItem){
+      sfxItem.triggerAttackRelease(['G5','B5','D6'], '16n', now, 0.38);
+      sfxItem.triggerAttackRelease(['B5','E6'], '16n', now + 0.07, 0.30);
+    }else if(sfxTap){
+      sfxTap.triggerAttackRelease('C5', '32n', now, 0.28);
+    }
   }catch(e){}
 }
 
+async function playTapSfx(){
+  return playUnifiedGameSfx();
+}
+
+async function playItemSfx(){
+  return playUnifiedGameSfx();
+}
+
 async function playBadSfx(){
-  if(!(await ensureSfx()) || !sfxBad) return;
-  try{ sfxBad.triggerAttackRelease('C3', '16n', Tone.now(), 0.22); }catch(e){}
+  return playUnifiedGameSfx();
 }
 
 function haptic(pattern){
@@ -2091,6 +2128,15 @@ function haptic(pattern){
 function hapticTap(){ haptic(10); }
 function hapticItem(){ haptic([18, 24, 32]); }
 function hapticBad(){ haptic([45, 30, 45]); }
+let lastDragHapticAt = 0;
+function hapticDragMark(){
+  // X를 긁어서 칠할 때 칸을 지나갈 때마다 짧게 '드르륵' 느낌을 준다.
+  // 너무 잦은 진동 호출은 브라우저가 무시하거나 버벅임을 만들 수 있어 약하게 제한한다.
+  const now = Date.now();
+  if(now - lastDragHapticAt < 28) return;
+  lastDragHapticAt = now;
+  haptic(6);
+}
 
 function applyAutoMarksFor(r, c, recordHistory){
   // 자동 X 표시는 게임이 너무 쉽게 풀리지 않도록 완전히 끈다.
