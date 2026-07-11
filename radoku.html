@@ -1425,8 +1425,33 @@ function isOwnedAccount(name){
   const deviceId = getDeviceId();
   return getOwnedAccounts().some(x => x.name === clean && x.deviceId === deviceId);
 }
+function isLegacyLocalPlayer(name){
+  const clean = String(name || '').trim();
+  if(!clean) return false;
+  try{
+    const raw = localStorageSafe.get(STORAGE_KEY);
+    if(raw){
+      const saved = JSON.parse(raw);
+      if(String(saved.playerName || '').trim() === clean) return true;
+    }
+  }catch(e){}
+  try{
+    const oldRaw = localStorageSafe.get('ladoku_owned_accounts');
+    const oldArr = oldRaw ? JSON.parse(oldRaw) : [];
+    if(Array.isArray(oldArr) && oldArr.some(x => String((x && (x.name || x.playerName || x)) || '').trim() === clean)) return true;
+  }catch(e){}
+  return false;
+}
+function canUsePlayer(name){
+  return isOwnedAccount(name) || isLegacyLocalPlayer(name);
+}
+function ensureOwnedFromLegacy(name){
+  if(!isOwnedAccount(name) && isLegacyLocalPlayer(name)){
+    markOwnedAccount(name);
+  }
+}
 function requireOwnedAccount(actionText){
-  if(isOwnedAccount(state.playerName)) return true;
+  if(canUsePlayer(state.playerName)){ ensureOwnedFromLegacy(state.playerName); return true; }
   showToast(actionText || '이 기기에서 새로 만든 계정만 사용할 수 있어요', 2400);
   return false;
 }
@@ -1441,6 +1466,7 @@ function loadState(){
       state.characterId = parsed.characterId || '';
       state.currentLevel = parsed.currentLevel || 1;
       state.completedLevels = parsed.completedLevels || [];
+      if(state.playerName) markOwnedAccount(state.playerName);
     }
   }catch(e){}
 }
@@ -2898,7 +2924,7 @@ document.getElementById('btn-start-back').addEventListener('click', ()=>{
 function refreshSettingsScreen(){
   const el = document.getElementById('settings-current-player');
   if(el){
-    const ownerText = isOwnedAccount(state.playerName) ? '이 기기에서 새로 만든 계정' : '보호된 계정';
+    const ownerText = canUsePlayer(state.playerName) ? '내 계정' : '보호된 계정';
     el.innerHTML = `${escapeHtml(state.playerName || '이름 없음')}님 · ${state.currentLevel || 1}단계 진행 중<br>${normalizeCompletedLevels(state.completedLevels).length} / ${LEVELS.length}단계 완료<br>${ownerText}`;
   }
 }
@@ -3113,7 +3139,7 @@ async function renderWhoScreen(){
   cachedPlayers.forEach((p, idx)=>{
     const item = document.createElement('button');
     item.className = 'who-item';
-    const owned = isOwnedAccount(p.name);
+    const owned = canUsePlayer(p.name);
     const localLabel = owned ? ' · 내 계정' : ' · 보호됨';
     const completed = getCompletedCountForPlayer(p);
     const rank = getRankByCompleted(completed);
@@ -3139,10 +3165,11 @@ function escapeHtml(str){
 }
 
 function selectExistingPlayer(p){
-  if(!isOwnedAccount(p.name)){
-    showToast('내가 만든 계정만 들어갈 수 있어요', 2200);
+  if(!canUsePlayer(p.name)){
+    showToast('이 기기에서 만든 계정만 들어갈 수 있어요', 2200);
     return;
   }
+  ensureOwnedFromLegacy(p.name);
   state.playerName = p.name;
   state.characterId = p.character_id || '';
   state.currentLevel = p.current_level || 1;
