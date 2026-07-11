@@ -8,219 +8,143 @@
 @import url('https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Serif+KR:wght@400;500;600;700&display=swap');
 
 :root{
-  --void: #0A0818;
-  --night: #14102B;
-  --night-deep: #1E1640;
-  --ink: #F0EAFF;
-  --ink-soft: #B8A8E0;
-  --ink-dim: #7868A8;
-  --gold: #E8C766;
-  --gold-bright: #FFE9A8;
-  --gold-dim: #9C8348;
-  --line: #3D3168;
-  --gem0: #8441C7;
-  --gem1: #4184C7;
+  --void:#0A0818; --night:#14102B; --night-deep:#1E1640;
+  --ink:#F0EAFF; --ink-soft:#B8A8E0; --ink-dim:#7868A8;
+  --gold:#E8C766; --gold-bright:#FFE9A8; --gold-dim:#9C8348;
+  --line:#3D3168;
+  --rad:#8441C7; --ant:#F09030; --dot:#6FA84A;
 }
-
-*{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
-html,body{margin:0; padding:0; min-height:100%; overflow-x:hidden;}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent; margin:0; padding:0;}
+html,body{min-height:100%; overflow-x:hidden;}
 body{
-  font-family:'Noto Serif KR', serif;
-  background: var(--void);
-  color: var(--ink);
+  font-family:'Noto Serif KR',serif; background:var(--void); color:var(--ink);
+  user-select:none; min-height:100vh; display:flex; flex-direction:column; align-items:center;
   position:relative;
-  user-select:none;
-  min-height:100vh;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
 }
 
-#starfield{
-  position:fixed; inset:0;
-  z-index:0;
+#starfield{position:fixed; inset:0; z-index:0;
   background:
     radial-gradient(ellipse at 30% 20%, rgba(132,65,199,0.30) 0%, transparent 55%),
     radial-gradient(ellipse at 75% 75%, rgba(65,132,199,0.25) 0%, transparent 55%),
     radial-gradient(ellipse at 50% 100%, rgba(45,35,88,0.6) 0%, transparent 70%),
-    linear-gradient(180deg, var(--void) 0%, var(--night) 45%, var(--night-deep) 100%);
-}
-.star{
-  position:absolute;
-  background: var(--gold-bright);
-  border-radius:50%;
-  opacity: 0.7;
-  animation: twinkle 3s ease-in-out infinite;
-}
-@keyframes twinkle{
-  0%,100%{ opacity: 0.2; transform: scale(0.8); }
-  50%{ opacity: 1; transform: scale(1.3); }
-}
-.shooting-star{
-  position:absolute;
-  width: 2px; height: 2px;
-  background: var(--gold-bright);
-  border-radius: 50%;
-  box-shadow: 0 0 6px 1px var(--gold-bright);
-  opacity: 0;
-  animation: shoot 4.5s linear infinite;
-}
-@keyframes shoot{
-  0%{ opacity: 0; transform: translate(0,0); }
-  3%{ opacity: 1; }
-  15%{ opacity: 0; transform: translate(-220px, 160px); }
-  100%{ opacity: 0; }
-}
+    linear-gradient(180deg, var(--void) 0%, var(--night) 45%, var(--night-deep) 100%);}
+.star{position:absolute; background:var(--gold-bright); border-radius:50%; opacity:0.7; animation:twinkle 3s ease-in-out infinite;}
+@keyframes twinkle{0%,100%{opacity:0.2; transform:scale(0.8);} 50%{opacity:1; transform:scale(1.3);}}
 
-.page{
-  position:relative;
-  z-index:1;
-  width:100%;
-  max-width: 520px;
-  padding: 48px 24px 64px;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-}
+.page{position:relative; z-index:1; width:100%; max-width:920px; padding:36px 20px 64px;
+  display:flex; flex-direction:column; align-items:center;}
 
-.brand{
-  text-align:center;
-  margin-bottom: 8px;
-}
-.brand-mark{
-  font-size: 34px;
-  margin-bottom: 10px;
-  filter: drop-shadow(0 0 16px rgba(232,199,102,0.5));
-}
-.brand-title{
-  font-family:'Nanum Myeongjo', serif;
-  font-weight: 800;
-  font-size: 38px;
-  letter-spacing: 3px;
-  color: var(--gold);
-  text-shadow: 0 0 26px rgba(232,199,102,0.4);
-  margin: 0 0 6px;
-}
-.brand-sub{
-  font-size: 13.5px;
-  color: var(--ink-soft);
-  letter-spacing: 0.5px;
-  margin-bottom: 44px;
-}
+.brand{text-align:center; margin-bottom:26px;}
+.brand-mark{font-size:32px; margin-bottom:8px; filter:drop-shadow(0 0 16px rgba(232,199,102,0.5));}
+.brand-title{font-family:'Nanum Myeongjo',serif; font-weight:800; font-size:36px; letter-spacing:3px;
+  color:var(--gold); text-shadow:0 0 26px rgba(232,199,102,0.4); margin-bottom:4px;}
+.brand-sub{font-size:13px; color:var(--ink-soft); letter-spacing:0.5px;}
 
-.game-grid{
-  width:100%;
-  display:flex;
-  flex-direction:column;
-  gap: 20px;
-}
+/* hero carousel */
+.hero{position:relative; width:100%; border-radius:26px; overflow:hidden;
+  aspect-ratio:16/9; max-height:440px; border:1.5px solid var(--line);
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+@media(max-width:640px){ .hero{aspect-ratio:4/5; max-height:none;} }
 
-.game-card{
-  position:relative;
-  display:flex;
-  align-items:center;
-  gap: 18px;
-  width:100%;
-  text-decoration:none;
-  color: var(--ink);
-  background: rgba(20,16,43,0.55);
-  border: 1.5px solid var(--line);
-  border-radius: 22px;
-  padding: 22px 22px;
-  overflow:hidden;
-  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
-}
-.game-card:active{ transform: scale(0.97); }
-.game-card::before{
-  content:"";
-  position:absolute; inset:0;
-  opacity: 0;
-  transition: opacity .25s ease;
-  pointer-events:none;
-}
-.game-card.radoku::before{
-  background: radial-gradient(circle at 85% 15%, rgba(132,65,199,0.35) 0%, transparent 60%);
-}
-.game-card.antopia::before{
-  background: radial-gradient(circle at 85% 15%, rgba(232,160,80,0.30) 0%, transparent 60%);
-}
-.game-card.dotoring::before{
-  background: radial-gradient(circle at 85% 15%, rgba(90,160,70,0.35) 0%, transparent 60%);
-}
-.game-card:hover::before, .game-card:active::before{ opacity:1; }
+.slides{position:absolute; inset:0;}
+.slide{position:absolute; inset:0; opacity:0; transition:opacity .8s ease; display:flex; align-items:flex-end;}
+.slide.active{opacity:1;}
 
-.game-card.radoku{ border-color: rgba(132,65,199,0.45); }
-.game-card.antopia{ border-color: rgba(232,160,80,0.4); }
-.game-card.dotoring{ border-color: rgba(120,180,90,0.45); }
-.game-card.radoku:active{ box-shadow: 0 0 28px rgba(132,65,199,0.35); }
-.game-card.antopia:active{ box-shadow: 0 0 28px rgba(232,160,80,0.3); }
-.game-card.dotoring:active{ box-shadow: 0 0 28px rgba(120,180,90,0.35); }
+.slide-art{position:absolute; inset:0; z-index:0;}
+.slide-content{position:relative; z-index:2; padding:34px; max-width:60%;}
+@media(max-width:640px){ .slide-content{max-width:92%; padding:24px;} }
+.slide-tag{display:inline-block; font-size:11px; letter-spacing:2px; text-transform:uppercase;
+  padding:4px 12px; border-radius:20px; margin-bottom:12px; font-weight:700; color:#fff;}
+.slide-title{font-family:'Nanum Myeongjo',serif; font-weight:800; font-size:34px; line-height:1.15;
+  margin-bottom:10px; text-shadow:0 3px 20px rgba(0,0,0,0.6);}
+@media(max-width:640px){ .slide-title{font-size:26px;} }
+.slide-desc{font-size:13.5px; color:rgba(255,255,255,0.88); line-height:1.5; margin-bottom:18px;
+  text-shadow:0 2px 8px rgba(0,0,0,0.6);}
+.slide-btn{display:inline-flex; align-items:center; gap:8px; text-decoration:none; color:#12101a;
+  background:#fff; padding:11px 22px; border-radius:30px; font-weight:800; font-size:13px;
+  letter-spacing:0.5px; transition:transform .12s;}
+.slide-btn:active{transform:scale(0.95);}
+.slide-btn .arr{transition:transform .2s;}
+.slide-btn:hover .arr{transform:translateX(4px);}
 
-.game-icon{
-  flex-shrink:0;
-  width: 64px; height: 64px;
-  border-radius: 18px;
-  display:flex; align-items:center; justify-content:center;
-  font-size: 32px;
-  position:relative;
-  z-index:1;
-}
-.game-card.radoku .game-icon{
-  background: radial-gradient(circle at 32% 28%, #B790DE, #8441C7 55%, #4C2276 100%);
-  box-shadow: 0 0 18px rgba(132,65,199,0.5);
-}
-.game-card.antopia .game-icon{
-  background: radial-gradient(circle at 32% 28%, #FFD9A0, #F09030 55%, #B05E10 100%);
-  box-shadow: 0 0 18px rgba(240,144,48,0.5);
-}
-.game-card.dotoring .game-icon{
-  background: radial-gradient(circle at 32% 28%, #C8E6A0, #6FA84A 55%, #3E6E28 100%);
-  box-shadow: 0 0 18px rgba(120,180,90,0.5);
-}
+.slide::before{content:""; position:absolute; inset:0; z-index:1;
+  background:linear-gradient(90deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.35) 45%, transparent 75%);}
+@media(max-width:640px){ .slide::before{background:linear-gradient(0deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.2) 60%, transparent 100%);} }
 
-.game-info{
-  position:relative;
-  z-index:1;
-  flex:1;
-  min-width:0;
-}
-.game-name{
-  font-family:'Nanum Myeongjo', serif;
-  font-weight: 800;
-  font-size: 21px;
-  margin: 0 0 4px;
-  letter-spacing: 0.5px;
-}
-.game-card.radoku .game-name{ color: var(--gold-bright); }
-.game-card.antopia .game-name{ color: #FFD9A0; }
-.game-card.dotoring .game-name{ color: #D4EBB0; }
-.game-desc{
-  font-size: 12.5px;
-  color: var(--ink-soft);
-  line-height: 1.5;
-}
-.game-arrow{
-  flex-shrink:0;
-  font-size: 20px;
-  color: var(--ink-dim);
-  position:relative;
-  z-index:1;
-}
+.hero-btn{position:absolute; top:50%; transform:translateY(-50%); z-index:5;
+  width:38px; height:38px; border-radius:50%; border:none; cursor:pointer;
+  background:rgba(255,255,255,0.85); color:#222; font-size:18px; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 3px 10px rgba(0,0,0,0.3);}
+.hero-btn.prev{left:14px;} .hero-btn.next{right:14px;}
+.hero-btn:active{transform:translateY(-50%) scale(0.9);}
+.dots{position:absolute; bottom:16px; left:50%; transform:translateX(-50%); z-index:5; display:flex; gap:8px;}
+@media(max-width:640px){ .dots{bottom:auto; top:14px;} }
+.dot{width:9px; height:9px; border-radius:50%; background:rgba(255,255,255,0.4); cursor:pointer; transition:all .2s;}
+.dot.active{background:#fff; width:24px; border-radius:5px;}
 
-.footer-note{
-  margin-top: 56px;
-  text-align:center;
-  font-size: 11.5px;
-  color: var(--ink-dim);
-  letter-spacing: 0.5px;
-}
-.footer-note .heart{
-  color: var(--gold-dim);
-}
+/* game art (CSS-drawn) */
+.art-radoku{background:linear-gradient(135deg,#2a1650 0%,#4C2276 55%,#1a0e33 100%);}
+.art-radoku .glow{position:absolute; inset:0; background:radial-gradient(circle at 72% 40%, rgba(183,144,222,0.5) 0%, transparent 55%);}
+.art-radoku .grid{position:absolute; right:8%; top:50%; transform:translateY(-50%) rotate(-8deg);
+  display:grid; grid-template-columns:repeat(4,44px); grid-template-rows:repeat(4,44px); gap:5px;
+  filter:drop-shadow(0 8px 24px rgba(0,0,0,0.5));}
+@media(max-width:640px){ .art-radoku .grid{grid-template-columns:repeat(4,38px); grid-template-rows:repeat(4,38px); right:6%; top:26%;} }
+.art-radoku .cell{border-radius:8px; background:rgba(255,255,255,0.08); border:1px solid rgba(183,144,222,0.4);
+  display:flex; align-items:center; justify-content:center; font-size:20px;}
+.art-radoku .cell.lit{background:radial-gradient(circle at 35% 30%,#E8C766,#9C6B1E); box-shadow:0 0 14px rgba(232,199,102,0.7);}
 
-@media (prefers-reduced-motion: reduce){
-  *{ animation: none !important; transition: none !important; }
-}
+.art-antopia{background:linear-gradient(135deg,#B05E10 0%,#F09030 50%,#FFC978 100%);}
+.art-antopia .sky{position:absolute; inset:0; background:radial-gradient(ellipse at 30% 20%, rgba(255,240,200,0.6) 0%, transparent 60%);}
+.art-antopia .sun{position:absolute; right:14%; top:16%; width:80px; height:80px; border-radius:50%;
+  background:radial-gradient(circle,#FFF3C0,#FFD070); box-shadow:0 0 50px rgba(255,220,120,0.9);}
+.art-antopia .parrot{position:absolute; right:16%; top:42%; font-size:96px; filter:drop-shadow(0 10px 20px rgba(0,0,0,0.35)); animation:bob 3s ease-in-out infinite;}
+@media(max-width:640px){ .art-antopia .parrot{font-size:76px; top:22%; right:12%;} .art-antopia .sun{top:8%;} }
+.art-antopia .leaf{position:absolute; font-size:40px; opacity:0.85;}
+.art-antopia .leaf.l1{left:8%; bottom:8%; transform:rotate(-20deg);}
+.art-antopia .leaf.l2{right:6%; bottom:4%; transform:rotate(15deg) scaleX(-1);}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg);} 50%{transform:translateY(-12px) rotate(3deg);}}
+
+.art-dotoring{background:linear-gradient(180deg,#4a9fe0 0%,#bfe8f5 42%,#5a9c4a 42%,#3E6E28 100%);}
+.art-dotoring .fog{position:absolute; inset:0; background:radial-gradient(ellipse at 60% 70%, rgba(255,255,255,0.25) 0%, transparent 55%);}
+.art-dotoring .tree{position:absolute; bottom:14%; font-size:56px; filter:drop-shadow(0 8px 14px rgba(0,0,0,0.3));}
+.art-dotoring .tree.t1{right:34%; font-size:70px;}
+.art-dotoring .tree.t2{right:12%; bottom:10%;}
+.art-dotoring .tree.t3{right:52%; bottom:18%; font-size:44px; opacity:0.85;}
+.art-dotoring .acorn{position:absolute; right:22%; bottom:20%; font-size:64px; filter:drop-shadow(0 8px 16px rgba(0,0,0,0.35)); animation:hop 1.6s ease-in-out infinite;}
+@media(max-width:640px){ .art-dotoring .acorn{right:18%; bottom:30%; font-size:54px;} .art-dotoring .tree.t1{font-size:56px;} }
+@keyframes hop{0%,100%{transform:translateY(0);} 40%{transform:translateY(-18px);}}
+
+/* game cards */
+.section-label{align-self:flex-start; margin:44px 4px 16px; font-family:'Nanum Myeongjo',serif;
+  font-weight:800; font-size:18px; color:var(--gold-bright); letter-spacing:1px;}
+.cards{width:100%; display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+@media(max-width:640px){ .cards{grid-template-columns:1fr;} }
+
+.card{position:relative; text-decoration:none; color:var(--ink); border-radius:20px; overflow:hidden;
+  border:1.5px solid var(--line); background:rgba(20,16,43,0.55); transition:transform .15s, box-shadow .15s;}
+.card:active{transform:scale(0.97);}
+.card-thumb{position:relative; width:100%; aspect-ratio:16/10; overflow:hidden;}
+.card-thumb .badge{position:absolute; top:10px; left:10px; z-index:3; font-size:10px; font-weight:800;
+  letter-spacing:1px; padding:3px 10px; border-radius:14px; color:#fff;}
+.card-body{padding:14px 16px 18px; position:relative; z-index:2;}
+.card-name{font-family:'Nanum Myeongjo',serif; font-weight:800; font-size:18px; margin-bottom:4px;}
+.card-desc{font-size:11.5px; color:var(--ink-soft); line-height:1.5;}
+.card-play{display:inline-flex; align-items:center; gap:5px; margin-top:10px; font-size:12px; font-weight:700;}
+
+.card.radoku{border-color:rgba(132,65,199,0.45);} .card.radoku:active{box-shadow:0 0 26px rgba(132,65,199,0.4);}
+.card.radoku .badge{background:var(--rad);} .card.radoku .card-name{color:#D9B8FF;} .card.radoku .card-play{color:#D9B8FF;}
+.card.antopia{border-color:rgba(240,144,48,0.45);} .card.antopia:active{box-shadow:0 0 26px rgba(240,144,48,0.4);}
+.card.antopia .badge{background:var(--ant);} .card.antopia .card-name{color:#FFD9A0;} .card.antopia .card-play{color:#FFD9A0;}
+.card.dotoring{border-color:rgba(120,180,90,0.5);} .card.dotoring:active{box-shadow:0 0 26px rgba(120,180,90,0.4);}
+.card.dotoring .badge{background:var(--dot);} .card.dotoring .card-name{color:#D4EBB0;} .card.dotoring .card-play{color:#D4EBB0;}
+
+.card .card-thumb .thumb-emoji{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:52px; z-index:2;
+  filter:drop-shadow(0 6px 12px rgba(0,0,0,0.4));}
+
+.footer-note{margin-top:52px; text-align:center; font-size:11px; color:var(--ink-dim); letter-spacing:0.5px;}
+.footer-note .heart{color:var(--gold-dim);}
+
+@media(prefers-reduced-motion:reduce){ *{animation:none !important; transition:none !important;} }
 </style>
 </head>
 <body>
@@ -229,36 +153,111 @@ body{
 <div class="page">
   <div class="brand">
     <div class="brand-mark">✨</div>
-    <h1 class="brand-title">CALI LAB</h1>
+    <div class="brand-title">CALI LAB</div>
     <div class="brand-sub">함께 만든 작은 게임들</div>
   </div>
 
-  <div class="game-grid">
-    <a class="game-card radoku" href="radoku.html">
-      <div class="game-icon">🐱</div>
-      <div class="game-info">
-        <div class="game-name">라도쿠</div>
-        <div class="game-desc">영역마다 마법 유물을 하나씩, 신비로운 별빛 퍼즐</div>
+  <div class="hero">
+    <div class="slides">
+      <div class="slide active" data-i="0">
+        <div class="slide-art art-radoku">
+          <div class="glow"></div>
+          <div class="grid">
+            <div class="cell lit">🌙</div><div class="cell"></div><div class="cell"></div><div class="cell lit">⭐</div>
+            <div class="cell"></div><div class="cell lit">🔮</div><div class="cell"></div><div class="cell"></div>
+            <div class="cell"></div><div class="cell"></div><div class="cell lit">💎</div><div class="cell"></div>
+            <div class="cell lit">🗝️</div><div class="cell"></div><div class="cell"></div><div class="cell lit">✨</div>
+          </div>
+        </div>
+        <div class="slide-content">
+          <span class="slide-tag" style="background:var(--rad);">Puzzle</span>
+          <div class="slide-title">라도쿠</div>
+          <div class="slide-desc">영역마다 마법 유물을 하나씩. 규칙을 지켜 별빛 퍼즐을 완성하세요. 100개의 레벨이 기다려요.</div>
+          <a class="slide-btn" href="radoku.html">지금 플레이 <span class="arr">→</span></a>
+        </div>
       </div>
-      <div class="game-arrow">›</div>
+
+      <div class="slide" data-i="1">
+        <div class="slide-art art-antopia">
+          <div class="sky"></div>
+          <div class="sun"></div>
+          <div class="parrot">🦜</div>
+          <div class="leaf l1">🌿</div>
+          <div class="leaf l2">🌴</div>
+        </div>
+        <div class="slide-content">
+          <span class="slide-tag" style="background:var(--ant);">Pet Care</span>
+          <div class="slide-title">앵토피아</div>
+          <div class="slide-desc">나만의 앵무새를 키우고 꾸미는 아기자기한 세상. 뽑기, 미니게임, 시즌 상점까지!</div>
+          <a class="slide-btn" href="antopia.html">지금 플레이 <span class="arr">→</span></a>
+        </div>
+      </div>
+
+      <div class="slide" data-i="2">
+        <div class="slide-art art-dotoring">
+          <div class="fog"></div>
+          <div class="tree t3">🌲</div>
+          <div class="tree t1">🌳</div>
+          <div class="tree t2">🌲</div>
+          <div class="acorn">🌰</div>
+        </div>
+        <div class="slide-content">
+          <span class="slide-tag" style="background:var(--dot);">3D Action</span>
+          <div class="slide-title">도토링 런</div>
+          <div class="slide-desc">숲속 미로에서 펼쳐지는 3D 술래잡기 슈터. 친구와 온라인으로 도토링 vs 유리우다다 대결!</div>
+          <a class="slide-btn" href="dotoringrun.html">지금 플레이 <span class="arr">→</span></a>
+        </div>
+      </div>
+    </div>
+
+    <button class="hero-btn prev" aria-label="이전">‹</button>
+    <button class="hero-btn next" aria-label="다음">›</button>
+    <div class="dots">
+      <div class="dot active" data-i="0"></div>
+      <div class="dot" data-i="1"></div>
+      <div class="dot" data-i="2"></div>
+    </div>
+  </div>
+
+  <div class="section-label">모든 게임</div>
+  <div class="cards">
+    <a class="card radoku" href="radoku.html">
+      <div class="card-thumb art-radoku">
+        <span class="badge">PUZZLE</span>
+        <div class="glow"></div>
+        <div class="thumb-emoji">🔮</div>
+      </div>
+      <div class="card-body">
+        <div class="card-name">라도쿠</div>
+        <div class="card-desc">신비로운 별빛 퍼즐. 100 레벨.</div>
+        <div class="card-play">플레이 →</div>
+      </div>
     </a>
 
-    <a class="game-card antopia" href="antopia.html">
-      <div class="game-icon">🦜</div>
-      <div class="game-info">
-        <div class="game-name">앵토피아</div>
-        <div class="game-desc">나만의 앵무새를 키우고 꾸미는 아기자기한 세상</div>
+    <a class="card antopia" href="antopia.html">
+      <div class="card-thumb art-antopia">
+        <span class="badge">PET</span>
+        <div class="sky"></div>
+        <div class="thumb-emoji">🦜</div>
       </div>
-      <div class="game-arrow">›</div>
+      <div class="card-body">
+        <div class="card-name">앵토피아</div>
+        <div class="card-desc">앵무새를 키우는 아기자기한 세상.</div>
+        <div class="card-play">플레이 →</div>
+      </div>
     </a>
 
-    <a class="game-card dotoring" href="dotoringrun.html">
-      <div class="game-icon">🌰</div>
-      <div class="game-info">
-        <div class="game-name">도토링 런</div>
-        <div class="game-desc">숲속 미로에서 펼쳐지는 3D 술래잡기, 친구와 온라인으로도!</div>
+    <a class="card dotoring" href="dotoringrun.html">
+      <div class="card-thumb art-dotoring">
+        <span class="badge">3D</span>
+        <div class="fog"></div>
+        <div class="thumb-emoji">🌰</div>
       </div>
-      <div class="game-arrow">›</div>
+      <div class="card-body">
+        <div class="card-name">도토링 런</div>
+        <div class="card-desc">숲속 3D 술래잡기. 온라인 대전!</div>
+        <div class="card-play">플레이 →</div>
+      </div>
     </a>
   </div>
 
@@ -268,28 +267,42 @@ body{
 <script>
 (function(){
   const field = document.getElementById('starfield');
-  const starCount = 70;
-  for(let i=0;i<starCount;i++){
+  for(let i=0;i<70;i++){
     const s = document.createElement('div');
-    s.className = 'star';
-    const size = Math.random()*2.2 + 1;
-    s.style.width = size+'px';
-    s.style.height = size+'px';
-    s.style.left = Math.random()*100+'%';
-    s.style.top = Math.random()*100+'%';
-    s.style.animationDelay = (Math.random()*3)+'s';
-    s.style.animationDuration = (2 + Math.random()*3)+'s';
+    s.className='star';
+    const size = Math.random()*2.2+1;
+    s.style.width=size+'px'; s.style.height=size+'px';
+    s.style.left=Math.random()*100+'%'; s.style.top=Math.random()*100+'%';
+    s.style.animationDelay=(Math.random()*3)+'s';
+    s.style.animationDuration=(2+Math.random()*3)+'s';
     field.appendChild(s);
   }
-  for(let i=0;i<3;i++){
-    const sh = document.createElement('div');
-    sh.className = 'shooting-star';
-    sh.style.left = (50 + Math.random()*40)+'%';
-    sh.style.top = (Math.random()*40)+'%';
-    sh.style.animationDelay = (Math.random()*8)+'s';
-    sh.style.animationDuration = (3.5 + Math.random()*3)+'s';
-    field.appendChild(sh);
+
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const dots = Array.from(document.querySelectorAll('.dot'));
+  let idx = 0, timer = null;
+  function go(n){
+    idx = (n + slides.length) % slides.length;
+    slides.forEach((s,i)=>s.classList.toggle('active', i===idx));
+    dots.forEach((d,i)=>d.classList.toggle('active', i===idx));
   }
+  function next(){ go(idx+1); }
+  function prev(){ go(idx-1); }
+  function restart(){ if(timer) clearInterval(timer); timer = setInterval(next, 5000); }
+
+  document.querySelector('.hero-btn.next').addEventListener('click', ()=>{ next(); restart(); });
+  document.querySelector('.hero-btn.prev').addEventListener('click', ()=>{ prev(); restart(); });
+  dots.forEach(d=>d.addEventListener('click', ()=>{ go(parseInt(d.dataset.i)); restart(); }));
+
+  let sx=0;
+  const hero = document.querySelector('.hero');
+  hero.addEventListener('touchstart', e=>{ sx = e.touches[0].clientX; }, {passive:true});
+  hero.addEventListener('touchend', e=>{
+    const dx = e.changedTouches[0].clientX - sx;
+    if(Math.abs(dx)>40){ dx<0 ? next() : prev(); restart(); }
+  }, {passive:true});
+
+  restart();
 })();
 </script>
 </body>
