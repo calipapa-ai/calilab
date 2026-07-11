@@ -321,8 +321,40 @@ const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 // THREE SETUP
 // ---------------------------------------------------------------
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x9fd8a0, 40, 140);
-scene.background = new THREE.Color(0xbfe8ff);
+scene.fog = new THREE.Fog(0xa8d8b0, 48, 155);
+scene.background = new THREE.Color(0x9fcfe8);
+
+// gradient sky dome
+const skyGeo = new THREE.SphereGeometry(200, 24, 16);
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide,
+  uniforms: {
+    topColor: { value: new THREE.Color(0x4a9fe0) },
+    midColor: { value: new THREE.Color(0xbfe8f5) },
+    bottomColor: { value: new THREE.Color(0xe8f5d8) }
+  },
+  vertexShader: `
+    varying vec3 vWorldPosition;
+    void main(){
+      vec4 wp = modelMatrix * vec4(position, 1.0);
+      vWorldPosition = wp.xyz;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }`,
+  fragmentShader: `
+    uniform vec3 topColor;
+    uniform vec3 midColor;
+    uniform vec3 bottomColor;
+    varying vec3 vWorldPosition;
+    void main(){
+      float h = normalize(vWorldPosition).y;
+      vec3 col;
+      if (h > 0.0) col = mix(midColor, topColor, pow(clamp(h,0.0,1.0), 0.6));
+      else col = mix(midColor, bottomColor, clamp(-h*2.0,0.0,1.0));
+      gl_FragColor = vec4(col, 1.0);
+    }`
+});
+const skyDome = new THREE.Mesh(skyGeo, skyMat);
+scene.add(skyDome);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 320);
 camera.rotation.order = 'YXZ';
@@ -331,6 +363,10 @@ const renderer = new THREE.WebGLRenderer({ antialias:true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
 document.body.appendChild(renderer.domElement);
 
 window.addEventListener('resize', () => {
@@ -820,6 +856,11 @@ function handleHostMessage(guestId, msg){
     }
   } else if (msg.type === 'shotHit'){
     handleRemoteShot(guestId, msg.targetSlotIndex);
+  } else if (msg.type === 'shotFxRelay'){
+    // re-broadcast this guest's shot visual to everyone (the shooter ignores 'all'? no—self:false so shooter won't replay its own)
+    hostBroadcast({ type:'shotFx', fx: msg.fx, except: guestId });
+    // host also shows it locally
+    playRemoteShotFx(msg.fx);
   }
 }
 
@@ -965,6 +1006,7 @@ function guestTryShoot(){
   if (guestMatch.cooldown>0) return;
   guestMatch.cooldown = PLAYER_FIRE_COOLDOWN;
   sfxShoot();
+  fireVisualFromCamera(SHOOT_RANGE);
   raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
   raycaster.far = SHOOT_RANGE;
   const meshes = guestMatch.dotMeshes.filter(m=>m);
@@ -994,6 +1036,11 @@ function handleGuestMessage(msg){
     return;
   }
   if (!guestMatch) return;
+  if (msg.type === 'shotFx'){
+    if (msg.except && msg.except === net.guestId) return; // don't replay my own shot
+    playRemoteShotFx(msg.fx);
+    return;
+  }
   if (msg.type === 'snapshot'){
     for (const e of msg.dot){
       if (guestMatch.role==='dotoring' && e.slotIndex===guestMatch.slotIndex) continue;
@@ -1016,6 +1063,8 @@ function handleGuestMessage(msg){
   } else if (msg.type === 'youWereHit'){
     guestMatch.hp = msg.hp;
     flashHit();
+    sfxHit();
+    vibrate([60,40,60]);
     updateGuestHUDRole();
   } else if (msg.type === 'youWereJailed'){
     guestMatch.isJailed = true;
@@ -1023,6 +1072,7 @@ function handleGuestMessage(msg){
     camera.position.set(msg.x, EYE_HEIGHT, msg.z);
     showEliminatedBanner();
     sfxJail();
+    vibrate(200);
     updateGuestHUDRole();
   } else if (msg.type === 'youWereReleased'){
     guestMatch.isJailed = false;
@@ -1462,6 +1512,115 @@ function releaseAllJailed(){
 }
 
 // ---------------------------------------------------------------
+// SHOOTING VISUALS (projectiles, tracers, muzzle flash) + haptics
+// ---------------------------------------------------------------
+const activeProjectiles = []; // {mesh, vel, life}
+const activeTracers = [];     // {mesh, life, maxLife}
+const activeFlashes = [];     // {mesh, life}
+
+function vibrate(ms){
+  try{ if (navigator.vibrate) navigator.vibrate(ms); }catch(e){}
+}
+
+// a glowing acorn-colored pellet that flies from->toward a direction
+function spawnProjectile(origin, dir, speed){
+  const geo = new THREE.SphereGeometry(0.18, 8, 8);
+  const mat = new THREE.MeshBasicMaterial({ color:0xffd24a });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.copy(origin);
+  scene.add(mesh);
+  // little glow halo
+  const halo = new THREE.Mesh(new THREE.SphereGeometry(0.32,8,8), new THREE.MeshBasicMaterial({color:0xff9020, transparent:true, opacity:0.4}));
+  mesh.add(halo);
+  activeProjectiles.push({ mesh, vel: dir.clone().normalize().multiplyScalar(speed), life: 0.9 });
+}
+
+// a fading line drawn along the shot path (tracer streak)
+function spawnTracer(from, to){
+  const geo = new THREE.BufferGeometry().setFromPoints([from.clone(), to.clone()]);
+  const mat = new THREE.LineBasicMaterial({ color:0xfff2a0, transparent:true, opacity:0.85 });
+  const line = new THREE.Line(geo, mat);
+  scene.add(line);
+  activeTracers.push({ mesh: line, life: 0.12, maxLife: 0.12 });
+}
+
+// bright flash at the muzzle position
+function spawnMuzzleFlash(pos){
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.4,8,8), new THREE.MeshBasicMaterial({color:0xfff0b0, transparent:true, opacity:0.9}));
+  mesh.position.copy(pos);
+  scene.add(mesh);
+  activeFlashes.push({ mesh, life: 0.07 });
+}
+
+// muzzle world-position: slightly in front of + right of the camera/shooter
+function muzzlePosFrom(pos, dir){
+  const right = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0,1,0)).normalize();
+  return pos.clone().add(dir.clone().multiplyScalar(0.9)).add(right.multiplyScalar(0.35)).add(new THREE.Vector3(0,-0.15,0));
+}
+
+// full first-person shot visual: muzzle flash at camera, projectile + tracer downrange
+function fireVisualFromCamera(range){
+  const dir = camera.getWorldDirection(new THREE.Vector3());
+  const muzzle = muzzlePosFrom(camera.position, dir);
+  spawnMuzzleFlash(muzzle);
+  spawnProjectile(muzzle, dir, 60);
+  const to = camera.position.clone().add(dir.clone().multiplyScalar(range));
+  spawnTracer(muzzle, to);
+  vibrate(35);
+  if (net.mode === 'host'){
+    hostBroadcast({ type:'shotFx', fx:{ fromX:muzzle.x, fromY:muzzle.y, fromZ:muzzle.z, toX:to.x, toY:to.y, toZ:to.z } });
+  } else if (net.mode === 'guest'){
+    guestSend({ type:'shotFxRelay', fx:{ fromX:muzzle.x, fromY:muzzle.y, fromZ:muzzle.z, toX:to.x, toY:to.y, toZ:to.z } });
+  }
+}
+
+// visual for an AI/other hunter firing at a target position
+function fireVisualFromTo(fromPos, targetPos){
+  const dir = targetPos.clone().sub(fromPos).setY(0).normalize();
+  const muzzle = fromPos.clone().add(dir.clone().multiplyScalar(0.9)).add(new THREE.Vector3(0,1.25,0));
+  spawnMuzzleFlash(muzzle);
+  spawnProjectile(muzzle, targetPos.clone().sub(muzzle).normalize(), 55);
+  const to = targetPos.clone().add(new THREE.Vector3(0,1.2,0));
+  spawnTracer(muzzle, to);
+  if (net.mode === 'host'){
+    hostBroadcast({ type:'shotFx', fx:{ fromX:muzzle.x, fromY:muzzle.y, fromZ:muzzle.z, toX:to.x, toY:to.y, toZ:to.z } });
+  }
+}
+
+// replay a shot FX received over the network (no gameplay effect, visual only)
+function playRemoteShotFx(fx){
+  const muzzle = new THREE.Vector3(fx.fromX, fx.fromY, fx.fromZ);
+  const to = new THREE.Vector3(fx.toX, fx.toY, fx.toZ);
+  spawnMuzzleFlash(muzzle);
+  spawnProjectile(muzzle, to.clone().sub(muzzle).normalize(), 55);
+  spawnTracer(muzzle, to);
+  sfxShoot();
+}
+
+function updateShotVisuals(delta){
+  for (let i=activeProjectiles.length-1;i>=0;i--){
+    const p = activeProjectiles[i];
+    p.mesh.position.addScaledVector(p.vel, delta);
+    p.life -= delta;
+    if (p.life <= 0){ scene.remove(p.mesh); activeProjectiles.splice(i,1); }
+  }
+  for (let i=activeTracers.length-1;i>=0;i--){
+    const t = activeTracers[i];
+    t.life -= delta;
+    t.mesh.material.opacity = 0.85 * Math.max(0, t.life/t.maxLife);
+    if (t.life <= 0){ scene.remove(t.mesh); t.mesh.geometry.dispose(); activeTracers.splice(i,1); }
+  }
+  for (let i=activeFlashes.length-1;i>=0;i--){
+    const f = activeFlashes[i];
+    f.life -= delta;
+    const s = 1 + (0.07-f.life)*8;
+    f.mesh.scale.set(s,s,s);
+    f.mesh.material.opacity = Math.max(0, f.life/0.07)*0.9;
+    if (f.life <= 0){ scene.remove(f.mesh); activeFlashes.splice(i,1); }
+  }
+}
+
+// ---------------------------------------------------------------
 // SHOOTING
 // ---------------------------------------------------------------
 const raycaster = new THREE.Raycaster();
@@ -1488,6 +1647,7 @@ function handleRemoteShot(fromGuestId, targetSlotIndex){
     if (match.playerIsJailed) return;
     match.playerHP -= 1;
     sfxHit(); flashHit();
+    vibrate([60,40,60]);
     if (match.playerHP <= 0){ jailPlayer(); } else { updateHUDRole(); }
     updateHUDCounts();
     return;
@@ -1503,6 +1663,7 @@ function tryPlayerShoot(){
   const gun = net.mode==='solo' ? getGunStats() : {cooldown:PLAYER_FIRE_COOLDOWN, range:SHOOT_RANGE};
   match.playerCooldown = gun.cooldown;
   sfxShoot();
+  fireVisualFromCamera(gun.range);
   raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
   raycaster.far = gun.range;
   const meshes = match.dotoringAI.filter(c=>!c.isJailed).map(c=>c.mesh);
@@ -1517,14 +1678,16 @@ function tryPlayerShoot(){
   }
 }
 
-function hunterAIAttemptShoot(targetPos, dist, isPlayerTarget, targetEntity){
+function hunterAIAttemptShoot(shooterPos, targetPos, dist, isPlayerTarget, targetEntity){
   const hitChance = Math.max(0.16, Math.min(0.75, 1 - dist/SHOOT_RANGE));
   sfxShoot();
+  fireVisualFromTo(shooterPos, targetPos);
   if (Math.random() < hitChance){
     sfxHit();
     if (isPlayerTarget){
       match.playerHP -= 1;
       flashHit();
+      vibrate([60,40,60]);
       if (match.playerHP <= 0){ jailPlayer(); updateHUDCounts(); }
       else { updateHUDRole(); }
     } else if (targetEntity){
@@ -1643,6 +1806,8 @@ const clock = new THREE.Clock();
 function update(){
   requestAnimationFrame(update);
   const delta = Math.min(clock.getDelta(), 0.1);
+
+  updateShotVisuals(delta);
 
   if (net.mode === 'guest'){
     guestUpdate(delta);
@@ -1764,7 +1929,7 @@ function update(){
         h.mesh.rotation.y = Math.atan2(dirX, dirZ);
         if (d < SHOOT_RANGE && h.cooldown <= 0){
           h.cooldown = HUNTER_FIRE_COOLDOWN;
-          hunterAIAttemptShoot(nearest.pos, d, nearest.isPlayer, nearest.entity);
+          hunterAIAttemptShoot(h.mesh.position, nearest.pos, d, nearest.isPlayer, nearest.entity);
         }
       } else {
         h.wanderTimer -= delta;
