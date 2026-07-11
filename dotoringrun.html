@@ -56,16 +56,22 @@
 
   #crosshair {
     position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-    width:22px; height:22px; display:none;
+    width:26px; height:26px; display:none;
   }
   #crosshair::before, #crosshair::after {
-    content:''; position:absolute; background:#fff; box-shadow:0 0 3px rgba(0,0,0,0.8);
+    content:''; position:absolute; background:rgba(255,255,255,0.9); box-shadow:0 0 3px rgba(0,0,0,0.9);
   }
-  #crosshair::before { width:2px; height:22px; left:10px; }
-  #crosshair::after { width:22px; height:2px; top:10px; }
+  #crosshair::before { width:2px; height:26px; left:12px; }
+  #crosshair::after { width:26px; height:2px; top:12px; }
+  #crosshair .dot { position:absolute; top:11px; left:11px; width:4px; height:4px; border-radius:50%; background:#ffe27a; box-shadow:0 0 4px #ffb020; }
   #crosshair.hit::before, #crosshair.hit::after { background:#ff3b3b; }
 
-  #hitFlash { position:fixed; inset:0; background:#ff2020; opacity:0; pointer-events:none; z-index:25; transition:opacity 0.08s; }
+  #vignette {
+    position:fixed; inset:0; pointer-events:none; z-index:18; display:none;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.28) 100%);
+  }
+
+  #hitFlash { position:fixed; inset:0; background:radial-gradient(ellipse at center, transparent 40%, #ff2020 100%); opacity:0; pointer-events:none; z-index:25; transition:opacity 0.08s; }
 
   #eliminatedBanner {
     position:absolute; top:36%; left:50%; transform:translate(-50%,-50%); text-align:center;
@@ -104,6 +110,35 @@
   #shootBtn:active { transform:translateY(4px); box-shadow:0 1px 0 #8f2a05; }
 
   #pcHint { position:fixed; bottom:14px; left:50%; transform:translateX(-50%); color:#fff9; font-size:12px; z-index:20; display:none; }
+
+  #quickChat { position:fixed; left:16px; top:70px; z-index:22; display:none; }
+  #quickChatToggle {
+    width:46px; height:46px; border-radius:50%; border:2px solid rgba(255,255,255,0.35);
+    background:rgba(0,0,0,0.45); color:#fff; font-size:22px; cursor:pointer; pointer-events:auto;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #quickChatMenu {
+    position:absolute; left:0; top:54px; display:none; flex-direction:column; gap:6px; pointer-events:auto;
+  }
+  #quickChatMenu.open { display:flex; }
+  .qcOption {
+    background:rgba(0,0,0,0.55); border:2px solid rgba(255,255,255,0.25); color:#fff;
+    font-size:14px; font-weight:bold; padding:9px 16px; border-radius:24px; cursor:pointer; white-space:nowrap;
+    text-align:left; transition:background .12s, transform .08s;
+  }
+  .qcOption:active { transform:scale(0.95); background:rgba(244,197,66,0.85); color:#3a2600; }
+
+  .chatBubble {
+    position:absolute; transform:translate(-50%,-100%);
+    background:rgba(255,255,255,0.95); color:#2a2018; font-weight:bold; font-size:14px;
+    padding:6px 12px; border-radius:14px; white-space:nowrap; pointer-events:none;
+    box-shadow:0 3px 10px rgba(0,0,0,0.4); z-index:19;
+  }
+  .chatBubble::after {
+    content:''; position:absolute; left:50%; bottom:-7px; transform:translateX(-50%);
+    border-left:7px solid transparent; border-right:7px solid transparent; border-top:8px solid rgba(255,255,255,0.95);
+  }
+  #chatLayer { position:fixed; inset:0; pointer-events:none; z-index:19; }
 
   #lyricLine {
     font-size:15px; color:#dfe9c8; margin-bottom:16px; letter-spacing:1px; line-height:1.6; max-width:360px;
@@ -268,8 +303,20 @@
 </div>
 
 <div id="hitFlash"></div>
-<div id="crosshair"></div>
-<div id="pcHint">이동 WASD · 시점 마우스 · 발사 좌클릭 · Esc로 마우스 해제</div>
+<div id="vignette"></div>
+<div id="chatLayer"></div>
+<div id="crosshair"><div class="dot"></div></div>
+<div id="pcHint">이동 WASD · 시점 마우스 · 발사 좌클릭 · 채팅 1~4 · Esc로 마우스 해제</div>
+
+<div id="quickChat">
+  <button id="quickChatToggle" title="퀵챗">💬</button>
+  <div id="quickChatMenu">
+    <button class="qcOption" data-msg="도망쳐">🏃 도망쳐</button>
+    <button class="qcOption" data-msg="구해줘">🆘 구해줘</button>
+    <button class="qcOption" data-msg="안녕">👋 안녕</button>
+    <button class="qcOption" data-msg="잘가">✌️ 잘가</button>
+  </div>
+</div>
 
 <div id="touchControls">
   <div id="lookArea"></div>
@@ -376,31 +423,59 @@ window.addEventListener('resize', () => {
 });
 
 // Lighting
-const hemi = new THREE.HemisphereLight(0xddf4ff, 0x3a5a2a, 0.9);
+const hemi = new THREE.HemisphereLight(0xcfeeff, 0x4a6a38, 0.75);
 scene.add(hemi);
-const sun = new THREE.DirectionalLight(0xfff4d6, 1.0);
-sun.position.set(40, 55, 15);
+const sun = new THREE.DirectionalLight(0xfff2d0, 1.15);
+sun.position.set(45, 70, 25);
 sun.castShadow = true;
-sun.shadow.mapSize.set(1024,1024);
-sun.shadow.camera.left = -75; sun.shadow.camera.right = 75;
-sun.shadow.camera.top = 75; sun.shadow.camera.bottom = -75;
+sun.shadow.mapSize.set(2048,2048);
+sun.shadow.camera.left = -80; sun.shadow.camera.right = 80;
+sun.shadow.camera.top = 80; sun.shadow.camera.bottom = -80;
+sun.shadow.camera.near = 1; sun.shadow.camera.far = 200;
+sun.shadow.bias = -0.0004;
+sun.shadow.normalBias = 0.02;
 scene.add(sun);
+sun.target.position.set(0,0,0);
+scene.add(sun.target);
+// gentle cool fill from opposite side to soften shadows
+const fill = new THREE.DirectionalLight(0xa8c8ff, 0.28);
+fill.position.set(-35, 30, -25);
+scene.add(fill);
 
+// Ground with a subtle procedural grass texture
+function makeGrassTexture(){
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#5a9c4a';
+  ctx.fillRect(0,0,256,256);
+  for (let i=0;i<2600;i++){
+    const x = Math.random()*256, y = Math.random()*256;
+    const g = 60 + Math.random()*80;
+    ctx.fillStyle = `rgba(${40+Math.random()*30},${g+40},${30+Math.random()*30},${0.25+Math.random()*0.35})`;
+    ctx.fillRect(x, y, 1.5, 3+Math.random()*3);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(24,24);
+  tex.encoding = THREE.sRGBEncoding;
+  return tex;
+}
 // Ground
 const groundGeo = new THREE.PlaneGeometry(ARENA_HALF*2+30, ARENA_HALF*2+30, 1, 1);
-const groundMat = new THREE.MeshLambertMaterial({ color:0x5a9c4a });
+const groundMat = new THREE.MeshLambertMaterial({ map: makeGrassTexture(), color:0xffffff });
 const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.rotation.x = -Math.PI/2;
 ground.receiveShadow = true;
 scene.add(ground);
 
-// Boundary fence
+// Boundary fence (wooden posts + rails, nicer than plain slabs)
 const fenceMat = new THREE.MeshLambertMaterial({ color:0x8a5a30 });
 for (let i=0;i<4;i++){
   const w = ARENA_HALF*2+2;
   const geo = new THREE.BoxGeometry(w, 2.6, 0.6);
   const seg = new THREE.Mesh(geo, fenceMat);
-  seg.castShadow = true;
+  seg.castShadow = true; seg.receiveShadow = true;
   const d = ARENA_HALF+1;
   if (i===0){ seg.position.set(0,1.3,-d); }
   else if (i===1){ seg.position.set(0,1.3,d); }
@@ -448,38 +523,46 @@ function inClearZone(x,z){
 
 function makeTree(x,z){
   const g = new THREE.Group();
-  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.45,2.6,8), new THREE.MeshLambertMaterial({color:0x6b4423}));
-  trunk.position.y = 1.3; trunk.castShadow = true;
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.48,2.6,10), new THREE.MeshStandardMaterial({color:0x6b4423, roughness:0.95}));
+  trunk.position.y = 1.3; trunk.castShadow = true; trunk.receiveShadow = true;
   g.add(trunk);
-  const leafColors = [0x3f8f3f,0x4aa34a,0x357a35];
+  const leafColors = [0x3f8f3f,0x4aa34a,0x357a35,0x52a83a];
   const lc = leafColors[Math.floor(forestRng()*leafColors.length)];
+  const leafMat = new THREE.MeshStandardMaterial({color:lc, roughness:0.85, flatShading:true});
+  // rounded blobby canopy instead of sharp cones
   for (let i=0;i<3;i++){
-    const cone = new THREE.Mesh(new THREE.ConeGeometry(1.6-i*0.3, 1.7, 8), new THREE.MeshLambertMaterial({color:lc}));
-    cone.position.y = 2.6 + i*1.15;
-    cone.castShadow = true;
-    g.add(cone);
+    const blob = new THREE.Mesh(new THREE.IcosahedronGeometry(1.55-i*0.32, 0), leafMat);
+    blob.position.set((forestRng()-0.5)*0.3, 2.7 + i*1.05, (forestRng()-0.5)*0.3);
+    blob.rotation.y = forestRng()*3;
+    blob.castShadow = true;
+    g.add(blob);
   }
   g.position.set(x,0,z);
+  g.rotation.y = forestRng()*Math.PI*2;
   scene.add(g);
   forestMeshes.push(g);
   obstacles.push({x,z,radius:1.0});
 }
 function makeRock(x,z){
-  const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.9+forestRng()*0.6,0), new THREE.MeshLambertMaterial({color:0x8a8a86}));
+  const shade = 0x7d7d7a + Math.floor(forestRng()*0x101010);
+  const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.9+forestRng()*0.6,0), new THREE.MeshStandardMaterial({color:shade, roughness:1.0, flatShading:true}));
   rock.position.set(x, 0.5, z);
   rock.rotation.set(forestRng()*3,forestRng()*3,forestRng()*3);
-  rock.castShadow = true;
+  rock.castShadow = true; rock.receiveShadow = true;
   scene.add(rock);
   forestMeshes.push(rock);
   obstacles.push({x,z,radius:1.2});
+  // small moss patch look: darker bottom via scale
+  rock.scale.y = 0.8 + forestRng()*0.4;
 }
 function makeWallSegment(x,z,rotY,length){
-  const wall = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.0, length), new THREE.MeshLambertMaterial({color:0x7a5535}));
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.0, length), new THREE.MeshStandardMaterial({color:0x7a5535, roughness:0.9}));
   wall.position.set(x,1.0,z);
   wall.rotation.y = rotY;
-  wall.castShadow = true;
+  wall.castShadow = true; wall.receiveShadow = true;
   scene.add(wall);
   forestMeshes.push(wall);
+  // rounded caps on the wall ends for a hedge/log look
   // add a chain of collision circles along the wall's length
   const steps = Math.max(2, Math.round(length/1.3));
   for (let i=0;i<=steps;i++){
@@ -534,22 +617,33 @@ const jailGroup = new THREE.Group();
 jailGroup.position.set(JAIL_POS.x, 0, JAIL_POS.z);
 scene.add(jailGroup);
 
-const jailBase = new THREE.Mesh(new THREE.CylinderGeometry(4.2,4.2,0.3,20), new THREE.MeshLambertMaterial({color:0x8a7a68}));
-jailBase.position.y = 0.15;
+const jailBase = new THREE.Mesh(new THREE.CylinderGeometry(4.2,4.4,0.35,24), new THREE.MeshStandardMaterial({color:0x8a7a68, roughness:0.9}));
+jailBase.position.y = 0.17;
 jailBase.receiveShadow = true;
 jailGroup.add(jailBase);
 
-const barMat = new THREE.MeshLambertMaterial({color:0x3a3a3a});
+const barMat = new THREE.MeshStandardMaterial({color:0x3a3a3a, roughness:0.5, metalness:0.6});
 const jailBars = [];
 const BAR_COUNT = 12;
 for (let i=0;i<BAR_COUNT;i++){
   const ang = i/BAR_COUNT*Math.PI*2;
-  const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.11,2.8,6), barMat);
+  const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.11,0.11,2.8,8), barMat);
   bar.position.set(3.7*Math.sin(ang), 1.4, 3.7*Math.cos(ang));
   bar.castShadow = true;
   jailGroup.add(bar);
   jailBars.push(bar);
 }
+// top ring connecting the bars
+const topRing = new THREE.Mesh(new THREE.TorusGeometry(3.7,0.09,8,24), barMat);
+topRing.position.y = 2.8; topRing.rotation.x = Math.PI/2;
+jailGroup.add(topRing);
+// glowing beacon so the jail is findable from afar in the big forest
+const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.5,12,12), new THREE.MeshBasicMaterial({color:0xff5a5a}));
+beacon.position.y = 4.2;
+jailGroup.add(beacon);
+const beaconBeam = new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,8,8), new THREE.MeshBasicMaterial({color:0xff8888, transparent:true, opacity:0.25}));
+beaconBeam.position.y = 7.5;
+jailGroup.add(beaconBeam);
 // door bars (facing the dotoring spawn side, +z) will lift up when rescue triggers
 const doorBars = [jailBars[0], jailBars[1], jailBars[BAR_COUNT-1]];
 let doorAnimTimer = 0;
@@ -557,39 +651,118 @@ let doorAnimTimer = 0;
 // rescue button pedestal
 const buttonGroup = new THREE.Group();
 buttonGroup.position.set(BUTTON_POS.x, 0, BUTTON_POS.z);
-const buttonBase = new THREE.Mesh(new THREE.CylinderGeometry(0.9,1.0,0.5,14), new THREE.MeshLambertMaterial({color:0x5a4a3a}));
+const buttonBase = new THREE.Mesh(new THREE.CylinderGeometry(0.9,1.0,0.5,16), new THREE.MeshStandardMaterial({color:0x5a4a3a, roughness:0.9}));
 buttonBase.position.y = 0.25;
+buttonBase.castShadow = true;
 buttonGroup.add(buttonBase);
-const buttonTop = new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,0.3,14), new THREE.MeshLambertMaterial({color:0x4ade6a, emissive:0x1a5a2a}));
+const buttonTop = new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,0.3,16), new THREE.MeshStandardMaterial({color:0x4ade6a, emissive:0x2a8a3a, emissiveIntensity:0.6, roughness:0.4}));
 buttonTop.position.y = 0.65;
 buttonGroup.add(buttonTop);
+buttonGroup.userData.top = buttonTop;
 scene.add(buttonGroup);
+
+// ---------------------------------------------------------------
+// FIRST-PERSON VIEWMODEL (attached to camera)
+// ---------------------------------------------------------------
+scene.add(camera);
+const viewmodel = new THREE.Group();
+camera.add(viewmodel);
+
+// hunter gun viewmodel
+const vmGun = new THREE.Group();
+(function(){
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.16,0.2,0.6), new THREE.MeshStandardMaterial({color:0xff7a2e, roughness:0.5, metalness:0.3}));
+  vmGun.add(body);
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.5,10), new THREE.MeshStandardMaterial({color:0x2a2a2a, roughness:0.4, metalness:0.6}));
+  barrel.rotation.x = Math.PI/2; barrel.position.set(0,0.02,-0.5);
+  vmGun.add(barrel);
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.06,8,8), new THREE.MeshBasicMaterial({color:0xffd24a}));
+  tip.position.set(0,0.02,-0.75);
+  vmGun.userData.tip = tip;
+  vmGun.add(tip);
+  vmGun.position.set(0.32, -0.32, -0.7);
+  vmGun.rotation.y = -0.08;
+})();
+viewmodel.add(vmGun);
+
+// dotoring paws viewmodel (two little acorn hands at bottom)
+const vmPaws = new THREE.Group();
+for (const s of [-0.35,0.35]){
+  const paw = new THREE.Mesh(new THREE.SphereGeometry(0.13,10,10), new THREE.MeshStandardMaterial({color:0x9a6b3c, roughness:0.85}));
+  paw.scale.set(1,1.3,1);
+  paw.position.set(s, -0.42, -0.6);
+  vmPaws.add(paw);
+}
+viewmodel.add(vmPaws);
+
+function setViewmodel(role){
+  vmGun.visible = (role === 'hunter');
+  vmPaws.visible = (role === 'dotoring');
+}
+setViewmodel('dotoring');
+
+let vmRecoil = 0;
+function viewmodelRecoil(){ vmRecoil = 0.18; }
+function updateViewmodel(delta, moving){
+  if (vmRecoil > 0){ vmRecoil = Math.max(0, vmRecoil - delta*1.4); }
+  const bob = moving ? Math.sin(ambientClock*10)*0.015 : Math.sin(ambientClock*2)*0.005;
+  vmGun.position.z = -0.7 + vmRecoil;
+  vmGun.position.y = -0.32 + bob;
+  vmPaws.position.y = bob*1.5;
+}
 
 // ---------------------------------------------------------------
 // CHARACTER FACTORIES
 // ---------------------------------------------------------------
 function makeDotoring(capColor){
   const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.SphereGeometry(0.62,16,14), new THREE.MeshLambertMaterial({color:0x9a6b3c}));
-  body.position.y = 1.0; body.castShadow = true;
+  // acorn body (slightly egg-shaped)
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.62,20,18), new THREE.MeshStandardMaterial({color:0xa9784a, roughness:0.85, metalness:0.0}));
+  body.scale.y = 1.12;
+  body.position.y = 1.0; body.castShadow = true; body.receiveShadow = true;
   g.add(body);
-  const cap = new THREE.Mesh(new THREE.ConeGeometry(0.66,0.62,10), new THREE.MeshLambertMaterial({color:capColor}));
-  cap.position.y = 1.62; cap.castShadow = true;
+  // cap (dome) + textured ridge ring
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.68,20,12,0,Math.PI*2,0,Math.PI*0.55), new THREE.MeshStandardMaterial({color:capColor, roughness:0.7}));
+  cap.position.y = 1.5; cap.castShadow = true;
   g.add(cap);
-  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.1,0.28,6), new THREE.MeshLambertMaterial({color:0x5a3a1e}));
-  stem.position.y = 1.98;
+  const capRim = new THREE.Mesh(new THREE.TorusGeometry(0.6,0.09,8,20), new THREE.MeshStandardMaterial({color:capColor, roughness:0.6}));
+  capRim.position.y = 1.5; capRim.rotation.x = Math.PI/2;
+  g.add(capRim);
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.1,0.3,8), new THREE.MeshStandardMaterial({color:0x5a3a1e, roughness:0.9}));
+  stem.position.y = 1.92;
   g.add(stem);
-  for (const s of [-0.22,0.22]){
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.08,8,8), new THREE.MeshBasicMaterial({color:0x1a1008}));
-    eye.position.set(s, 1.06, 0.56);
+  // eyes with a shine dot
+  for (const s of [-0.2,0.2]){
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.09,10,10), new THREE.MeshBasicMaterial({color:0x201410}));
+    eye.position.set(s, 1.08, 0.55);
     g.add(eye);
+    const shine = new THREE.Mesh(new THREE.SphereGeometry(0.03,6,6), new THREE.MeshBasicMaterial({color:0xffffff}));
+    shine.position.set(s+0.03, 1.12, 0.61);
+    g.add(shine);
   }
+  // blush cheeks
+  for (const s of [-0.32,0.32]){
+    const cheek = new THREE.Mesh(new THREE.CircleGeometry(0.09,10), new THREE.MeshBasicMaterial({color:0xff9a8a, transparent:true, opacity:0.55}));
+    cheek.position.set(s, 0.96, 0.52); cheek.lookAt(s*3,0.96,3);
+    g.add(cheek);
+  }
+  // tiny arms
+  for (const s of [-0.6,0.6]){
+    const arm = new THREE.Mesh(new THREE.SphereGeometry(0.12,8,8), new THREE.MeshStandardMaterial({color:0x9a6b3c, roughness:0.85}));
+    arm.position.set(s, 1.02, 0.1); arm.scale.set(1,1.4,1);
+    g.add(arm);
+  }
+  // legs
   const legs = [];
-  for (const s of [-0.28,0.28]){
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.14,0.5,8), new THREE.MeshLambertMaterial({color:0x7a4f28}));
+  for (const s of [-0.26,0.26]){
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.15,0.5,8), new THREE.MeshStandardMaterial({color:0x7a4f28, roughness:0.9}));
     leg.position.set(s,0.42,0);
     leg.castShadow = true;
     g.add(leg);
+    const foot = new THREE.Mesh(new THREE.SphereGeometry(0.16,8,8), new THREE.MeshStandardMaterial({color:0x6a4322, roughness:0.9}));
+    foot.position.set(s,0.16,0.05); foot.scale.set(1,0.6,1.3);
+    leg.userData.foot = foot;
+    g.add(foot);
     legs.push(leg);
   }
   g.userData.legs = legs;
@@ -599,50 +772,74 @@ function makeDotoring(capColor){
 
 function makeHunter(jerseyColor){
   const g = new THREE.Group();
-  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.5,1.15,10), new THREE.MeshLambertMaterial({color:jerseyColor}));
-  torso.position.y = 1.15; torso.castShadow = true;
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.52,1.15,14), new THREE.MeshStandardMaterial({color:jerseyColor, roughness:0.6}));
+  torso.position.y = 1.15; torso.castShadow = true; torso.receiveShadow = true;
   g.add(torso);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.36,14,12), new THREE.MeshLambertMaterial({color:0xf0c090}));
+  // number stripe accent
+  const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.53,0.53,0.16,14), new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.5}));
+  stripe.position.y = 1.0;
+  g.add(stripe);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.36,16,14), new THREE.MeshStandardMaterial({color:0xf0c090, roughness:0.75}));
   head.position.y = 1.92; head.castShadow = true;
   g.add(head);
-  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.38,12,10,0,Math.PI*2,0,Math.PI/1.8), new THREE.MeshLambertMaterial({color:0x2a1e14}));
-  hair.position.y = 1.98;
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.39,14,12,0,Math.PI*2,0,Math.PI/1.7), new THREE.MeshStandardMaterial({color:0x2a1e14, roughness:0.9}));
+  hair.position.y = 1.99;
   g.add(hair);
+  // eyes
+  for (const s of [-0.14,0.14]){
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05,8,8), new THREE.MeshBasicMaterial({color:0x201410}));
+    eye.position.set(s,1.94,0.31);
+    g.add(eye);
+  }
   const legs = [];
-  for (const s of [-0.3,0.3]){
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,0.85,8), new THREE.MeshLambertMaterial({color:0x2e3b52}));
+  for (const s of [-0.26,0.26]){
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.16,0.85,8), new THREE.MeshStandardMaterial({color:0x2e3b52, roughness:0.8}));
     leg.position.set(s,0.42,0);
     leg.castShadow = true;
     g.add(leg);
+    const shoe = new THREE.Mesh(new THREE.SphereGeometry(0.17,8,8), new THREE.MeshStandardMaterial({color:0x1a1a22, roughness:0.6}));
+    shoe.position.set(s,0.06,0.06); shoe.scale.set(1,0.6,1.4);
+    g.add(shoe);
     legs.push(leg);
   }
   g.userData.legs = legs;
+  // gun (nicer: body + grip + barrel + glowing muzzle tip)
   const gunGroup = new THREE.Group();
-  const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.22,0.75), new THREE.MeshLambertMaterial({color:0xff7a2e}));
+  const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.24,0.8), new THREE.MeshStandardMaterial({color:0xff7a2e, roughness:0.5, metalness:0.3}));
   gunGroup.add(gunBody);
-  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.5,8), new THREE.MeshLambertMaterial({color:0x333333}));
+  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.16,0.34,0.18), new THREE.MeshStandardMaterial({color:0x3a2a1a, roughness:0.7}));
+  grip.position.set(0,-0.22,0.2); grip.rotation.x = 0.25;
+  gunGroup.add(grip);
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.55,10), new THREE.MeshStandardMaterial({color:0x2a2a2a, roughness:0.4, metalness:0.6}));
   barrel.rotation.x = Math.PI/2;
-  barrel.position.set(0,0.03,-0.55);
+  barrel.position.set(0,0.04,-0.6);
   gunGroup.add(barrel);
-  gunGroup.position.set(0.5, 1.25, 0.25);
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.07,8,8), new THREE.MeshBasicMaterial({color:0xffd24a}));
+  tip.position.set(0,0.04,-0.88);
+  gunGroup.add(tip);
+  gunGroup.position.set(0.5, 1.25, 0.2);
   g.add(gunGroup);
   return g;
 }
 
 function makeCake(){
   const g = new THREE.Group();
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.6,0.5,16), new THREE.MeshLambertMaterial({color:0xd9a15c}));
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.6,0.5,18), new THREE.MeshStandardMaterial({color:0xd9a15c, roughness:0.8}));
   base.position.y = 0.25; base.castShadow = true;
   g.add(base);
-  const frosting = new THREE.Mesh(new THREE.CylinderGeometry(0.58,0.58,0.22,16), new THREE.MeshLambertMaterial({color:0xfff2d8}));
+  const frosting = new THREE.Mesh(new THREE.CylinderGeometry(0.58,0.58,0.22,18), new THREE.MeshStandardMaterial({color:0xfff2d8, roughness:0.6}));
   frosting.position.y = 0.61; frosting.castShadow = true;
   g.add(frosting);
-  const drip = new THREE.Mesh(new THREE.TorusGeometry(0.5,0.07,8,16), new THREE.MeshLambertMaterial({color:0xff8fb0}));
-  drip.position.y = 0.5; drip.rotation.x = Math.PI/2;
+  const drip = new THREE.Mesh(new THREE.TorusGeometry(0.5,0.08,10,18), new THREE.MeshStandardMaterial({color:0xff8fb0, roughness:0.5}));
+  drip.position.y = 0.52; drip.rotation.x = Math.PI/2;
   g.add(drip);
-  const cherry = new THREE.Mesh(new THREE.SphereGeometry(0.13,10,10), new THREE.MeshLambertMaterial({color:0xe23050}));
-  cherry.position.y = 0.85;
+  const cherry = new THREE.Mesh(new THREE.SphereGeometry(0.14,12,12), new THREE.MeshStandardMaterial({color:0xe23050, roughness:0.3, metalness:0.1}));
+  cherry.position.y = 0.86;
   g.add(cherry);
+  // sparkle ring so falling cake reads as a pickup
+  const glow = new THREE.Mesh(new THREE.SphereGeometry(0.9,12,12), new THREE.MeshBasicMaterial({color:0xffe9a8, transparent:true, opacity:0.16}));
+  glow.position.y = 0.5;
+  g.add(glow);
   return g;
 }
 
@@ -824,7 +1021,7 @@ function handleChannelMessage(payload){
         net.connectedGuests.push({ id: payload.guestId, name: payload.name || '친구' });
         if (typeof updateLobbyUI === 'function') updateLobbyUI();
       }
-    } else if (payload.type === 'input' || payload.type === 'shotHit'){
+    } else if (payload.type === 'input' || payload.type === 'shotHit' || payload.type === 'shotFxRelay' || payload.type === 'chat'){
       handleHostMessage(payload.guestId, payload);
     }
   } else if (net.mode === 'guest'){
@@ -857,10 +1054,18 @@ function handleHostMessage(guestId, msg){
   } else if (msg.type === 'shotHit'){
     handleRemoteShot(guestId, msg.targetSlotIndex);
   } else if (msg.type === 'shotFxRelay'){
-    // re-broadcast this guest's shot visual to everyone (the shooter ignores 'all'? no—self:false so shooter won't replay its own)
+    // re-broadcast this guest's shot visual to everyone (self:false so shooter won't replay its own)
     hostBroadcast({ type:'shotFx', fx: msg.fx, except: guestId });
     // host also shows it locally
     playRemoteShotFx(msg.fx);
+  } else if (msg.type === 'chat'){
+    const controllerTag = 'remote:'+guestId;
+    let ent = match.dotoringAI.find(e=>e.controller===controllerTag) || match.hunterAI.find(e=>e.controller===controllerTag);
+    if (ent){
+      spawnBubble(msg.text, () => ent.mesh.position);
+      sfxChat();
+      hostBroadcast({ type:'chat', text: msg.text, sender:{ fromGuestId: guestId, role: ent.role, slotIndex: ent.slotIndex }, except: guestId });
+    }
   }
 }
 
@@ -948,6 +1153,8 @@ function startGuestMatch(role, slotIndex){
   if (isTouch) document.getElementById('touchControls').style.display = 'block';
   updateGuestHUDRole();
   document.getElementById('crosshair').style.display = (role==='hunter') ? 'block' : 'none';
+  setShootButtonVisible(role==='hunter');
+  setViewmodel(role);
 }
 
 function updateGuestHUDRole(){
@@ -970,6 +1177,7 @@ function guestUpdate(delta){
   if (guestMatch.cooldown > 0) guestMatch.cooldown -= delta;
 
   const canMove = guestMatch.role==='hunter' || !guestMatch.isJailed;
+  let gMoving = false;
   if (canMove){
     let f=0,r=0;
     if (keys['KeyW']) f+=1; if (keys['KeyS']) f-=1;
@@ -978,6 +1186,7 @@ function guestUpdate(delta){
     const mag = Math.hypot(f,r);
     if (mag>1){ f/=mag; r/=mag; }
     if (mag>0.05){
+      gMoving = true;
       const forward = new THREE.Vector3(0,0,-1).applyEuler(new THREE.Euler(0,guestMatch.yaw,0,'YXZ'));
       const right = new THREE.Vector3(1,0,0).applyEuler(new THREE.Euler(0,guestMatch.yaw,0,'YXZ'));
       const speed = guestMatch.role==='dotoring' ? DOTORING_SPEED : HUNTER_SPEED;
@@ -993,6 +1202,7 @@ function guestUpdate(delta){
       camera.position.copy(newPos);
     }
   }
+  updateViewmodel(delta, gMoving);
 
   guestInputTimer += delta;
   if (guestInputTimer > 1/INPUT_HZ){
@@ -1006,7 +1216,7 @@ function guestTryShoot(){
   if (guestMatch.cooldown>0) return;
   guestMatch.cooldown = PLAYER_FIRE_COOLDOWN;
   sfxShoot();
-  fireVisualFromCamera(SHOOT_RANGE);
+  fireVisualFromCamera(SHOOT_RANGE); // also triggers recoil
   raycaster.set(camera.position, camera.getWorldDirection(new THREE.Vector3()));
   raycaster.far = SHOOT_RANGE;
   const meshes = guestMatch.dotMeshes.filter(m=>m);
@@ -1039,6 +1249,15 @@ function handleGuestMessage(msg){
   if (msg.type === 'shotFx'){
     if (msg.except && msg.except === net.guestId) return; // don't replay my own shot
     playRemoteShotFx(msg.fx);
+    return;
+  }
+  if (msg.type === 'chat'){
+    if (msg.except && msg.except === net.guestId) return; // don't echo my own chat
+    const s = msg.sender;
+    if (s){
+      spawnBubble(msg.text, () => getSenderWorldPos(s));
+      sfxChat();
+    }
     return;
   }
   if (msg.type === 'snapshot'){
@@ -1350,13 +1569,25 @@ function initMatch(remotePlan){
   document.getElementById('eliminatedBanner').style.display = 'none';
   document.getElementById('rescueHint').style.display = 'none';
   document.getElementById('crosshair').style.display = (playerRole==='hunter') ? 'block' : 'none';
+  setShootButtonVisible(playerRole==='hunter');
+  setViewmodel(playerRole);
 }
 
 // ---------------------------------------------------------------
 // INPUT: keyboard + pointer lock (PC)
 // ---------------------------------------------------------------
 const keys = {};
-window.addEventListener('keydown', e => { keys[e.code] = true; });
+window.addEventListener('keydown', e => {
+  keys[e.code] = true;
+  // quick chat shortcuts 1-4 while playing
+  const playing = (net.mode==='guest') ? (guestMatch && !guestMatch.over) : (match && !match.over);
+  if (playing){
+    if (e.code === 'Digit1') sendQuickChat('도망쳐');
+    else if (e.code === 'Digit2') sendQuickChat('구해줘');
+    else if (e.code === 'Digit3') sendQuickChat('안녕');
+    else if (e.code === 'Digit4') sendQuickChat('잘가');
+  }
+});
 window.addEventListener('keyup', e => { keys[e.code] = false; });
 
 const canvas = renderer.domElement;
@@ -1384,6 +1615,10 @@ const joyBase = document.getElementById('joyBase');
 const joyThumb = document.getElementById('joyThumb');
 const lookArea = document.getElementById('lookArea');
 const shootBtn = document.getElementById('shootBtn');
+
+function setShootButtonVisible(isHunter){
+  if (shootBtn) shootBtn.style.display = (isTouch && isHunter) ? 'flex' : 'none';
+}
 
 let joyTouchId = null, joyCenter = {x:0,y:0}, joyVec = {x:0,y:0};
 let lookTouchId = null, lookLast = {x:0,y:0};
@@ -1567,6 +1802,7 @@ function fireVisualFromCamera(range){
   const to = camera.position.clone().add(dir.clone().multiplyScalar(range));
   spawnTracer(muzzle, to);
   vibrate(35);
+  viewmodelRecoil();
   if (net.mode === 'host'){
     hostBroadcast({ type:'shotFx', fx:{ fromX:muzzle.x, fromY:muzzle.y, fromZ:muzzle.z, toX:to.x, toY:to.y, toZ:to.z } });
   } else if (net.mode === 'guest'){
@@ -1617,6 +1853,112 @@ function updateShotVisuals(delta){
     f.mesh.scale.set(s,s,s);
     f.mesh.material.opacity = Math.max(0, f.life/0.07)*0.9;
     if (f.life <= 0){ scene.remove(f.mesh); activeFlashes.splice(i,1); }
+  }
+}
+
+// ---------------------------------------------------------------
+// QUICK CHAT (floating speech bubbles anchored above characters)
+// ---------------------------------------------------------------
+const activeBubbles = []; // { el, getWorldPos(), life }
+const chatLayer = document.getElementById('chatLayer');
+const _projV = new THREE.Vector3();
+
+function spawnBubble(text, getWorldPos){
+  const el = document.createElement('div');
+  el.className = 'chatBubble';
+  el.textContent = text;
+  chatLayer.appendChild(el);
+  activeBubbles.push({ el, getWorldPos, life: 3.0 });
+}
+
+function updateChatBubbles(delta){
+  for (let i=activeBubbles.length-1;i>=0;i--){
+    const b = activeBubbles[i];
+    b.life -= delta;
+    if (b.life <= 0){ if (b.el.parentNode) b.el.parentNode.removeChild(b.el); activeBubbles.splice(i,1); continue; }
+    const wp = b.getWorldPos();
+    if (!wp){ b.el.style.display='none'; continue; }
+    _projV.copy(wp); _projV.y += 2.6;
+    _projV.project(camera);
+    if (_projV.z > 1){ b.el.style.display='none'; continue; } // behind camera
+    const x = (_projV.x*0.5+0.5) * window.innerWidth;
+    const y = (-_projV.y*0.5+0.5) * window.innerHeight;
+    b.el.style.display='block';
+    b.el.style.left = x+'px';
+    b.el.style.top = y+'px';
+    b.el.style.opacity = Math.min(1, b.life);
+  }
+}
+
+// figure out MY character's world position (for anchoring my own bubble)
+function getLocalPlayerWorldPos(){
+  if (net.mode === 'guest'){
+    return guestMatch ? camera.position : null;
+  }
+  return (match && !match.over) ? camera.position : null;
+}
+
+// resolve the world position of a remote sender by their controller/slot
+function getSenderWorldPos(sender){
+  // sender: { fromGuestId } or { fromHost:true, role, slotIndex }
+  if (net.mode === 'host'){
+    if (sender.fromGuestId){
+      const tag = 'remote:'+sender.fromGuestId;
+      const ent = match && (match.dotoringAI.find(e=>e.controller===tag) || match.hunterAI.find(e=>e.controller===tag));
+      return ent ? ent.mesh.position : null;
+    }
+  } else if (net.mode === 'guest'){
+    if (sender.fromHost || sender.fromGuestId){
+      // find the mesh in guest's local slot arrays
+      if (!guestMatch) return null;
+      if (sender.role === 'dotoring'){
+        const m = guestMatch.dotMeshes[sender.slotIndex];
+        return m ? m.position : null;
+      } else {
+        const m = guestMatch.hunMeshes[sender.slotIndex];
+        return m ? m.position : null;
+      }
+    }
+  }
+  return null;
+}
+
+function sendQuickChat(text){
+  // show above my own head locally
+  spawnBubble(text, getLocalPlayerWorldPos);
+  sfxChat();
+  if (net.mode === 'host'){
+    // tell all guests: it's from host, at host's role/slot
+    if (match){
+      hostBroadcast({ type:'chat', text, sender:{ fromHost:true, role:match.playerRole, slotIndex:match.playerSlot } });
+    }
+  } else if (net.mode === 'guest'){
+    guestSend({ type:'chat', text, guestId: net.guestId });
+  }
+}
+
+function sfxChat(){ beep(660,0.06,'sine',0.08); setTimeout(()=>beep(880,0.06,'sine',0.07),60); }
+
+let ambientClock = 0;
+function updateAmbient(delta){
+  ambientClock += delta;
+  const playing = (net.mode==='guest') ? (guestMatch && !guestMatch.over) : (match && !match.over);
+  const vg = document.getElementById('vignette');
+  if (vg) vg.style.display = playing ? 'block' : 'none';
+  const qc = document.getElementById('quickChat');
+  if (qc) qc.style.display = playing ? 'block' : 'none';
+  // jail beacon pulse
+  const pulse = 0.85 + Math.sin(ambientClock*3)*0.35;
+  if (typeof beacon !== 'undefined'){ beacon.scale.setScalar(pulse); }
+  if (typeof beaconBeam !== 'undefined'){ beaconBeam.material.opacity = 0.15 + Math.sin(ambientClock*3)*0.12; }
+  // rescue button gentle glow bob
+  if (buttonGroup.userData.top){
+    buttonGroup.userData.top.material.emissiveIntensity = 0.5 + Math.sin(ambientClock*4)*0.35;
+  }
+  // floating cake spin + bob once landed
+  if (cake && cake.landed){
+    cake.mesh.rotation.y += delta*1.0;
+    cake.mesh.position.y = Math.sin(ambientClock*2)*0.12 + 0.05;
   }
 }
 
@@ -1808,6 +2150,8 @@ function update(){
   const delta = Math.min(clock.getDelta(), 0.1);
 
   updateShotVisuals(delta);
+  updateAmbient(delta);
+  updateChatBubbles(delta);
 
   if (net.mode === 'guest'){
     guestUpdate(delta);
@@ -1834,6 +2178,7 @@ function update(){
 
     // player movement (blocked while jailed)
     const playerCanMove = match.playerRole === 'hunter' || !match.playerIsJailed;
+    let pMoving = false;
     if (playerCanMove){
       let f = 0, r = 0;
       if (keys['KeyW']) f += 1;
@@ -1844,6 +2189,7 @@ function update(){
       const mag = Math.hypot(f,r);
       if (mag > 1){ f/=mag; r/=mag; }
       if (mag > 0.05){
+        pMoving = true;
         const forward = new THREE.Vector3(0,0,-1).applyEuler(new THREE.Euler(0, match.yaw, 0, 'YXZ'));
         const right = new THREE.Vector3(1,0,0).applyEuler(new THREE.Euler(0, match.yaw, 0, 'YXZ'));
         const speed = (match.playerRole === 'dotoring' ? DOTORING_SPEED : HUNTER_SPEED) * (net.mode==='solo' ? getSpeedMult() : 1);
@@ -1860,6 +2206,7 @@ function update(){
         camera.position.copy(newPos);
       }
     }
+    updateViewmodel(delta, pMoving);
 
     // gather living/free entity lookup lists
     const dotoringEntities = match.dotoringAI.filter(c=>!c.isJailed).map(c=>({pos:c.mesh.position, isPlayer:false, entity:c}));
@@ -1880,7 +2227,6 @@ function update(){
         cake.mesh.position.y = CAKE_FALL_START_Y + (0.0 - CAKE_FALL_START_Y) * easeOutQuad(t);
         if (t >= 1) cake.landed = true;
       } else {
-        cake.mesh.rotation.y += delta * 1.2;
         for (const e of dotoringEntities){
           const dist = Math.hypot(e.pos.x - cake.mesh.position.x, e.pos.z - cake.mesh.position.z);
           if (dist < CAKE_EAT_RADIUS){
@@ -2074,6 +2420,25 @@ document.getElementById('shopBtn').addEventListener('click', () => {
   ensureAudio();
   document.getElementById('shopScreen').style.display = 'flex';
   renderShop();
+});
+
+// Quick chat
+const quickChatMenu = document.getElementById('quickChatMenu');
+document.getElementById('quickChatToggle').addEventListener('click', (e) => {
+  e.stopPropagation();
+  quickChatMenu.classList.toggle('open');
+});
+document.querySelectorAll('.qcOption').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    ensureAudio();
+    sendQuickChat(btn.dataset.msg);
+    quickChatMenu.classList.remove('open');
+  });
+});
+// close menu when tapping elsewhere
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#quickChat')) quickChatMenu.classList.remove('open');
 });
 document.getElementById('shopBackBtn').addEventListener('click', () => {
   document.getElementById('shopScreen').style.display = 'none';
