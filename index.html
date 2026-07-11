@@ -144,12 +144,17 @@ body{
 .game-card.antopia::before{
   background: radial-gradient(circle at 85% 15%, rgba(232,160,80,0.30) 0%, transparent 60%);
 }
+.game-card.dotoring::before{
+  background: radial-gradient(circle at 85% 15%, rgba(90,160,70,0.35) 0%, transparent 60%);
+}
 .game-card:hover::before, .game-card:active::before{ opacity:1; }
 
 .game-card.radoku{ border-color: rgba(132,65,199,0.45); }
 .game-card.antopia{ border-color: rgba(232,160,80,0.4); }
+.game-card.dotoring{ border-color: rgba(120,180,90,0.45); }
 .game-card.radoku:active{ box-shadow: 0 0 28px rgba(132,65,199,0.35); }
 .game-card.antopia:active{ box-shadow: 0 0 28px rgba(232,160,80,0.3); }
+.game-card.dotoring:active{ box-shadow: 0 0 28px rgba(120,180,90,0.35); }
 
 .game-icon{
   flex-shrink:0;
@@ -168,6 +173,10 @@ body{
   background: radial-gradient(circle at 32% 28%, #FFD9A0, #F09030 55%, #B05E10 100%);
   box-shadow: 0 0 18px rgba(240,144,48,0.5);
 }
+.game-card.dotoring .game-icon{
+  background: radial-gradient(circle at 32% 28%, #C8E6A0, #6FA84A 55%, #3E6E28 100%);
+  box-shadow: 0 0 18px rgba(120,180,90,0.5);
+}
 
 .game-info{
   position:relative;
@@ -184,6 +193,7 @@ body{
 }
 .game-card.radoku .game-name{ color: var(--gold-bright); }
 .game-card.antopia .game-name{ color: #FFD9A0; }
+.game-card.dotoring .game-name{ color: #D4EBB0; }
 .game-desc{
   font-size: 12.5px;
   color: var(--ink-soft);
@@ -238,6 +248,15 @@ body{
       <div class="game-info">
         <div class="game-name">앵토피아</div>
         <div class="game-desc">나만의 앵무새를 키우고 꾸미는 아기자기한 세상</div>
+      </div>
+      <div class="game-arrow">›</div>
+    </a>
+
+    <a class="game-card dotoring" href="dotoringrun.html">
+      <div class="game-icon">🌰</div>
+      <div class="game-info">
+        <div class="game-name">도토링 런</div>
+        <div class="game-desc">숲속 미로에서 펼쳐지는 3D 술래잡기, 친구와 온라인으로도!</div>
       </div>
       <div class="game-arrow">›</div>
     </a>
