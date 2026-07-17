@@ -9,34 +9,183 @@
   html, body { width:100%; height:100%; overflow:hidden; background:#1a2e1a; font-family: 'Trebuchet MS', 'Malgun Gothic', sans-serif; touch-action:none; }
   canvas { display:block; }
 
-  #startScreen, #endScreen {
+  /* shared full-screen overlay base */
+  #loadingScreen, #manualScreen, #onboardScreen, #homeScreen, #endScreen {
     position:fixed; inset:0; z-index:50;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     background: radial-gradient(ellipse at center, #3a6b35 0%, #1a3a1a 70%, #0d1f0d 100%);
     color:#fff; text-align:center; padding:20px; overflow-y:auto;
   }
-  #startScreen h1, #endScreen h1 {
+  #manualScreen, #onboardScreen, #homeScreen, #endScreen { display:none; }
+
+  #manualScreen h1, #endScreen h1 {
     font-size:min(13vw, 58px); color:#f4c542; text-shadow: 3px 3px 0 #7a4a1e, -1px -1px 0 #7a4a1e, 1px -1px 0 #7a4a1e, -1px 1px 0 #7a4a1e;
     letter-spacing:2px; margin-bottom:6px;
   }
-  #startScreen .sub { color:#dfe9c8; font-size:14px; margin-bottom:18px; opacity:0.85; }
+  #manualScreen .sub { color:#dfe9c8; font-size:14px; margin-bottom:18px; opacity:0.85; }
   .rulebox {
     background:rgba(0,0,0,0.35); border:2px solid #f4c54255; border-radius:16px;
-    padding:14px 20px; max-width:420px; margin-bottom:18px; font-size:13px; line-height:1.65; color:#f2f2e6;
+    padding:14px 20px; max-width:420px; margin-bottom:18px; font-size:13px; line-height:1.65; color:#f2f2e6; text-align:left;
   }
   .rulebox b { color:#f4c542; }
   .rulebox .row { display:flex; gap:10px; align-items:flex-start; margin-bottom:6px; }
   .rulebox .emoji { font-size:18px; flex-shrink:0; }
-  #startBtn, #retryBtn {
+
+  #manualOkBtn, #retryBtn, #playBtn, .obNext {
     background:linear-gradient(180deg,#ffdd66,#f4a942);
     color:#5a3200; font-weight:bold; font-size:20px; border:none; border-radius:50px;
     padding:16px 46px; box-shadow:0 6px 0 #a0651c, 0 8px 18px rgba(0,0,0,0.4);
-    cursor:pointer; letter-spacing:1px; transition:transform 0.08s; margin-bottom:20px;
+    cursor:pointer; letter-spacing:1px; transition:transform 0.08s; margin-bottom:12px;
   }
-  #startBtn:active, #retryBtn:active { transform:translateY(4px); box-shadow:0 2px 0 #a0651c; }
+  #manualOkBtn:active, #retryBtn:active, #playBtn:active, .obNext:active { transform:translateY(4px); box-shadow:0 2px 0 #a0651c; }
+
+  /* ---------- LOADING ---------- */
+  .loadIcon { font-size:70px; animation:loadBob 1.2s ease-in-out infinite; }
+  @keyframes loadBob { 0%,100%{transform:translateY(0) rotate(-5deg);} 50%{transform:translateY(-16px) rotate(5deg);} }
+  .loadTitle { font-size:min(11vw,44px); color:#f4c542; letter-spacing:3px; margin:14px 0 22px;
+    text-shadow:3px 3px 0 #7a4a1e; font-weight:bold; }
+  .loadBarWrap { width:min(280px,70vw); height:12px; background:rgba(0,0,0,0.4); border-radius:10px; overflow:hidden; border:2px solid #f4c54255; }
+  .loadBar { width:0%; height:100%; background:linear-gradient(90deg,#ffdd66,#f4a942); border-radius:10px; transition:width .2s; }
+  .loadText { margin-top:12px; font-size:13px; color:#dfe9c8; opacity:0.8; }
+
+  /* ---------- ONBOARDING ---------- */
+  .obPanel { background:rgba(0,0,0,0.4); border:2px solid #f4c54255; border-radius:22px;
+    padding:26px 24px; width:min(420px,92vw); }
+  .obStep h2 { color:#f4c542; font-size:22px; margin-bottom:18px; }
+  #onboardScreen input, #profileScreen input, #mpScreen input {
+    width:100%; padding:12px; border-radius:12px; border:none; text-align:center;
+    font-size:18px; margin-bottom:16px; box-sizing:border-box;
+  }
+  .swatchGrid { display:grid; grid-template-columns:repeat(auto-fit, minmax(64px,1fr)); gap:10px; margin-bottom:18px; }
+  .swatch {
+    aspect-ratio:1; border-radius:14px; border:3px solid transparent; cursor:pointer;
+    background:rgba(255,255,255,0.08); transition:transform .1s, border-color .1s;
+    padding:4px; display:flex; align-items:center; justify-content:center;
+  }
+  .swatch canvas { width:100%; height:100%; display:block; }
+  .swatch:active { transform:scale(0.93); }
+  .swatch.sel { border-color:#ffe27a; box-shadow:0 0 14px rgba(255,226,122,0.7); background:rgba(255,226,122,0.15); }
+  .previewBig { display:none; }
+
+  /* ---------- HOME (Brawl Stars style) ---------- */
+  #homeScreen {
+    justify-content:flex-start; padding:0;
+    background:
+      /* soft sun glow */
+      radial-gradient(circle at 78% 16%, rgba(255,240,190,0.55) 0%, transparent 26%),
+      /* distant tree line silhouettes */
+      radial-gradient(ellipse 90px 130px at 6% 62%, #2f6b34 0%, #2f6b34 46%, transparent 47%),
+      radial-gradient(ellipse 70px 105px at 17% 65%, #38793d 0%, #38793d 46%, transparent 47%),
+      radial-gradient(ellipse 100px 145px at 30% 61%, #2a5f2f 0%, #2a5f2f 46%, transparent 47%),
+      radial-gradient(ellipse 78px 112px at 44% 64%, #35743a 0%, #35743a 46%, transparent 47%),
+      radial-gradient(ellipse 92px 135px at 58% 62%, #2f6b34 0%, #2f6b34 46%, transparent 47%),
+      radial-gradient(ellipse 72px 108px at 71% 65%, #38793d 0%, #38793d 46%, transparent 47%),
+      radial-gradient(ellipse 98px 140px at 85% 62%, #2a5f2f 0%, #2a5f2f 46%, transparent 47%),
+      radial-gradient(ellipse 76px 110px at 96% 64%, #35743a 0%, #35743a 46%, transparent 47%),
+      /* grassy ground */
+      linear-gradient(180deg, transparent 0%, transparent 63%, #5a9c4a 63%, #4a8a3d 78%, #37702f 100%),
+      /* blue sky */
+      linear-gradient(180deg, #3f97dd 0%, #6fb8e8 32%, #a9ddf2 52%, #d8f0e0 63%);
+    background-repeat:no-repeat;
+    background-attachment:fixed;
+  }
+  .homeTop {
+    width:100%; display:flex; justify-content:space-between; align-items:center;
+    padding:16px 16px 0; gap:10px;
+  }
+  .profileChip {
+    display:flex; align-items:center; gap:10px; background:rgba(0,0,0,0.5);
+    border:2px solid rgba(255,255,255,0.35); border-radius:40px; padding:6px 16px 6px 6px; cursor:pointer;
+    box-shadow:0 3px 12px rgba(0,0,0,0.3);
+  }
+  .profileChip:active { transform:scale(0.96); }
+  .pfpDot {
+    width:44px; height:44px; border-radius:50%; flex-shrink:0;
+    background:#dff0ff; border:2px solid rgba(255,255,255,0.6);
+    display:block;
+  }
+  .pfpInfo { text-align:left; }
+  .pfpName { font-size:15px; font-weight:bold; color:#fff; }
+  .pfpSub { font-size:10px; color:#cfe0c0; }
+  .pointsChip {
+    background:rgba(0,0,0,0.5); border:2px solid #ffe27a88; border-radius:30px;
+    padding:9px 18px; font-size:16px; color:#ffe27a; font-weight:bold; white-space:nowrap;
+    box-shadow:0 3px 12px rgba(0,0,0,0.3);
+  }
+
+  .homeStage {
+    flex:1; width:100%; display:flex; align-items:center; justify-content:center; gap:14px;
+    padding:10px 14px; max-width:640px;
+  }
+  .sideShop {
+    background:rgba(0,0,0,0.48); border:2px solid rgba(255,255,255,0.3); border-radius:20px;
+    color:#fff; padding:16px 10px; cursor:pointer; width:84px; flex-shrink:0;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    transition:transform .1s, border-color .1s; box-shadow:0 4px 14px rgba(0,0,0,0.3);
+  }
+  .sideShop:active { transform:scale(0.94); }
+  .sideShop.left { border-color:rgba(255,160,110,0.7); }
+  .sideShop.right { border-color:rgba(255,160,210,0.7); }
+  .ssIcon { font-size:30px; }
+  .ssLabel { font-size:11px; font-weight:bold; line-height:1.3; color:#e8e0d0; }
+
+  #homeScreen::before {
+    content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
+    background:
+      radial-gradient(ellipse 60px 22px at 12% 12%, rgba(255,255,255,0.85) 0%, transparent 70%),
+      radial-gradient(ellipse 42px 17px at 20% 15%, rgba(255,255,255,0.8) 0%, transparent 70%),
+      radial-gradient(ellipse 70px 25px at 62% 8%, rgba(255,255,255,0.8) 0%, transparent 70%),
+      radial-gradient(ellipse 50px 19px at 72% 11%, rgba(255,255,255,0.75) 0%, transparent 70%),
+      radial-gradient(ellipse 55px 20px at 38% 22%, rgba(255,255,255,0.6) 0%, transparent 70%);
+    background-repeat:no-repeat;
+    animation:cloudDrift 40s linear infinite alternate;
+  }
+  @keyframes cloudDrift { from{transform:translateX(-14px);} to{transform:translateX(14px);} }
+  .homeTop, .homeStage, #playBtn, #playMenu, #lyricLine { position:relative; z-index:1; }
+
+  .charStage { position:relative; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .charGlow {
+    position:absolute; width:190px; height:190px; border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 68%);
+    animation:charPulse 2.6s ease-in-out infinite;
+  }
+  @keyframes charPulse { 0%,100%{transform:scale(1); opacity:0.6;} 50%{transform:scale(1.12); opacity:0.95;} }
+  #homeCharCanvas {
+    position:relative; z-index:1;
+    width:min(230px, 55vw); height:min(230px, 55vw);
+    display:block;
+    filter:drop-shadow(0 12px 20px rgba(0,0,0,0.45));
+  }
+  .charName {
+    margin-top:8px; font-size:14px; font-weight:bold; color:#ffe9a8; position:relative; z-index:1;
+    background:rgba(0,0,0,0.52); padding:6px 18px; border-radius:20px; border:1px solid rgba(255,226,122,0.55);
+    box-shadow:0 3px 10px rgba(0,0,0,0.3);
+  }
+
+  #playBtn { margin-bottom:8px; }
+  #playMenu {
+    display:none; flex-direction:column; gap:10px; margin-bottom:14px; width:min(300px,80vw);
+  }
+  #playMenu.open { display:flex; }
+  .playOpt {
+    background:rgba(0,0,0,0.5); border:2px solid rgba(255,255,255,0.28); color:#fff;
+    font-size:16px; font-weight:bold; padding:14px; border-radius:16px; cursor:pointer;
+  }
+  .playOpt:active { transform:scale(0.96); }
+  .playOpt.playBack { background:none; border-color:#666; color:#aaa; font-size:13px; padding:10px; }
 
   #resultTitle { font-size:min(12vw,52px); margin-bottom:4px; }
   #resultDetail { font-size:15px; color:#e3e3d0; margin-bottom:26px; max-width:340px; }
+
+  /* PROFILE + DECO screens reuse the panel look */
+  #profileScreen, #decoScreen {
+    position:fixed; inset:0; z-index:56; display:none;
+    align-items:center; justify-content:center;
+    background:rgba(10,20,10,0.94); color:#fff; text-align:center; padding:20px; overflow-y:auto;
+  }
+  #decoPoints { float:right; color:#ffe27a; font-size:15px; }
+  #decoTabs { display:flex; gap:6px; margin:12px 0; }
+  #decoItemList { display:flex; flex-direction:column; gap:10px; text-align:left; max-height:48vh; overflow-y:auto; }
 
   #hud { position:fixed; inset:0; z-index:20; pointer-events:none; display:none; font-weight:bold; }
   #topBar {
@@ -119,8 +268,27 @@
   }
   #quickChatMenu {
     position:absolute; left:0; top:54px; display:none; flex-direction:column; gap:6px; pointer-events:auto;
+    max-height:52vh; overflow-y:auto; padding-right:4px;
   }
   #quickChatMenu.open { display:flex; }
+
+  #chatLog {
+    position:fixed; left:16px; bottom:170px; z-index:21;
+    width:min(300px, 60vw); max-height:150px; overflow:hidden;
+    display:none; flex-direction:column; justify-content:flex-end; gap:3px;
+    pointer-events:none; font-size:13px;
+  }
+  #chatLog.show { display:flex; }
+  #chatLog .logLine {
+    background:rgba(0,0,0,0.45); border-radius:8px; padding:4px 10px; color:#fff;
+    text-shadow:0 1px 2px rgba(0,0,0,0.8); animation:logIn 0.2s ease;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  #chatLog .logLine .who { font-weight:bold; margin-right:5px; }
+  #chatLog .logLine .who.dot { color:#f0b860; }
+  #chatLog .logLine .who.hun { color:#6fc0f0; }
+  #chatLog .logLine .who.me { color:#8cffb0; }
+  @keyframes logIn { from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
   .qcOption {
     background:rgba(0,0,0,0.55); border:2px solid rgba(255,255,255,0.25); color:#fff;
     font-size:14px; font-weight:bold; padding:9px 16px; border-radius:24px; cursor:pointer; white-space:nowrap;
@@ -151,6 +319,24 @@
     background:rgba(0,0,0,0.4); border:2px solid rgba(255,255,255,0.3); color:#fff; font-size:18px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;
   }
+
+  #exitBtn {
+    position:fixed; top:60px; right:14px; z-index:23; display:none;
+    background:rgba(120,20,20,0.6); border:2px solid rgba(255,140,140,0.4); color:#fff;
+    font-size:12px; font-weight:bold; padding:8px 14px; border-radius:20px; cursor:pointer;
+  }
+  #exitBtn:active { transform:scale(0.94); }
+
+  #rewardLine {
+    font-size:16px; color:#ffe27a; font-weight:bold; margin-bottom:18px;
+  }
+  #claimBtn {
+    background:linear-gradient(180deg,#8cffb0,#3ca35a);
+    color:#0f3a1e; font-weight:bold; font-size:17px; border:none; border-radius:50px;
+    padding:14px 34px; box-shadow:0 5px 0 #24632f, 0 8px 18px rgba(0,0,0,0.4);
+    cursor:pointer; letter-spacing:0.5px; margin-bottom:12px;
+  }
+  #claimBtn:active { transform:translateY(3px); box-shadow:0 2px 0 #24632f; }
 
   #mpLink {
     background:none; border:2px solid rgba(255,255,255,0.35); color:#dfe9c8; font-size:13px;
@@ -221,37 +407,140 @@
 </head>
 <body>
 
-<div id="startScreen">
-  <div id="pointsDisplay">🌰 0</div>
+<!-- 1) LOADING -->
+<div id="loadingScreen">
+  <div class="loadIcon">🌰</div>
+  <h1 class="loadTitle">도토링 런</h1>
+  <div class="loadBarWrap"><div class="loadBar"></div></div>
+  <div class="loadText">숲을 준비하는 중...</div>
+</div>
+
+<!-- 2) MANUAL (shown after loading) -->
+<div id="manualScreen">
   <h1>🐿️ 도토링 런 🌰</h1>
-  <div class="sub">숲속 미로 3vs3... 아니 6vs4 술래잡기 슈터</div>
+  <div class="sub">숲속 미로 술래잡기 슈터</div>
   <div class="rulebox">
     <div class="row"><span class="emoji">🌰</span><div><b>도토링 팀 (6명)</b> — 총이 없어요! 맞으면 체력이 닳고, 0이 되면 맵 중앙 <b>감옥</b>에 갇혀요.</div></div>
     <div class="row"><span class="emoji">🔓</span><div>갇힌 팀원은 <b>다른 도토링이 감옥 근처 구출 지점</b>에 가면 전부 풀려나요!</div></div>
     <div class="row"><span class="emoji">🔫</span><div><b>유리우다다 팀 (2명)</b> — 이유림총으로 쏘고, <b>도토링 6명을 전부 동시에 감옥에 가두면</b> 승리!</div></div>
     <div class="row"><span class="emoji">⏱️</span><div>시간이 다 될 때까지 도토링이 한 명이라도 자유로우면 도토링 팀 승리.</div></div>
-    <div class="row"><span class="emoji">🌲</span><div>넓은 숲은 나무와 담장이 빽빽한 <b>미로</b>예요. 길을 잘 기억하세요!</div></div>
-    <div class="row"><span class="emoji">🍰</span><div>가끔 하늘에서 <b>케이크</b>가 떨어져요! 도토링이 먹으면 체력이 3 회복돼요.</div></div>
+    <div class="row"><span class="emoji">🍰</span><div>가끔 하늘에서 <b>케이크</b>가 떨어져요! 도토링이 먹으면 체력이 회복돼요.</div></div>
     <div class="row"><span class="emoji">🎲</span><div>매판 <b>랜덤으로 팀 배정</b>, 나머지는 AI가 채워줍니다.</div></div>
-    <div class="row"><span class="emoji">🎮</span><div>PC: WASD 이동 + 마우스 시점 + 클릭 발사<br>모바일: 조이스틱 + 화면 드래그 시점 + 발사 버튼</div></div>
+    <div class="row"><span class="emoji">🎮</span><div>PC: WASD 이동 + 마우스 시점 + 클릭 발사 + 채팅 1~9,0<br>모바일: 조이스틱 + 화면 드래그 시점 + 발사 버튼</div></div>
   </div>
-  <div id="lyricLine"></div>
-  <button id="startBtn">게임 시작</button>
-  <button id="mpLink">👥 친구와 온라인으로 하기</button>
-  <button id="shopBtn">🛍️ 상점 (장비 구매/장착)</button>
+  <button id="manualOkBtn">확인</button>
 </div>
 
+<!-- 3) ONBOARDING (first launch only) -->
+<div id="onboardScreen">
+  <div class="obPanel">
+    <div class="obStep" id="obStep1">
+      <h2>이름을 정해줘!</h2>
+      <input type="text" id="obNameInput" placeholder="내 이름" maxlength="10">
+      <button class="obNext" id="obNext1">다음 →</button>
+    </div>
+
+    <div class="obStep" id="obStep2" style="display:none;">
+      <h2>프로필 사진을 골라줘</h2>
+      <div class="swatchGrid" id="obProfileGrid"></div>
+      <button class="obNext" id="obNext2">다음 →</button>
+    </div>
+
+    <div class="obStep" id="obStep3" style="display:none;">
+      <h2>내 도토링 색은?</h2>
+      <div class="previewBig" id="obDotPreview">🌰</div>
+      <div class="swatchGrid" id="obDotGrid"></div>
+      <button class="obNext" id="obNext3">다음 →</button>
+    </div>
+
+    <div class="obStep" id="obStep4" style="display:none;">
+      <h2>내 유리우다다 색은?</h2>
+      <div class="previewBig" id="obHunPreview">🔫</div>
+      <div class="swatchGrid" id="obHunGrid"></div>
+      <button class="obNext" id="obNext4">시작하기!</button>
+    </div>
+  </div>
+</div>
+
+<!-- 4) HOME (Brawl Stars style) -->
+<div id="homeScreen">
+  <div class="homeTop">
+    <div class="profileChip" id="profileChip">
+      <canvas class="pfpDot" id="pfpDot" width="84" height="84"></canvas>
+      <div class="pfpInfo">
+        <div class="pfpName" id="pfpName">플레이어</div>
+        <div class="pfpSub">도토링 런</div>
+      </div>
+    </div>
+    <div class="pointsChip">🌰 <span id="pointsDisplay">0</span></div>
+  </div>
+
+  <div class="homeStage">
+    <button class="sideShop left" id="itemShopBtn">
+      <div class="ssIcon">🔫</div>
+      <div class="ssLabel">아이템<br>상점</div>
+    </button>
+
+    <div class="charStage">
+      <div class="charGlow"></div>
+      <canvas id="homeCharCanvas"></canvas>
+      <div class="charName" id="homeCharName">내 도토링</div>
+    </div>
+
+    <button class="sideShop right" id="decoShopBtn">
+      <div class="ssIcon">🎀</div>
+      <div class="ssLabel">데코<br>상점</div>
+    </button>
+  </div>
+
+  <button id="playBtn">▶ 게임 시작</button>
+
+  <div id="playMenu">
+    <button class="playOpt" id="playAiBtn">🤖 AI 대결</button>
+    <button class="playOpt" id="playOnlineBtn">👥 온라인 대결</button>
+    <button class="playOpt playBack" id="playCancelBtn">← 뒤로</button>
+  </div>
+
+  <div id="lyricLine"></div>
+</div>
+
+<!-- PROFILE EDIT (from home, tap profile chip) -->
+<div id="profileScreen">
+  <div class="panel" style="max-width:420px;">
+    <h2>프로필</h2>
+    <input type="text" id="pfEditName" placeholder="내 이름" maxlength="10">
+    <div style="font-size:12px;color:#bbb;margin:10px 0 6px;text-align:left;">프로필 사진</div>
+    <div class="swatchGrid" id="pfProfileGrid"></div>
+    <div style="font-size:12px;color:#bbb;margin:12px 0 6px;text-align:left;">내 도토링 색</div>
+    <div class="swatchGrid" id="pfDotGrid"></div>
+    <div style="font-size:12px;color:#bbb;margin:12px 0 6px;text-align:left;">내 유리우다다 색</div>
+    <div class="swatchGrid" id="pfHunGrid"></div>
+    <button class="mpBtn" id="pfSaveBtn">저장</button>
+    <button class="mpBtn mpBack" id="pfCloseBtn">← 닫기</button>
+  </div>
+</div>
+
+<!-- ITEM SHOP -->
 <div id="shopScreen">
   <div class="panel" style="max-width:480px;">
-    <h2>🛍️ 상점 <span id="shopPoints"></span></h2>
-    <div id="shopTabs">
-      <button class="shopTabBtn active" data-cat="gun">🔫 총</button>
-      <button class="shopTabBtn" data-cat="shield">🛡️ 방패</button>
-      <button class="shopTabBtn" data-cat="charm">💍 장신구</button>
-    </div>
+    <h2>🔫 아이템 상점 <span id="shopPoints"></span></h2>
     <div id="shopItemList"></div>
-    <p style="font-size:11px;color:#999;margin-top:10px;">※ 장비 효과는 혼자 플레이(솔로) 모드에서만 적용돼요. 이기면 🌰80, 져도 🌰20 획득!</p>
+    <p style="font-size:11px;color:#999;margin-top:10px;">※ 장비 효과는 AI 대결(솔로)에서만 적용돼요. 끝까지 하고 결과 화면에서 나가면 이기면 🌰20, 져도 🌰3 획득!</p>
     <button class="mpBtn mpBack" id="shopBackBtn">← 닫기</button>
+  </div>
+</div>
+
+<!-- DECO SHOP -->
+<div id="decoScreen">
+  <div class="panel" style="max-width:480px;">
+    <h2>🎀 데코 상점 <span id="decoPoints"></span></h2>
+    <div id="decoTabs">
+      <button class="shopTabBtn active" data-cat="skin">✨ 도토링 색</button>
+      <button class="shopTabBtn" data-cat="outfit">👕 옷</button>
+      <button class="shopTabBtn" data-cat="hat">🎩 머리</button>
+    </div>
+    <div id="decoItemList"></div>
+    <button class="mpBtn mpBack" id="decoBackBtn">← 닫기</button>
   </div>
 </div>
 
@@ -288,12 +577,14 @@
 <div id="endScreen" style="display:none;">
   <h1 id="resultTitle">승리!</h1>
   <div id="resultDetail"></div>
+  <div id="rewardLine"></div>
+  <button id="claimBtn">나가기 (포인트 받기)</button>
   <button id="retryBtn">다시하기</button>
 </div>
 
 <div id="hud">
   <div id="topBar">
-    <div id="roleTag"><span class="icon" id="roleIcon">🌰</span><span id="roleText">도토링</span><span id="hpDisplay"></span></div>
+    <div id="roleTag"><span class="icon" id="roleIcon">🌰</span><span id="roleText">도토링</span><span id="hpDisplay"></span><span id="shieldDisplay" style="display:none;color:#8cd0ff;margin-left:5px;"></span></div>
     <div id="timer">01:00</div>
     <div id="teamCounts"><span class="d" id="dCount">🌰 6</span><span class="h" id="hCount">🔫 2</span></div>
   </div>
@@ -306,17 +597,26 @@
 <div id="vignette"></div>
 <div id="chatLayer"></div>
 <div id="crosshair"><div class="dot"></div></div>
-<div id="pcHint">이동 WASD · 시점 마우스 · 발사 좌클릭 · 채팅 1~4 · Esc로 마우스 해제</div>
+<div id="pcHint">이동 WASD · 시점 마우스 · 발사 좌클릭 · 채팅 1~9,0 · Esc로 마우스 해제</div>
 
 <div id="quickChat">
   <button id="quickChatToggle" title="퀵챗">💬</button>
   <div id="quickChatMenu">
     <button class="qcOption" data-msg="도망쳐">🏃 도망쳐</button>
     <button class="qcOption" data-msg="구해줘">🆘 구해줘</button>
+    <button class="qcOption" data-msg="가고 있어">🏃‍♂️ 가고 있어</button>
+    <button class="qcOption" data-msg="체력 부족...">💔 체력 부족...</button>
+    <button class="qcOption" data-msg="고마워">💖 고마워</button>
+    <button class="qcOption" data-msg="응">👍 응</button>
+    <button class="qcOption" data-msg="싫어">🙅 싫어</button>
     <button class="qcOption" data-msg="안녕">👋 안녕</button>
+    <button class="qcOption" data-msg="갈게">🚪 갈게</button>
     <button class="qcOption" data-msg="잘가">✌️ 잘가</button>
   </div>
 </div>
+
+<div id="chatLog"></div>
+<button id="exitBtn">🚪 나가기</button>
 
 <div id="touchControls">
   <div id="lookArea"></div>
@@ -359,8 +659,8 @@ const JAIL_POS = { x:0, z:0 };
 const BUTTON_POS = { x:0, z:6.2 };
 const SNAPSHOT_HZ = 15;
 const INPUT_HZ = 15;
-const WIN_POINTS = 80;
-const LOSE_POINTS = 20;
+const WIN_POINTS = 20;
+const LOSE_POINTS = 3;
 
 const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 
@@ -687,8 +987,11 @@ viewmodel.add(vmGun);
 
 // dotoring paws viewmodel (two little acorn hands at bottom)
 const vmPaws = new THREE.Group();
+const vmPawMats = [];
 for (const s of [-0.35,0.35]){
-  const paw = new THREE.Mesh(new THREE.SphereGeometry(0.13,10,10), new THREE.MeshStandardMaterial({color:0x9a6b3c, roughness:0.85}));
+  const mat = new THREE.MeshStandardMaterial({color:0x9a6b3c, roughness:0.85});
+  vmPawMats.push(mat);
+  const paw = new THREE.Mesh(new THREE.SphereGeometry(0.13,10,10), mat);
   paw.scale.set(1,1.3,1);
   paw.position.set(s, -0.42, -0.6);
   vmPaws.add(paw);
@@ -698,8 +1001,21 @@ viewmodel.add(vmPaws);
 function setViewmodel(role){
   vmGun.visible = (role === 'hunter');
   vmPaws.visible = (role === 'dotoring');
+  // apply the player's own cosmetics to their first-person view
+  if (role === 'hunter'){
+    vmGun.children[0].material.color.setHex(getMyHunJerseyHex());
+  } else {
+    const skin = getMySkin();
+    for (const m of vmPawMats){
+      if (skin === 'skin_rainbow' || skin === 'skin_aurora') m.color.setHex(0xffffff);
+      else m.color.setHex(0x9a6b3c);
+    }
+  }
 }
-setViewmodel('dotoring');
+// note: don't call setViewmodel() here — `progress` isn't initialized yet.
+// It's called at match start (initMatch / startGuestMatch) instead.
+vmGun.visible = false;
+vmPaws.visible = true;
 
 let vmRecoil = 0;
 function viewmodelRecoil(){ vmRecoil = 0.18; }
@@ -709,6 +1025,17 @@ function updateViewmodel(delta, moving){
   vmGun.position.z = -0.7 + vmRecoil;
   vmGun.position.y = -0.32 + bob;
   vmPaws.position.y = bob*1.5;
+  // animate rainbow / aurora skins on the paws
+  const skin = getMySkin();
+  if (vmPaws.visible && (skin === 'skin_rainbow' || skin === 'skin_aurora')){
+    for (let i=0;i<vmPawMats.length;i++){
+      const t = ambientClock * (skin === 'skin_rainbow' ? 0.9 : 0.35) + i*0.15;
+      const hue = skin === 'skin_rainbow'
+        ? (t % 1)
+        : 0.5 + Math.sin(t)*0.18;   // aurora: greens/blues/violets
+      vmPawMats[i].color.setHSL(hue % 1, 0.75, 0.6);
+    }
+  }
 }
 
 // ---------------------------------------------------------------
@@ -768,6 +1095,98 @@ function makeDotoring(capColor){
   g.userData.legs = legs;
   g.userData.bodyMesh = body;
   return g;
+}
+
+// ---------------------------------------------------------------
+// 3D COSMETICS (outfit / hat / animated skins) applied to a dotoring model
+// ---------------------------------------------------------------
+function applyCosmetics(dotModel, cos){
+  // remove any previously applied cosmetics
+  const old = dotModel.userData.cosmetics || [];
+  for (const o of old) dotModel.remove(o);
+  dotModel.userData.cosmetics = [];
+  const added = [];
+
+  // --- OUTFIT ---
+  if (cos.outfit === 'outfit_scarf'){
+    const scarf = new THREE.Mesh(new THREE.TorusGeometry(0.5,0.11,8,18), new THREE.MeshStandardMaterial({color:0xd33a3a, roughness:0.85}));
+    scarf.position.y = 0.72; scarf.rotation.x = Math.PI/2;
+    added.push(scarf);
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.16,0.5,0.1), new THREE.MeshStandardMaterial({color:0xd33a3a, roughness:0.85}));
+    tail.position.set(0.35, 0.48, 0.25); tail.rotation.z = -0.25;
+    added.push(tail);
+  } else if (cos.outfit === 'outfit_cape'){
+    const cape = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.3, 1, 1), new THREE.MeshStandardMaterial({color:0x8a2be2, roughness:0.8, side:THREE.DoubleSide}));
+    cape.position.set(0, 0.85, -0.55);
+    cape.rotation.x = 0.16;
+    added.push(cape);
+    const clasp = new THREE.Mesh(new THREE.SphereGeometry(0.1,10,10), new THREE.MeshStandardMaterial({color:0xffd24a, metalness:0.6, roughness:0.3}));
+    clasp.position.set(0, 1.28, 0.42);
+    added.push(clasp);
+  } else if (cos.outfit === 'outfit_vest'){
+    const vest = new THREE.Mesh(new THREE.CylinderGeometry(0.66,0.72,0.62,16, 1, true), new THREE.MeshStandardMaterial({color:0xe8b33c, roughness:0.7, side:THREE.DoubleSide}));
+    vest.position.y = 0.9;
+    added.push(vest);
+  }
+
+  // --- HAT ---
+  if (cos.hat === 'hat_crown'){
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.36,0.28,10), new THREE.MeshStandardMaterial({color:0xffd24a, metalness:0.75, roughness:0.25}));
+    crown.position.y = 2.02;
+    added.push(crown);
+    for (let i=0;i<5;i++){
+      const a = i/5*Math.PI*2;
+      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.09,0.22,6), new THREE.MeshStandardMaterial({color:0xffd24a, metalness:0.75, roughness:0.25}));
+      spike.position.set(0.36*Math.sin(a), 2.26, 0.36*Math.cos(a));
+      added.push(spike);
+    }
+  } else if (cos.hat === 'hat_cap'){
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.44,14,10,0,Math.PI*2,0,Math.PI/2), new THREE.MeshStandardMaterial({color:0x3c78d4, roughness:0.75}));
+    cap.position.y = 1.95;
+    added.push(cap);
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.42,0.05,16, 1, false, 0, Math.PI), new THREE.MeshStandardMaterial({color:0x2a5aa8, roughness:0.75}));
+    brim.position.set(0, 1.94, 0.28);
+    added.push(brim);
+  } else if (cos.hat === 'hat_flower'){
+    const center = new THREE.Mesh(new THREE.SphereGeometry(0.1,10,10), new THREE.MeshStandardMaterial({color:0xffe27a, roughness:0.6}));
+    center.position.set(0.3, 2.0, 0.15);
+    added.push(center);
+    for (let i=0;i<6;i++){
+      const a = i/6*Math.PI*2;
+      const petal = new THREE.Mesh(new THREE.SphereGeometry(0.11,8,8), new THREE.MeshStandardMaterial({color:0xff8fb0, roughness:0.7}));
+      petal.scale.set(1,0.45,1.3);
+      petal.position.set(0.3 + 0.16*Math.sin(a), 2.0, 0.15 + 0.16*Math.cos(a));
+      added.push(petal);
+    }
+  } else if (cos.hat === 'hat_leaf'){
+    const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.28,10,8), new THREE.MeshStandardMaterial({color:0x4aa34a, roughness:0.85}));
+    leaf.scale.set(0.4, 0.16, 1.0);
+    leaf.position.set(0.12, 2.02, 0.1);
+    leaf.rotation.z = 0.35;
+    added.push(leaf);
+    const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.22,6), new THREE.MeshStandardMaterial({color:0x2a6a2a}));
+    stalk.position.set(0.02, 1.98, -0.12);
+    stalk.rotation.z = 0.5;
+    added.push(stalk);
+  }
+
+  for (const a of added){ a.castShadow = true; dotModel.add(a); }
+  dotModel.userData.cosmetics = added;
+  dotModel.userData.skin = cos.skin || 'skin_normal';
+}
+
+// animate rainbow / aurora body color on a dotoring model
+function animateSkin(dotModel, t, skin){
+  const body = dotModel.userData.bodyMesh;
+  if (!body) return;
+  if (skin === 'skin_rainbow'){
+    body.material.color.setHSL((t*0.22) % 1, 0.75, 0.62);
+  } else if (skin === 'skin_aurora'){
+    const hue = 0.45 + Math.sin(t*0.55)*0.16;   // teal -> blue -> violet
+    body.material.color.setHSL(hue % 1, 0.7, 0.6);
+  } else {
+    body.material.color.setHex(0xa9784a);
+  }
 }
 
 function makeHunter(jerseyColor){
@@ -1062,9 +1481,13 @@ function handleHostMessage(guestId, msg){
     const controllerTag = 'remote:'+guestId;
     let ent = match.dotoringAI.find(e=>e.controller===controllerTag) || match.hunterAI.find(e=>e.controller===controllerTag);
     if (ent){
+      const g = net.connectedGuests.find(x=>x.id===guestId);
+      const senderName = (g && g.name) || '친구';
       spawnBubble(msg.text, () => ent.mesh.position);
+      pushChatLog(senderName, msg.text, ent.role, false);
       sfxChat();
-      hostBroadcast({ type:'chat', text: msg.text, sender:{ fromGuestId: guestId, role: ent.role, slotIndex: ent.slotIndex }, except: guestId });
+      hostBroadcast({ type:'chat', text: msg.text, sender:{ fromGuestId: guestId, role: ent.role, slotIndex: ent.slotIndex, name: senderName }, except: guestId });
+      maybeAiReply(msg.text);
     }
   }
 }
@@ -1148,7 +1571,7 @@ function startGuestMatch(role, slotIndex){
   camera.rotation.y = guestMatch.yaw; camera.rotation.x = 0;
   buildGuestSlots();
   document.getElementById('mpScreen').style.display = 'none';
-  document.getElementById('startScreen').style.display = 'none';
+  showScreen(null);
   document.getElementById('hud').style.display = 'block';
   if (isTouch) document.getElementById('touchControls').style.display = 'block';
   updateGuestHUDRole();
@@ -1256,6 +1679,7 @@ function handleGuestMessage(msg){
     const s = msg.sender;
     if (s){
       spawnBubble(msg.text, () => getSenderWorldPos(s));
+      pushChatLog(s.name || '친구', msg.text, s.role, false);
       sfxChat();
     }
     return;
@@ -1312,7 +1736,7 @@ function handleGuestMessage(msg){
     if (playerWon){ title.textContent='🎉 승리!'; title.style.color='#f4c542'; sfxWin(); }
     else { title.textContent='💀 패배...'; title.style.color='#ff6b6b'; sfxLose(); }
     detail.textContent = msg.winnerTeam==='hunter' ? '유리우다다 팀이 도토링을 전부 감옥에 가뒀습니다!' : '시간 종료! 도토링 팀이 자유를 지켰습니다!';
-    awardPoints(playerWon);
+    setPendingReward(playerWon);
     document.getElementById('hud').style.display='none';
     document.getElementById('crosshair').style.display='none';
     document.getElementById('touchControls').style.display='none';
@@ -1331,101 +1755,224 @@ function handleShootInput(){
 }
 
 // ---------------------------------------------------------------
-// SHOP / PROGRESSION (points earned per match, spent on gear)
+// SHOP / PROGRESSION / CUSTOMIZATION
 // ---------------------------------------------------------------
-const SHOP_ITEMS = {
-  gun: [
-    { id:'gun_basic', name:'기본 이유림총', emoji:'🔫', cost:0, desc:'기본 성능' },
-    { id:'gun_rapid', name:'속사 이유림총', emoji:'⚡', cost:150, desc:'발사 속도 대폭 상승' },
-    { id:'gun_sniper', name:'저격 이유림총', emoji:'🎯', cost:220, desc:'사거리 +40%' }
+
+// Color palette used for dotoring caps / hunter jerseys / profile pictures
+const COLOR_CHOICES = [
+  { id:'red',    name:'빨강',   hex:0xd4463c, css:'#d4463c' },
+  { id:'blue',   name:'파랑',   hex:0x3c78d4, css:'#3c78d4' },
+  { id:'green',  name:'초록',   hex:0x3ca35a, css:'#3ca35a' },
+  { id:'orange', name:'주황',   hex:0xd4903c, css:'#d4903c' },
+  { id:'purple', name:'보라',   hex:0xa63cd4, css:'#a63cd4' },
+  { id:'teal',   name:'청록',   hex:0x3cd4c0, css:'#3cd4c0' },
+  { id:'pink',   name:'분홍',   hex:0xe86aa8, css:'#e86aa8' },
+  { id:'yellow', name:'노랑',   hex:0xe8c93c, css:'#e8c93c' }
+];
+function colorById(id){ return COLOR_CHOICES.find(c=>c.id===id) || COLOR_CHOICES[0]; }
+
+// ---- ITEM SHOP (combat gear) ----
+const ITEM_SHOP = [
+  { id:'gun_basic',  cat:'gun',    name:'기본 이유림총', emoji:'🔫', cost:0,   desc:'기본 성능 (연사 0.35초)' },
+  { id:'gun_good',   cat:'gun',    name:'좋은 총',       emoji:'⚡', cost:60,  desc:'연사 속도 빨라짐 + 사거리 조금 증가' },
+  { id:'gun_best',   cat:'gun',    name:'제일 좋은 총',  emoji:'🌟', cost:150, desc:'연사 매우 빠름 + 사거리 대폭 증가' },
+  { id:'shield_1',   cat:'shield', name:'방패 1회',      emoji:'🛡️', cost:40,  desc:'피해를 1번 막아주는 보호막 (막으면 사라짐)' },
+  { id:'shield_5',   cat:'shield', name:'방패 5회',      emoji:'✨', cost:140, desc:'피해를 5번 막아주는 보호막' }
+];
+
+// ---- DECO SHOP (cosmetics) ----
+const DECO_SHOP = {
+  skin: [
+    { id:'skin_normal',  name:'기본 도토리',  emoji:'🌰', cost:0,   desc:'평범한 도토리색' },
+    { id:'skin_rainbow', name:'무지개 도토링', emoji:'🌈', cost:120, desc:'몸이 무지개빛으로 반짝여요' },
+    { id:'skin_aurora',  name:'오로라 도토링', emoji:'🌌', cost:180, desc:'신비로운 오로라빛으로 일렁여요' }
   ],
-  shield: [
-    { id:'shield_none', name:'없음', emoji:'🚫', cost:0, desc:'기본 체력' },
-    { id:'shield_sturdy', name:'튼튼한 방패', emoji:'🛡️', cost:150, desc:'최대 체력 +2' },
-    { id:'shield_recovery', name:'회복 부적', emoji:'💚', cost:200, desc:'케이크 회복량 +2' }
+  outfit: [
+    { id:'outfit_none',   name:'없음',        emoji:'🚫', cost:0,   desc:'옷 없음' },
+    { id:'outfit_scarf',  name:'목도리',      emoji:'🧣', cost:50,  desc:'포근한 빨간 목도리' },
+    { id:'outfit_cape',   name:'영웅 망토',   emoji:'🦸', cost:100, desc:'펄럭이는 영웅 망토' },
+    { id:'outfit_vest',   name:'탐험가 조끼', emoji:'🦺', cost:80,  desc:'숲 탐험가의 조끼' }
   ],
-  charm: [
-    { id:'charm_none', name:'없음', emoji:'🚫', cost:0, desc:'추가 효과 없음' },
-    { id:'charm_speedy', name:'잽싼 신발', emoji:'👟', cost:180, desc:'이동속도 +8%' },
-    { id:'charm_lucky', name:'행운의 동전', emoji:'🍀', cost:220, desc:'포인트 획득 +20%' }
+  hat: [
+    { id:'hat_none',    name:'없음',      emoji:'🚫', cost:0,   desc:'머리에 아무것도 없음' },
+    { id:'hat_crown',   name:'왕관',      emoji:'👑', cost:130, desc:'반짝이는 황금 왕관' },
+    { id:'hat_cap',     name:'야구모자',  emoji:'🧢', cost:50,  desc:'귀여운 야구모자' },
+    { id:'hat_flower',  name:'꽃',        emoji:'🌸', cost:40,  desc:'머리에 꽂은 예쁜 꽃' },
+    { id:'hat_leaf',    name:'나뭇잎',    emoji:'🍃', cost:35,  desc:'숲의 나뭇잎 한 장' }
   ]
 };
-let progress = {
+
+const DEFAULT_PROGRESS = {
   points: 0,
-  owned: { gun_basic:true, shield_none:true, charm_none:true },
-  equipped: { gun:'gun_basic', shield:'shield_none', charm:'charm_none' }
+  onboarded: false,
+  name: '플레이어',
+  profileColor: 'red',
+  dotColor: 'red',
+  hunColor: 'blue',
+  owned: {
+    gun_basic:true,
+    skin_normal:true, outfit_none:true, hat_none:true
+  },
+  equipped: {
+    gun:'gun_basic', shield:null,           // shield is a consumable, not permanently equipped
+    skin:'skin_normal', outfit:'outfit_none', hat:'hat_none'
+  },
+  shieldCharges: 0   // remaining shield blocks
 };
+
+let progress = JSON.parse(JSON.stringify(DEFAULT_PROGRESS));
+
+const SAVE_KEY = 'dotoringProgress_v2';
+
+// Storage works in two environments:
+//  - Claude artifacts: window.storage (async key/value)
+//  - a normal website (GitHub Pages): localStorage
+const hasArtifactStorage = (typeof window !== 'undefined' && window.storage && typeof window.storage.get === 'function');
+
 async function loadProgress(){
+  let raw = null;
   try{
-    const res = await window.storage.get('dotoringProgress', false);
-    if (res && res.value){
-      const parsed = JSON.parse(res.value);
-      progress = Object.assign(progress, parsed);
-      progress.owned = Object.assign({ gun_basic:true, shield_none:true, charm_none:true }, parsed.owned||{});
-      progress.equipped = Object.assign({ gun:'gun_basic', shield:'shield_none', charm:'charm_none' }, parsed.equipped||{});
+    if (hasArtifactStorage){
+      const res = await window.storage.get(SAVE_KEY, false);
+      raw = res && res.value ? res.value : null;
+    } else {
+      raw = localStorage.getItem(SAVE_KEY);
     }
-  } catch(e){ /* no saved progress yet, defaults are fine */ }
+  } catch(e){ raw = null; /* first launch */ }
+
+  if (raw){
+    try{
+      const parsed = JSON.parse(raw);
+      progress = Object.assign(JSON.parse(JSON.stringify(DEFAULT_PROGRESS)), parsed);
+      progress.owned = Object.assign({}, DEFAULT_PROGRESS.owned, parsed.owned || {});
+      progress.equipped = Object.assign({}, DEFAULT_PROGRESS.equipped, parsed.equipped || {});
+    } catch(e){ console.error('save file was corrupted, starting fresh', e); }
+  }
   updatePointsUI();
+  updateShieldHUD();
+  return progress;
 }
+
 async function saveProgress(){
-  try{ await window.storage.set('dotoringProgress', JSON.stringify(progress), false); } catch(e){ console.error('save failed', e); }
+  const raw = JSON.stringify(progress);
+  try{
+    if (hasArtifactStorage){
+      await window.storage.set(SAVE_KEY, raw, false);
+    } else {
+      localStorage.setItem(SAVE_KEY, raw);
+    }
+  } catch(e){ console.error('save failed', e); }
 }
+
 function updatePointsUI(){
   const el = document.getElementById('pointsDisplay');
-  if (el) el.textContent = '🌰 ' + progress.points;
+  if (el) el.textContent = progress.points;
   const sp = document.getElementById('shopPoints');
   if (sp) sp.textContent = '🌰 ' + progress.points;
+  const dp = document.getElementById('decoPoints');
+  if (dp) dp.textContent = '🌰 ' + progress.points;
 }
-function awardPoints(won){
-  const base = won ? WIN_POINTS : LOSE_POINTS;
-  const mult = progress.equipped.charm==='charm_lucky' ? 1.2 : 1;
-  progress.points += Math.round(base*mult);
+
+// --- pending reward: only granted when the player claims it on the end screen ---
+let pendingReward = null;
+function setPendingReward(won){
+  const amount = won ? WIN_POINTS : LOSE_POINTS;
+  pendingReward = { won, amount };
+  const el = document.getElementById('rewardLine');
+  if (el) el.textContent = '획득 예정: 🌰 ' + amount;
+  const btn = document.getElementById('claimBtn');
+  if (btn) btn.textContent = '나가기 (🌰 ' + amount + ' 받기)';
+}
+function claimPendingReward(){
+  if (!pendingReward) return;
+  progress.points += pendingReward.amount;
+  pendingReward = null;
   saveProgress();
   updatePointsUI();
 }
+
+// --- gear effects (AI/solo battles only) ---
 function getGunStats(){
   const g = progress.equipped.gun;
-  if (g==='gun_rapid') return { cooldown: 0.16, range: SHOOT_RANGE };
-  if (g==='gun_sniper') return { cooldown: 0.5, range: SHOOT_RANGE*1.4 };
+  if (g === 'gun_best') return { cooldown: 0.14, range: SHOOT_RANGE*1.5 };
+  if (g === 'gun_good') return { cooldown: 0.22, range: SHOOT_RANGE*1.2 };
   return { cooldown: PLAYER_FIRE_COOLDOWN, range: SHOOT_RANGE };
 }
-function getShieldBonusHP(){ return progress.equipped.shield==='shield_sturdy' ? 2 : 0; }
-function getHealBonus(){ return progress.equipped.shield==='shield_recovery' ? 2 : 0; }
-function getSpeedMult(){ return progress.equipped.charm==='charm_speedy' ? 1.08 : 1; }
+// shield: consumable charges that each block one hit
+function consumeShieldCharge(){
+  if (progress.shieldCharges > 0){
+    progress.shieldCharges -= 1;
+    saveProgress();
+    updateShieldHUD();
+    return true; // damage blocked
+  }
+  return false;
+}
+function updateShieldHUD(){
+  const el = document.getElementById('shieldDisplay');
+  if (!el) return;
+  if (progress.shieldCharges > 0){
+    el.style.display = 'inline';
+    el.textContent = '🛡️' + progress.shieldCharges;
+  } else {
+    el.style.display = 'none';
+  }
+}
 
-let shopActiveCat = 'gun';
+// --- cosmetics applied to the player's own character model ---
+function getMyDotCapHex(){ return colorById(progress.dotColor).hex; }
+function getMyHunJerseyHex(){ return colorById(progress.hunColor).hex; }
+function getMySkin(){ return progress.equipped.skin; }
+function getMyOutfit(){ return progress.equipped.outfit; }
+function getMyHat(){ return progress.equipped.hat; }
+
+// ---- ITEM SHOP UI ----
 function renderShop(){
   updatePointsUI();
   const list = document.getElementById('shopItemList');
   list.innerHTML = '';
-  for (const item of SHOP_ITEMS[shopActiveCat]){
+  for (const item of ITEM_SHOP){
     const owned = !!progress.owned[item.id];
-    const equipped = progress.equipped[shopActiveCat] === item.id;
+    const isGun = item.cat === 'gun';
+    const isShield = item.cat === 'shield';
+    const equipped = isGun && progress.equipped.gun === item.id;
+
     const row = document.createElement('div');
     row.className = 'shopItem';
     const canAfford = progress.points >= item.cost;
+
     let btnHtml;
-    if (!owned){
+    if (isShield){
+      // shields are consumables: always buyable, they add charges
+      btnHtml = '<button class="buyBtn" '+(canAfford?'':'disabled')+'>구매 🌰'+item.cost+'</button>';
+    } else if (!owned){
       btnHtml = '<button class="buyBtn" '+(canAfford?'':'disabled')+'>구매 🌰'+item.cost+'</button>';
     } else if (equipped){
       btnHtml = '<button class="equippedBtn" disabled>장착됨</button>';
     } else {
       btnHtml = '<button class="equipBtn">장착</button>';
     }
+
+    let extra = '';
+    if (isShield && progress.shieldCharges > 0) extra = ' (보유 보호막: '+progress.shieldCharges+'회)';
+
     row.innerHTML =
       '<span class="emoji">'+item.emoji+'</span>' +
-      '<div class="info"><div class="name">'+item.name+'</div><div class="desc">'+item.desc+'</div></div>' +
-      (owned ? '' : '<span class="cost"></span>') +
+      '<div class="info"><div class="name">'+item.name+'</div><div class="desc">'+item.desc+extra+'</div></div>' +
       btnHtml;
-    const btn = row.querySelector('button');
-    btn.addEventListener('click', () => {
-      if (!owned){
+
+    row.querySelector('button').addEventListener('click', () => {
+      if (isShield){
+        if (progress.points < item.cost) return;
+        progress.points -= item.cost;
+        progress.shieldCharges += (item.id === 'shield_5' ? 5 : 1);
+      } else if (!owned){
         if (progress.points < item.cost) return;
         progress.points -= item.cost;
         progress.owned[item.id] = true;
-        progress.equipped[shopActiveCat] = item.id;
+        progress.equipped.gun = item.id;
       } else {
-        progress.equipped[shopActiveCat] = item.id;
+        progress.equipped.gun = item.id;
       }
       saveProgress();
       renderShop();
@@ -1433,7 +1980,45 @@ function renderShop(){
     list.appendChild(row);
   }
 }
-loadProgress();
+
+// ---- DECO SHOP UI ----
+let decoActiveCat = 'skin';
+function renderDeco(){
+  updatePointsUI();
+  const list = document.getElementById('decoItemList');
+  list.innerHTML = '';
+  for (const item of DECO_SHOP[decoActiveCat]){
+    const owned = !!progress.owned[item.id];
+    const equipped = progress.equipped[decoActiveCat] === item.id;
+    const row = document.createElement('div');
+    row.className = 'shopItem';
+    const canAfford = progress.points >= item.cost;
+    let btnHtml;
+    if (!owned){
+      btnHtml = '<button class="buyBtn" '+(canAfford?'':'disabled')+'>구매 🌰'+item.cost+'</button>';
+    } else if (equipped){
+      btnHtml = '<button class="equippedBtn" disabled>착용중</button>';
+    } else {
+      btnHtml = '<button class="equipBtn">착용</button>';
+    }
+    row.innerHTML =
+      '<span class="emoji">'+item.emoji+'</span>' +
+      '<div class="info"><div class="name">'+item.name+'</div><div class="desc">'+item.desc+'</div></div>' +
+      btnHtml;
+    row.querySelector('button').addEventListener('click', () => {
+      if (!owned){
+        if (progress.points < item.cost) return;
+        progress.points -= item.cost;
+        progress.owned[item.id] = true;
+      }
+      progress.equipped[decoActiveCat] = item.id;
+      saveProgress();
+      renderDeco();
+      updateHomeCharacter();
+    });
+    list.appendChild(row);
+  }
+}
 
 // ---------------------------------------------------------------
 // MATCH STATE
@@ -1486,6 +2071,11 @@ function clearMatch(){
   for (const c of match.dotoringAI) scene.remove(c.mesh);
   for (const c of match.hunterAI) scene.remove(c.mesh);
   if (cake){ scene.remove(cake.mesh); cake = null; }
+  // clear any lingering chat UI
+  for (const b of activeBubbles){ if (b.el.parentNode) b.el.parentNode.removeChild(b.el); }
+  activeBubbles.length = 0;
+  for (const l of chatLogLines){ if (l.el.parentNode) l.el.parentNode.removeChild(l.el); }
+  chatLogLines.length = 0;
 }
 
 function initMatch(remotePlan){
@@ -1549,8 +2139,8 @@ function initMatch(remotePlan){
 
   match = {
     playerRole, playerSlot,
-    playerHP: HP_MAX + (net.mode==='solo' ? getShieldBonusHP() : 0),
-    playerMaxHP: HP_MAX + (net.mode==='solo' ? getShieldBonusHP() : 0),
+    playerHP: HP_MAX,
+    playerMaxHP: HP_MAX,
     playerIsJailed:false,
     playerCooldown:0,
     dotoringAI, hunterAI,
@@ -1571,6 +2161,8 @@ function initMatch(remotePlan){
   document.getElementById('crosshair').style.display = (playerRole==='hunter') ? 'block' : 'none';
   setShootButtonVisible(playerRole==='hunter');
   setViewmodel(playerRole);
+  aiChatCooldown = 0;
+  aiGreetOnStart();
 }
 
 // ---------------------------------------------------------------
@@ -1582,10 +2174,11 @@ window.addEventListener('keydown', e => {
   // quick chat shortcuts 1-4 while playing
   const playing = (net.mode==='guest') ? (guestMatch && !guestMatch.over) : (match && !match.over);
   if (playing){
-    if (e.code === 'Digit1') sendQuickChat('도망쳐');
-    else if (e.code === 'Digit2') sendQuickChat('구해줘');
-    else if (e.code === 'Digit3') sendQuickChat('안녕');
-    else if (e.code === 'Digit4') sendQuickChat('잘가');
+    const QC_KEYS = {
+      Digit1:'도망쳐', Digit2:'구해줘', Digit3:'가고 있어', Digit4:'체력 부족...', Digit5:'고마워',
+      Digit6:'응', Digit7:'싫어', Digit8:'안녕', Digit9:'갈게', Digit0:'잘가'
+    };
+    if (QC_KEYS[e.code]) sendQuickChat(QC_KEYS[e.code]);
   }
 });
 window.addEventListener('keyup', e => { keys[e.code] = false; });
@@ -1703,6 +2296,7 @@ function jailAIDotoring(entity){
   entity.mesh.position.set(jp.x, 0, jp.z);
   pushKillFeed('🌰 도토링이 감옥에 갇혔습니다!');
   sfxJail();
+  aiCallForHelp(entity);
   if (entity.controller && entity.controller.indexOf('remote:')===0){
     hostSendTo(entity.controller.slice(7), {type:'youWereJailed', x:jp.x, z:jp.z});
   }
@@ -1743,6 +2337,12 @@ function releaseAllJailed(){
     pushKillFeed('🔓 탈옥 성공! 도토링들이 감옥 앞에서 풀려났습니다!');
     sfxRescue();
     doorAnimTimer = 1.6;
+    // a rescued AI thanks the rescuer
+    const rescuedAI = match.dotoringAI.filter(d => d.controller === 'ai');
+    if (rescuedAI.length > 0){
+      const speaker = rescuedAI[Math.floor(Math.random()*rescuedAI.length)];
+      setTimeout(() => { aiChatCooldown = 0; aiSay(speaker, 'rescued'); }, 600);
+    }
   }
 }
 
@@ -1908,7 +2508,7 @@ function getSenderWorldPos(sender){
       return ent ? ent.mesh.position : null;
     }
   } else if (net.mode === 'guest'){
-    if (sender.fromHost || sender.fromGuestId){
+    if (sender.fromHost || sender.fromGuestId || sender.fromAI){
       // find the mesh in guest's local slot arrays
       if (!guestMatch) return null;
       if (sender.role === 'dotoring'){
@@ -1927,17 +2527,256 @@ function sendQuickChat(text){
   // show above my own head locally
   spawnBubble(text, getLocalPlayerWorldPos);
   sfxChat();
+  const myRole = (net.mode==='guest') ? (guestMatch && guestMatch.role) : (match && match.playerRole);
+  pushChatLog('나', text, myRole, true);
   if (net.mode === 'host'){
     // tell all guests: it's from host, at host's role/slot
     if (match){
-      hostBroadcast({ type:'chat', text, sender:{ fromHost:true, role:match.playerRole, slotIndex:match.playerSlot } });
+      hostBroadcast({ type:'chat', text, sender:{ fromHost:true, role:match.playerRole, slotIndex:match.playerSlot, name:'방장' } });
     }
+    maybeAiReply(text);
   } else if (net.mode === 'guest'){
     guestSend({ type:'chat', text, guestId: net.guestId });
+  } else {
+    // solo: AI teammates can react
+    maybeAiReply(text);
   }
 }
 
 function sfxChat(){ beep(660,0.06,'sine',0.08); setTimeout(()=>beep(880,0.06,'sine',0.07),60); }
+
+// ---------------------------------------------------------------
+// CHAT LOG (Roblox-style: who said what, bottom-left)
+// ---------------------------------------------------------------
+const chatLogEl = document.getElementById('chatLog');
+const chatLogLines = []; // { el, life }
+
+function roleClass(role, isMe){
+  if (isMe) return 'me';
+  return role === 'hunter' ? 'hun' : 'dot';
+}
+function pushChatLog(who, text, role, isMe){
+  if (!chatLogEl) return;
+  chatLogEl.classList.add('show');
+  const line = document.createElement('div');
+  line.className = 'logLine';
+  const w = document.createElement('span');
+  w.className = 'who ' + roleClass(role, isMe);
+  w.textContent = who + ':';
+  const t = document.createElement('span');
+  t.textContent = ' ' + text;
+  line.appendChild(w); line.appendChild(t);
+  chatLogEl.appendChild(line);
+  chatLogLines.push({ el: line, life: 8.0 });
+  while (chatLogEl.children.length > 5) chatLogEl.removeChild(chatLogEl.firstChild);
+}
+function updateChatLog(delta){
+  for (let i=chatLogLines.length-1;i>=0;i--){
+    const l = chatLogLines[i];
+    l.life -= delta;
+    if (l.life <= 0){
+      if (l.el.parentNode) l.el.parentNode.removeChild(l.el);
+      chatLogLines.splice(i,1);
+    } else if (l.life < 1){
+      l.el.style.opacity = l.life;
+    }
+  }
+  if (chatLogLines.length === 0 && chatLogEl) chatLogEl.classList.remove('show');
+}
+
+// ---------------------------------------------------------------
+// AI CHAT (AI teammates respond to what the player says)
+// ---------------------------------------------------------------
+const AI_DOTORING_NAMES = ['도토리', '토토', '알밤이', '깍지', '동글이', '밤톨'];
+const AI_HUNTER_NAMES = ['유림', '우다다', '림이', '다다'];
+
+// what an AI dotoring might say back, per incoming message
+const AI_REPLIES = {
+  '도망쳐': ['응', '알겠어!', '도망가는 중!'],
+  '구해줘': ['가고 있어', '기다려!', '내가 갈게'],
+  '가고 있어': ['고마워!', '응', '빨리 와'],
+  '체력 부족...': ['케이크 먹어!', '조심해!', '숨어 있어'],
+  '고마워': ['천만에!', '응!', '괜찮아'],
+  '응': ['좋아!', '가자'],
+  '싫어': ['왜에', '알겠어...'],
+  '안녕': ['안녕!', '반가워'],
+  '갈게': ['잘가!', '응 조심히'],
+  '잘가': ['잘가!', '또 보자']
+};
+
+function aiEntityName(ent){
+  if (ent.role === 'dotoring') return AI_DOTORING_NAMES[ent.slotIndex % AI_DOTORING_NAMES.length];
+  return AI_HUNTER_NAMES[ent.slotIndex % AI_HUNTER_NAMES.length];
+}
+
+// pick a free AI dotoring teammate to answer the player
+function maybeAiReply(incomingText){
+  if (!match || match.over) return;
+  const replies = AI_REPLIES[incomingText];
+  if (!replies) return;
+  // AI teammates on MY team who are AI-controlled and available
+  const myRole = match.playerRole;
+  const pool = (myRole === 'dotoring')
+    ? match.dotoringAI.filter(e => e.controller === 'ai' && !e.isJailed)
+    : match.hunterAI.filter(e => e.controller === 'ai');
+  if (pool.length === 0) return;
+  // ~70% chance someone replies, after a short human-like delay
+  if (Math.random() > 0.7) return;
+  const responder = pool[Math.floor(Math.random()*pool.length)];
+  const reply = replies[Math.floor(Math.random()*replies.length)];
+  const delay = 500 + Math.random()*900;
+  setTimeout(() => {
+    if (!match || match.over) return;
+    if (responder.isJailed && responder.role === 'dotoring') return;
+    spawnBubble(reply, () => responder.mesh.position);
+    pushChatLog(aiEntityName(responder), reply, responder.role, false);
+    sfxChat();
+    if (net.mode === 'host'){
+      hostBroadcast({ type:'chat', text: reply, sender:{ fromAI:true, role:responder.role, slotIndex:responder.slotIndex, name: aiEntityName(responder) } });
+    }
+  }, delay);
+}
+
+// AI dotoring calls for help on its own when it gets jailed
+function aiCallForHelp(entity){
+  if (!match || match.over) return;
+  if (entity.controller !== 'ai') return;
+  if (Math.random() > 0.6) return;
+  const msg = ['구해줘', '살려줘!', '갇혔어!'][Math.floor(Math.random()*3)];
+  setTimeout(() => {
+    if (!match || match.over || !entity.isJailed) return;
+    aiChatCooldown = 0;          // a jail cry is important; let it through
+    entity.chatCooldown = 0;
+    aiChatCooldown = AI_CHAT_GLOBAL_COOLDOWN;
+    entity.chatCooldown = 8;
+    spawnBubble(msg, () => entity.mesh.position);
+    pushChatLog(aiEntityName(entity), msg, 'dotoring', false);
+    sfxChat();
+    if (net.mode === 'host'){
+      hostBroadcast({ type:'chat', text: msg, sender:{ fromAI:true, role:'dotoring', slotIndex:entity.slotIndex, name: aiEntityName(entity) } });
+    }
+  }, 400);
+}
+
+// ---------------------------------------------------------------
+// PROACTIVE AI CHATTER (AI speaks up on its own when the situation calls for it)
+// ---------------------------------------------------------------
+const AI_SITUATIONAL = {
+  chased:      ['도망쳐!', '쫓기고 있어!', '뒤에 있어!', '으악!'],
+  lowHp:       ['체력 부족...', '위험해!', '아파!', '살려줘'],
+  goingToSave: ['가고 있어', '내가 구할게!', '기다려!'],
+  rescued:     ['고마워!', '살았다!', '탈출!'],
+  sawCake:     ['케이크다!', '먹자!', '회복하자!'],
+  hunting:     ['찾았다!', '거기 서!', '도망 못 가!'],
+  greet:       ['안녕!', '가자!', '시작이다!']
+};
+
+// global cooldown so the AI doesn't spam the chat
+let aiChatCooldown = 0;
+const AI_CHAT_GLOBAL_COOLDOWN = 3.5; // seconds between any two AI lines
+
+function aiSay(entity, category){
+  if (!match || match.over) return;
+  if (entity.controller !== 'ai') return;
+  if (aiChatCooldown > 0) return;
+  const lines = AI_SITUATIONAL[category];
+  if (!lines) return;
+  // per-entity cooldown too, so the same AI doesn't repeat itself
+  entity.chatCooldown = entity.chatCooldown || 0;
+  if (entity.chatCooldown > 0) return;
+
+  const msg = lines[Math.floor(Math.random()*lines.length)];
+  aiChatCooldown = AI_CHAT_GLOBAL_COOLDOWN;
+  entity.chatCooldown = 8 + Math.random()*6;
+
+  spawnBubble(msg, () => entity.mesh.position);
+  pushChatLog(aiEntityName(entity), msg, entity.role, false);
+  sfxChat();
+  if (net.mode === 'host'){
+    hostBroadcast({ type:'chat', text: msg, sender:{ fromAI:true, role:entity.role, slotIndex:entity.slotIndex, name: aiEntityName(entity) } });
+  }
+}
+
+// scan the world each frame and let AI react to what's happening
+function updateAiChatter(delta){
+  if (!match || match.over) return;
+  if (aiChatCooldown > 0) aiChatCooldown -= delta;
+
+  // tick down per-entity cooldowns
+  for (const e of match.dotoringAI) if (e.chatCooldown > 0) e.chatCooldown -= delta;
+  for (const e of match.hunterAI) if (e.chatCooldown > 0) e.chatCooldown -= delta;
+
+  if (aiChatCooldown > 0) return; // nothing to say yet
+
+  // gather positions
+  const hunterPositions = match.hunterAI.map(h => h.mesh.position);
+  if (match.playerRole === 'hunter') hunterPositions.push(camera.position);
+  const anyJailed = match.dotoringAI.some(d => d.isJailed) || (match.playerRole==='dotoring' && match.playerIsJailed);
+
+  // --- AI dotoring reactions ---
+  for (const d of match.dotoringAI){
+    if (d.controller !== 'ai' || d.isJailed) continue;
+
+    // low health warning
+    if (d.hp <= 2){
+      if (Math.random() < 0.02){ aiSay(d, 'lowHp'); return; }
+    }
+    // being chased: a hunter is close
+    let nearestHunterDist = Infinity;
+    for (const hp of hunterPositions){
+      const dist = Math.hypot(hp.x - d.mesh.position.x, hp.z - d.mesh.position.z);
+      if (dist < nearestHunterDist) nearestHunterDist = dist;
+    }
+    if (nearestHunterDist < 10){
+      if (Math.random() < 0.02){ aiSay(d, 'chased'); return; }
+    }
+    // heading to the rescue button while a teammate is jailed
+    if (anyJailed){
+      const dToButton = Math.hypot(d.mesh.position.x - BUTTON_POS.x, d.mesh.position.z - BUTTON_POS.z);
+      if (dToButton < 22 && nearestHunterDist > RESCUE_FLEE_RADIUS){
+        if (Math.random() < 0.015){ aiSay(d, 'goingToSave'); return; }
+      }
+    }
+    // spotted a cake nearby
+    if (cake && cake.landed && d.hp < HP_MAX){
+      const dToCake = Math.hypot(d.mesh.position.x - cake.mesh.position.x, d.mesh.position.z - cake.mesh.position.z);
+      if (dToCake < 12){
+        if (Math.random() < 0.015){ aiSay(d, 'sawCake'); return; }
+      }
+    }
+  }
+
+  // --- AI hunter taunts when closing in on a dotoring ---
+  for (const h of match.hunterAI){
+    if (h.controller !== 'ai') continue;
+    let nearestDot = Infinity;
+    for (const d of match.dotoringAI){
+      if (d.isJailed) continue;
+      const dist = Math.hypot(d.mesh.position.x - h.mesh.position.x, d.mesh.position.z - h.mesh.position.z);
+      if (dist < nearestDot) nearestDot = dist;
+    }
+    if (match.playerRole==='dotoring' && !match.playerIsJailed){
+      const dist = Math.hypot(camera.position.x - h.mesh.position.x, camera.position.z - h.mesh.position.z);
+      if (dist < nearestDot) nearestDot = dist;
+    }
+    if (nearestDot < 12){
+      if (Math.random() < 0.012){ aiSay(h, 'hunting'); return; }
+    }
+  }
+}
+
+// AI greets at the start of a round
+function aiGreetOnStart(){
+  if (!match) return;
+  const pool = match.dotoringAI.filter(e => e.controller === 'ai');
+  if (pool.length === 0) return;
+  const speaker = pool[Math.floor(Math.random()*pool.length)];
+  setTimeout(() => {
+    if (!match || match.over) return;
+    aiChatCooldown = 0; // allow the greeting through
+    aiSay(speaker, 'greet');
+  }, 1200 + Math.random()*800);
+}
 
 let ambientClock = 0;
 function updateAmbient(delta){
@@ -1947,6 +2786,8 @@ function updateAmbient(delta){
   if (vg) vg.style.display = playing ? 'block' : 'none';
   const qc = document.getElementById('quickChat');
   if (qc) qc.style.display = playing ? 'block' : 'none';
+  const ex = document.getElementById('exitBtn');
+  if (ex) ex.style.display = playing ? 'block' : 'none';
   // jail beacon pulse
   const pulse = 0.85 + Math.sin(ambientClock*3)*0.35;
   if (typeof beacon !== 'undefined'){ beacon.scale.setScalar(pulse); }
@@ -1983,14 +2824,36 @@ function applyHitToDotoring(owner){
   return true;
 }
 
+// apply one point of damage to the local player, respecting the shield consumable
+function damageLocalPlayer(){
+  if (!match || match.playerIsJailed) return;
+  // shields only apply in AI (solo) battles
+  if (net.mode === 'solo' && consumeShieldCharge()){
+    // blocked! flash blue instead of red, no HP lost
+    const el = document.getElementById('hitFlash');
+    if (el){
+      el.style.background = 'radial-gradient(ellipse at center, transparent 40%, #40a0ff 100%)';
+      el.style.opacity = '0.5';
+      setTimeout(()=>{ el.style.opacity='0'; setTimeout(()=>{ el.style.background='radial-gradient(ellipse at center, transparent 40%, #ff2020 100%)'; },150); }, 120);
+    }
+    beep(880,0.12,'sine',0.14);
+    vibrate(40);
+    pushKillFeed('🛡️ 보호막이 피해를 막았어요! (남은 ' + progress.shieldCharges + '회)');
+    return;
+  }
+  match.playerHP -= 1;
+  sfxHit();
+  flashHit();
+  vibrate([60,40,60]);
+  if (match.playerHP <= 0){ jailPlayer(); updateHUDCounts(); }
+  else { updateHUDRole(); }
+}
+
 function handleRemoteShot(fromGuestId, targetSlotIndex){
   if (!match) return;
   if (match.playerRole==='dotoring' && match.playerSlot===targetSlotIndex){
     if (match.playerIsJailed) return;
-    match.playerHP -= 1;
-    sfxHit(); flashHit();
-    vibrate([60,40,60]);
-    if (match.playerHP <= 0){ jailPlayer(); } else { updateHUDRole(); }
+    damageLocalPlayer();
     updateHUDCounts();
     return;
   }
@@ -2025,14 +2888,11 @@ function hunterAIAttemptShoot(shooterPos, targetPos, dist, isPlayerTarget, targe
   sfxShoot();
   fireVisualFromTo(shooterPos, targetPos);
   if (Math.random() < hitChance){
-    sfxHit();
     if (isPlayerTarget){
-      match.playerHP -= 1;
-      flashHit();
-      vibrate([60,40,60]);
-      if (match.playerHP <= 0){ jailPlayer(); updateHUDCounts(); }
-      else { updateHUDRole(); }
+      damageLocalPlayer();
+      updateHUDCounts();
     } else if (targetEntity){
+      sfxHit();
       targetEntity.hp -= 1;
       if (targetEntity.hp <= 0){ jailAIDotoring(targetEntity); updateHUDCounts(); }
     }
@@ -2133,7 +2993,7 @@ function endRound(winnerTeam){
     reasonText += ' (너는 감옥에 갇혀 있었지만 팀이 승리했어!)';
   }
   detail.textContent = reasonText;
-  awardPoints(playerWon);
+  setPendingReward(playerWon);
   document.getElementById('hud').style.display = 'none';
   document.getElementById('crosshair').style.display = 'none';
   document.getElementById('touchControls').style.display = 'none';
@@ -2149,9 +3009,15 @@ function update(){
   requestAnimationFrame(update);
   const delta = Math.min(clock.getDelta(), 0.1);
 
+  // home screen 3D character preview
+  const homeVisible = document.getElementById('homeScreen') &&
+                      document.getElementById('homeScreen').style.display === 'flex';
+  if (homeVisible) renderHomePreview(delta);
+
   updateShotVisuals(delta);
   updateAmbient(delta);
   updateChatBubbles(delta);
+  updateChatLog(delta);
 
   if (net.mode === 'guest'){
     guestUpdate(delta);
@@ -2166,6 +3032,8 @@ function update(){
     if (match.playerCooldown > 0) match.playerCooldown -= delta;
     camera.rotation.y = match.yaw;
     camera.rotation.x = match.pitch;
+
+    updateAiChatter(delta);
 
     // door animation
     if (doorAnimTimer > 0){
@@ -2192,7 +3060,7 @@ function update(){
         pMoving = true;
         const forward = new THREE.Vector3(0,0,-1).applyEuler(new THREE.Euler(0, match.yaw, 0, 'YXZ'));
         const right = new THREE.Vector3(1,0,0).applyEuler(new THREE.Euler(0, match.yaw, 0, 'YXZ'));
-        const speed = (match.playerRole === 'dotoring' ? DOTORING_SPEED : HUNTER_SPEED) * (net.mode==='solo' ? getSpeedMult() : 1);
+        const speed = (match.playerRole === 'dotoring' ? DOTORING_SPEED : HUNTER_SPEED);
         const move = new THREE.Vector3();
         move.addScaledVector(forward, f);
         move.addScaledVector(right, r);
@@ -2231,8 +3099,7 @@ function update(){
           const dist = Math.hypot(e.pos.x - cake.mesh.position.x, e.pos.z - cake.mesh.position.z);
           if (dist < CAKE_EAT_RADIUS){
             if (e.isPlayer){
-              const healAmt = CAKE_HEAL + (net.mode==='solo' ? getHealBonus() : 0);
-              match.playerHP = Math.min(match.playerMaxHP || HP_MAX, match.playerHP + healAmt);
+              match.playerHP = Math.min(match.playerMaxHP || HP_MAX, match.playerHP + CAKE_HEAL);
               updateHUDRole();
             } else if (e.entity){
               e.entity.hp = Math.min(HP_MAX, e.entity.hp + CAKE_HEAL);
@@ -2393,19 +3260,384 @@ function update(){
 }
 
 // ---------------------------------------------------------------
-// SCREEN FLOW
+// SCREEN FLOW: loading -> manual -> onboarding (first time) -> home
 // ---------------------------------------------------------------
-document.getElementById('startBtn').addEventListener('click', () => {
+function showScreen(id){
+  for (const s of ['loadingScreen','manualScreen','onboardScreen','homeScreen','endScreen']){
+    const el = document.getElementById(s);
+    if (el) el.style.display = (s === id) ? 'flex' : 'none';
+  }
+}
+
+// ---------------------------------------------------------------
+// 2D CHARACTER DRAWING (for swatches + profile picture)
+// ---------------------------------------------------------------
+function drawDotoring2D(ctx, w, h, opts){
+  const capCss = opts.capCss || '#d4463c';
+  const skin = opts.skin || 'skin_normal';
+  const hat = opts.hat || 'hat_none';
+  const outfit = opts.outfit || 'outfit_none';
+  const t = opts.t || 0;
+
+  ctx.clearRect(0,0,w,h);
+  const cx = w/2;
+  const S = Math.min(w,h);
+
+  // body color (rainbow / aurora animate)
+  let bodyFill = '#a9784a';
+  if (skin === 'skin_rainbow'){
+    const hue = (t*60) % 360;
+    bodyFill = 'hsl('+hue+', 75%, 62%)';
+  } else if (skin === 'skin_aurora'){
+    const hue = 180 + Math.sin(t*0.8)*70;
+    bodyFill = 'hsl('+hue+', 70%, 60%)';
+  }
+
+  // legs
+  ctx.fillStyle = '#7a4f28';
+  ctx.beginPath(); ctx.ellipse(cx - S*0.13, h*0.86, S*0.055, S*0.07, 0, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx + S*0.13, h*0.86, S*0.055, S*0.07, 0, 0, 7); ctx.fill();
+
+  // body (acorn)
+  ctx.fillStyle = bodyFill;
+  ctx.beginPath();
+  ctx.ellipse(cx, h*0.62, S*0.26, S*0.28, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // outfit
+  if (outfit === 'outfit_scarf'){
+    ctx.fillStyle = '#d33a3a';
+    ctx.fillRect(cx - S*0.24, h*0.60, S*0.48, S*0.09);
+    ctx.fillRect(cx + S*0.10, h*0.66, S*0.08, S*0.16);
+  } else if (outfit === 'outfit_cape'){
+    ctx.fillStyle = '#8a2be2';
+    ctx.beginPath();
+    ctx.moveTo(cx - S*0.24, h*0.50);
+    ctx.lineTo(cx - S*0.34, h*0.90);
+    ctx.lineTo(cx + S*0.34, h*0.90);
+    ctx.lineTo(cx + S*0.24, h*0.50);
+    ctx.closePath();
+    ctx.globalAlpha = 0.75; ctx.fill(); ctx.globalAlpha = 1;
+  } else if (outfit === 'outfit_vest'){
+    ctx.fillStyle = '#e8b33c';
+    ctx.fillRect(cx - S*0.22, h*0.62, S*0.14, S*0.22);
+    ctx.fillRect(cx + S*0.08, h*0.62, S*0.14, S*0.22);
+  }
+
+  // cap (the color the player picks)
+  ctx.fillStyle = capCss;
+  ctx.beginPath();
+  ctx.ellipse(cx, h*0.40, S*0.29, S*0.17, 0, Math.PI, 0);
+  ctx.fill();
+  ctx.fillRect(cx - S*0.29, h*0.38, S*0.58, S*0.05);
+  // stem
+  ctx.fillStyle = '#5a3a1e';
+  ctx.fillRect(cx - S*0.03, h*0.26, S*0.06, S*0.09);
+
+  // eyes
+  ctx.fillStyle = '#201410';
+  ctx.beginPath(); ctx.arc(cx - S*0.09, h*0.60, S*0.042, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + S*0.09, h*0.60, S*0.042, 0, 7); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(cx - S*0.075, h*0.585, S*0.015, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + S*0.105, h*0.585, S*0.015, 0, 7); ctx.fill();
+
+  // blush
+  ctx.fillStyle = 'rgba(255,140,120,0.55)';
+  ctx.beginPath(); ctx.ellipse(cx - S*0.18, h*0.67, S*0.04, S*0.028, 0, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx + S*0.18, h*0.67, S*0.04, S*0.028, 0, 0, 7); ctx.fill();
+
+  // hat on top
+  if (hat !== 'hat_none'){
+    const hatEmoji = { hat_crown:'👑', hat_cap:'🧢', hat_flower:'🌸', hat_leaf:'🍃' }[hat];
+    if (hatEmoji){
+      ctx.font = Math.round(S*0.26)+'px serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(hatEmoji, cx, h*0.22);
+    }
+  }
+}
+
+function drawHunter2D(ctx, w, h, jerseyCss){
+  ctx.clearRect(0,0,w,h);
+  const cx = w/2, S = Math.min(w,h);
+  // legs
+  ctx.fillStyle = '#2e3b52';
+  ctx.fillRect(cx - S*0.16, h*0.70, S*0.11, S*0.22);
+  ctx.fillRect(cx + S*0.05, h*0.70, S*0.11, S*0.22);
+  // torso
+  ctx.fillStyle = jerseyCss;
+  ctx.beginPath();
+  ctx.moveTo(cx - S*0.20, h*0.40);
+  ctx.lineTo(cx + S*0.20, h*0.40);
+  ctx.lineTo(cx + S*0.24, h*0.72);
+  ctx.lineTo(cx - S*0.24, h*0.72);
+  ctx.closePath(); ctx.fill();
+  // white stripe
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(cx - S*0.23, h*0.60, S*0.46, S*0.05);
+  // head
+  ctx.fillStyle = '#f0c090';
+  ctx.beginPath(); ctx.arc(cx, h*0.28, S*0.15, 0, 7); ctx.fill();
+  // hair
+  ctx.fillStyle = '#2a1e14';
+  ctx.beginPath(); ctx.arc(cx, h*0.25, S*0.155, Math.PI, 0); ctx.fill();
+  // eyes
+  ctx.fillStyle = '#201410';
+  ctx.beginPath(); ctx.arc(cx - S*0.055, h*0.29, S*0.022, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + S*0.055, h*0.29, S*0.022, 0, 7); ctx.fill();
+  // gun
+  ctx.fillStyle = '#ff7a2e';
+  ctx.fillRect(cx + S*0.16, h*0.48, S*0.22, S*0.07);
+  ctx.fillStyle = '#333';
+  ctx.fillRect(cx + S*0.34, h*0.50, S*0.10, S*0.03);
+}
+
+// ---- swatch builders (real drawn characters) ----
+function buildSwatchGrid(container, selectedId, onPick, kind){
+  container.innerHTML = '';
+  for (const c of COLOR_CHOICES){
+    const sw = document.createElement('div');
+    sw.className = 'swatch' + (c.id === selectedId ? ' sel' : '');
+    const cv = document.createElement('canvas');
+    cv.width = 96; cv.height = 96;
+    const ctx = cv.getContext('2d');
+    if (kind === 'hunter'){
+      drawHunter2D(ctx, 96, 96, c.css);
+    } else {
+      drawDotoring2D(ctx, 96, 96, { capCss: c.css, skin:'skin_normal', hat:'hat_none', outfit:'outfit_none' });
+    }
+    sw.appendChild(cv);
+    sw.addEventListener('click', () => {
+      onPick(c.id);
+      buildSwatchGrid(container, c.id, onPick, kind);
+    });
+    container.appendChild(sw);
+  }
+}
+
+// ---------------------------------------------------------------
+// HOME 3D CHARACTER PREVIEW (real rotating dotoring/model)
+// ---------------------------------------------------------------
+let homeScene = null, homeCamera = null, homeRenderer = null, homeModel = null, homeClock = 0;
+
+function initHomePreview(){
+  const canvas = document.getElementById('homeCharCanvas');
+  if (!canvas || homeRenderer) return;
+  homeRenderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+  homeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  homeRenderer.outputEncoding = THREE.sRGBEncoding;
+
+  homeScene = new THREE.Scene();
+  homeCamera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+  homeCamera.position.set(0, 1.5, 5.2);
+  homeCamera.lookAt(0, 1.15, 0);
+
+  homeScene.add(new THREE.HemisphereLight(0xdfeeff, 0x3a5a2a, 1.0));
+  const hl = new THREE.DirectionalLight(0xfff2d0, 1.4);
+  hl.position.set(3, 6, 4);
+  homeScene.add(hl);
+  const rim = new THREE.DirectionalLight(0xffe27a, 0.8);
+  rim.position.set(-4, 2, -3);
+  homeScene.add(rim);
+
+  resizeHomePreview();
+  window.addEventListener('resize', resizeHomePreview);
+}
+
+function resizeHomePreview(){
+  const canvas = document.getElementById('homeCharCanvas');
+  if (!canvas || !homeRenderer || !homeCamera) return;
+  const w = canvas.clientWidth || 230;
+  const h = canvas.clientHeight || 230;
+  if (w === 0 || h === 0) return;
+  homeRenderer.setSize(w, h, false);
+  homeCamera.aspect = w / h;
+  homeCamera.updateProjectionMatrix();
+}
+
+function rebuildHomeModel(){
+  if (!homeScene) return;
+  if (homeModel){ homeScene.remove(homeModel); homeModel = null; }
+  homeModel = makeDotoring(getMyDotCapHex());
+  applyCosmetics(homeModel, {
+    skin: getMySkin(), outfit: getMyOutfit(), hat: getMyHat()
+  });
+  homeScene.add(homeModel);
+}
+
+function renderHomePreview(delta){
+  if (!homeRenderer || !homeModel) return;
+  homeClock += delta;
+  homeModel.rotation.y += delta * 0.7;
+  homeModel.position.y = Math.sin(homeClock*1.8)*0.09;
+  animateSkin(homeModel, homeClock, getMySkin());
+  homeRenderer.render(homeScene, homeCamera);
+}
+
+// ---- HOME UI refresh ----
+function updateHomeCharacter(){
+  initHomePreview();
+  rebuildHomeModel();
+  const nm = document.getElementById('homeCharName');
+  if (nm) nm.textContent = progress.name + '의 도토링';
+}
+
+function updateProfileChip(){
+  const nameEl = document.getElementById('pfpName');
+  if (nameEl) nameEl.textContent = progress.name;
+  const cv = document.getElementById('pfpDot');
+  if (cv && cv.getContext){
+    const ctx = cv.getContext('2d');
+    drawDotoring2D(ctx, cv.width, cv.height, {
+      capCss: colorById(progress.profileColor).css,
+      skin:'skin_normal', hat:'hat_none', outfit:'outfit_none'
+    });
+  }
+}
+
+function refreshHomeUI(){
+  updatePointsUI();
+  updateProfileChip();
+  updateHomeCharacter();
+}
+
+function goToHome(){
+  showScreen('homeScreen');
+  document.getElementById('playMenu').classList.remove('open');
+  refreshHomeUI();
+  // the canvas only has a real size once the screen is visible
+  requestAnimationFrame(() => { resizeHomePreview(); });
+}
+
+// ---- LOADING ----
+(function runLoading(){
+  const bar = document.querySelector('.loadBar');
+  const txt = document.querySelector('.loadText');
+  const msgs = ['숲을 준비하는 중...', '도토링을 깨우는 중...', '이유림총 장전 중...', '케이크 굽는 중...'];
+  let p = 0;
+  const iv = setInterval(() => {
+    p += 6 + Math.random()*12;
+    if (p > 100) p = 100;
+    if (bar) bar.style.width = p + '%';
+    if (txt && Math.random() < 0.35) txt.textContent = msgs[Math.floor(Math.random()*msgs.length)];
+    if (p >= 100){
+      clearInterval(iv);
+      setTimeout(() => { showScreen('manualScreen'); }, 350);
+    }
+  }, 180);
+})();
+
+// ---- MANUAL -> onboarding or home ----
+document.getElementById('manualOkBtn').addEventListener('click', async () => {
+  ensureAudio();
+  startTheme();
+  await loadProgress();
+  if (progress.onboarded){
+    goToHome();
+  } else {
+    startOnboarding();
+  }
+});
+
+// ---- ONBOARDING ----
+let obTemp = { name:'', profileColor:'red', dotColor:'red', hunColor:'blue' };
+
+function startOnboarding(){
+  showScreen('onboardScreen');
+  obTemp = { name:'', profileColor:'red', dotColor:'red', hunColor:'blue' };
+  for (const s of ['obStep1','obStep2','obStep3','obStep4']){
+    document.getElementById(s).style.display = (s==='obStep1') ? 'block' : 'none';
+  }
+  document.getElementById('obNameInput').value = '';
+  buildSwatchGrid(document.getElementById('obProfileGrid'), obTemp.profileColor, id => { obTemp.profileColor = id; }, 'dot');
+  buildSwatchGrid(document.getElementById('obDotGrid'), obTemp.dotColor, id => {
+    obTemp.dotColor = id;
+    document.getElementById('obDotPreview').style.filter = 'drop-shadow(0 0 16px '+colorById(id).css+')';
+  }, 'dot');
+  buildSwatchGrid(document.getElementById('obHunGrid'), obTemp.hunColor, id => {
+    obTemp.hunColor = id;
+    document.getElementById('obHunPreview').style.filter = 'drop-shadow(0 0 16px '+colorById(id).css+')';
+  }, 'hunter');
+}
+function obGoStep(n){
+  for (let i=1;i<=4;i++){
+    document.getElementById('obStep'+i).style.display = (i===n) ? 'block' : 'none';
+  }
+}
+document.getElementById('obNext1').addEventListener('click', () => {
+  const v = document.getElementById('obNameInput').value.trim();
+  if (!v){ alert('이름을 입력해주세요!'); return; }
+  obTemp.name = v;
+  obGoStep(2);
+});
+document.getElementById('obNext2').addEventListener('click', () => obGoStep(3));
+document.getElementById('obNext3').addEventListener('click', () => obGoStep(4));
+document.getElementById('obNext4').addEventListener('click', async () => {
+  progress.name = obTemp.name;
+  progress.profileColor = obTemp.profileColor;
+  progress.dotColor = obTemp.dotColor;
+  progress.hunColor = obTemp.hunColor;
+  progress.onboarded = true;
+  guestName = progress.name;
+  await saveProgress();
+  goToHome();
+});
+
+// ---- PROFILE EDIT ----
+document.getElementById('profileChip').addEventListener('click', () => {
+  ensureAudio();
+  const sc = document.getElementById('profileScreen');
+  sc.style.display = 'flex';
+  document.getElementById('pfEditName').value = progress.name;
+  buildSwatchGrid(document.getElementById('pfProfileGrid'), progress.profileColor, id => { progress.profileColor = id; }, 'dot');
+  buildSwatchGrid(document.getElementById('pfDotGrid'), progress.dotColor, id => { progress.dotColor = id; }, 'dot');
+  buildSwatchGrid(document.getElementById('pfHunGrid'), progress.hunColor, id => { progress.hunColor = id; }, 'hunter');
+});
+document.getElementById('pfSaveBtn').addEventListener('click', async () => {
+  const v = document.getElementById('pfEditName').value.trim();
+  if (v) progress.name = v;
+  guestName = progress.name;
+  await saveProgress();
+  document.getElementById('profileScreen').style.display = 'none';
+  refreshHomeUI();
+});
+document.getElementById('pfCloseBtn').addEventListener('click', () => {
+  document.getElementById('profileScreen').style.display = 'none';
+  refreshHomeUI();
+});
+
+// ---- PLAY MENU ----
+document.getElementById('playBtn').addEventListener('click', () => {
+  ensureAudio();
+  document.getElementById('playMenu').classList.toggle('open');
+});
+document.getElementById('playCancelBtn').addEventListener('click', () => {
+  document.getElementById('playMenu').classList.remove('open');
+});
+document.getElementById('playAiBtn').addEventListener('click', () => {
   ensureAudio();
   startTheme();
   net.mode = 'solo';
-  document.getElementById('startScreen').style.display = 'none';
+  showScreen(null);
   document.getElementById('hud').style.display = 'block';
   if (isTouch) document.getElementById('touchControls').style.display = 'block';
+  updateShieldHUD();
   initMatch();
 });
+document.getElementById('playOnlineBtn').addEventListener('click', () => {
+  ensureAudio(); startTheme();
+  document.getElementById('playMenu').classList.remove('open');
+  document.getElementById('mpScreen').style.display = 'flex';
+  document.getElementById('mpChoicePanel').style.display = 'block';
+  document.getElementById('mpHostPanel').style.display = 'none';
+  document.getElementById('mpJoinPanel').style.display = 'none';
+});
+
+// ---- RETRY / EXIT / CLAIM ----
 document.getElementById('retryBtn').addEventListener('click', () => {
   ensureAudio();
+  claimPendingReward(); // you earned it; keep it even if you play again
   document.getElementById('endScreen').style.display = 'none';
   if (net.mode === 'guest'){
     // only the host controls when a new round starts; just wait
@@ -2413,16 +3645,76 @@ document.getElementById('retryBtn').addEventListener('click', () => {
   }
   document.getElementById('hud').style.display = 'block';
   if (isTouch) document.getElementById('touchControls').style.display = 'block';
+  updateShieldHUD();
   if (net.mode === 'host'){ hostStartMatch(); } else { initMatch(); }
 });
 
-document.getElementById('shopBtn').addEventListener('click', () => {
+function goHome(){
+  document.exitPointerLock && document.exitPointerLock();
+  if (match){ match.over = true; clearMatch(); match = null; }
+  if (guestMatch){
+    guestMatch.over = true;
+    for (const m of (guestMatch.dotMeshes||[])) if (m) scene.remove(m);
+    for (const m of (guestMatch.hunMeshes||[])) if (m) scene.remove(m);
+    guestMatch = null;
+  }
+  if (mpChannel && sbClient){ sbClient.removeChannel(mpChannel); mpChannel = null; }
+  net.mode = 'solo';
+  net.roomCode = null;
+  net.connectedGuests = [];
+  if (cake){ scene.remove(cake.mesh); cake = null; }
+
+  document.getElementById('hud').style.display = 'none';
+  document.getElementById('crosshair').style.display = 'none';
+  document.getElementById('touchControls').style.display = 'none';
+  document.getElementById('exitBtn').style.display = 'none';
+  document.getElementById('quickChat').style.display = 'none';
+  document.getElementById('vignette').style.display = 'none';
+  document.getElementById('mpScreen').style.display = 'none';
+  goToHome();
+}
+
+document.getElementById('exitBtn').addEventListener('click', () => {
+  const ok = confirm('게임 도중에 나가면 포인트를 받을 수 없어요. 정말 나갈까요?');
+  if (!ok) return;
+  pendingReward = null;
+  goHome();
+});
+document.getElementById('claimBtn').addEventListener('click', () => {
+  ensureAudio();
+  claimPendingReward();
+  goHome();
+});
+
+// ---- SHOPS ----
+document.getElementById('itemShopBtn').addEventListener('click', () => {
   ensureAudio();
   document.getElementById('shopScreen').style.display = 'flex';
   renderShop();
 });
+document.getElementById('shopBackBtn').addEventListener('click', () => {
+  document.getElementById('shopScreen').style.display = 'none';
+  refreshHomeUI();
+});
+document.getElementById('decoShopBtn').addEventListener('click', () => {
+  ensureAudio();
+  document.getElementById('decoScreen').style.display = 'flex';
+  renderDeco();
+});
+document.getElementById('decoBackBtn').addEventListener('click', () => {
+  document.getElementById('decoScreen').style.display = 'none';
+  refreshHomeUI();
+});
+document.querySelectorAll('#decoTabs .shopTabBtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#decoTabs .shopTabBtn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    decoActiveCat = btn.dataset.cat;
+    renderDeco();
+  });
+});
 
-// Quick chat
+// ---- QUICK CHAT ----
 const quickChatMenu = document.getElementById('quickChatMenu');
 document.getElementById('quickChatToggle').addEventListener('click', (e) => {
   e.stopPropagation();
@@ -2436,29 +3728,11 @@ document.querySelectorAll('.qcOption').forEach(btn => {
     quickChatMenu.classList.remove('open');
   });
 });
-// close menu when tapping elsewhere
 document.addEventListener('click', (e) => {
   if (!e.target.closest('#quickChat')) quickChatMenu.classList.remove('open');
 });
-document.getElementById('shopBackBtn').addEventListener('click', () => {
-  document.getElementById('shopScreen').style.display = 'none';
-});
-document.querySelectorAll('.shopTabBtn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.shopTabBtn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    shopActiveCat = btn.dataset.cat;
-    renderShop();
-  });
-});
 
-document.getElementById('mpLink').addEventListener('click', () => {
-  ensureAudio(); startTheme();
-  document.getElementById('mpScreen').style.display = 'flex';
-  document.getElementById('mpChoicePanel').style.display = 'block';
-  document.getElementById('mpHostPanel').style.display = 'none';
-  document.getElementById('mpJoinPanel').style.display = 'none';
-});
+// ---- MULTIPLAYER LOBBY ----
 function mpBackToChoice(){
   document.getElementById('mpHostPanel').style.display = 'none';
   document.getElementById('mpJoinPanel').style.display = 'none';
@@ -2488,7 +3762,7 @@ function updateLobbyUI(){
 }
 document.getElementById('mpHostStartBtn').addEventListener('click', () => {
   document.getElementById('mpScreen').style.display = 'none';
-  document.getElementById('startScreen').style.display = 'none';
+  showScreen(null);
   document.getElementById('hud').style.display = 'block';
   if (isTouch) document.getElementById('touchControls').style.display = 'block';
   hostStartMatch();
@@ -2497,6 +3771,7 @@ document.getElementById('mpHostStartBtn').addEventListener('click', () => {
 document.getElementById('mpJoinShowBtn').addEventListener('click', () => {
   document.getElementById('mpChoicePanel').style.display = 'none';
   document.getElementById('mpJoinPanel').style.display = 'block';
+  document.getElementById('mpNameInput').value = progress.name || '';
 });
 document.getElementById('mpJoinBtn').addEventListener('click', async () => {
   const code = document.getElementById('mpCodeInput').value.trim();

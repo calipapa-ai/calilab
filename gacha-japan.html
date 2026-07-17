@@ -1,0 +1,2854 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>가챠가쟈 일본 가자 🎏</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; user-select:none; }
+  html, body { width:100%; height:100%; overflow:hidden; background:#0d0620; font-family:'Gaegu', sans-serif; }
+  #canvas-wrap { position:fixed; inset:0; }
+  canvas { display:block; touch-action:none; }
+
+  /* ---------- 로그인/랭킹 ---------- */
+  #login-overlay {
+    position:fixed; inset:0; z-index:90; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 50% 30%, #2a1450, #0d0620 70%);
+  }
+  #login-overlay.hidden { display:none; }
+  .login-box {
+    width:min(88vw,340px); background:linear-gradient(160deg,#241148,#160b30); border:3px solid #ff6fb8;
+    border-radius:22px; padding:24px 20px; text-align:center; box-shadow:0 0 50px rgba(255,45,149,0.4);
+  }
+  .login-box h1 { font-family:'Jua',sans-serif; color:#ff6fb8; font-size:1.5em; margin-bottom:8px; text-shadow:0 0 16px #ff2d95; }
+  .login-sub { color:#b9a8e8; font-size:0.95em; margin-bottom:14px; }
+  .login-list { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:14px; max-height:150px; overflow-y:auto; }
+  .login-chip {
+    background:rgba(255,255,255,0.08); border:2px solid #7de8ff; color:#d8faff; font-family:'Jua',sans-serif;
+    padding:8px 16px; border-radius:14px; cursor:pointer; font-size:0.95em;
+  }
+  .login-chip:active { transform:scale(0.95); }
+  .login-chip.selected { background:#7de8ff; color:#160b30; }
+  #login-name {
+    width:100%; padding:10px 14px; border-radius:12px; border:2px solid #b76bff; background:rgba(255,255,255,0.06);
+    color:#fff; font-family:'Gaegu'; font-size:1.05em; text-align:center; margin-bottom:14px; outline:none;
+  }
+  .login-note { color:#ffd166; font-size:0.82em; margin-top:10px; min-height:1.2em; }
+  #rank-btn {
+    pointer-events:auto; background:linear-gradient(135deg,#2b1650,#3d1f6e); border:2px solid #ffd166;
+    border-radius:16px; padding:8px 12px; font-size:1.15em; cursor:pointer;
+    box-shadow:0 4px 14px rgba(0,0,0,0.4);
+  }
+  #rank-panel {
+    position:fixed; inset:0; z-index:55; display:none; background:rgba(8,3,20,0.85); backdrop-filter:blur(2px);
+    align-items:center; justify-content:center;
+  }
+  #rank-panel.show { display:flex; }
+  .rank-row {
+    display:flex; justify-content:space-between; align-items:center; padding:9px 12px; border-radius:12px;
+    background:rgba(255,255,255,0.05); margin-bottom:7px; color:#fff; font-family:'Gaegu'; font-weight:700;
+  }
+  .rank-row .rr-name { color:#7de8ff; font-family:'Jua',sans-serif; }
+  .rank-row .rr-stat { color:#ffd166; font-size:0.9em; }
+  .rank-row.me { border:2px solid #ff6fb8; }
+
+  /* ---------- 다른 플레이어 이름표 ---------- */
+  .peer-label {
+    position:fixed; z-index:14; transform:translate(-50%,-100%); pointer-events:none;
+    background:rgba(20,8,40,0.75); color:#7de8ff; font-family:'Jua',sans-serif; font-size:0.72em;
+    padding:2px 9px; border-radius:9px; white-space:nowrap; border:1px solid #7de8ff55;
+  }
+
+  /* ---------- 로그인/랭킹 끝 ---------- */
+
+  /* ---------- Loading ---------- */
+  #loading {
+    position:fixed; inset:0; z-index:100; background:radial-gradient(circle at 50% 30%, #2a1450, #0d0620 70%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; color:#ffe6f5;
+  }
+  #loading h1 { font-family:'Jua', sans-serif; font-size:2.2em; color:#ff6fb8; text-shadow:0 0 20px #ff2d95; letter-spacing:2px; }
+  #loading p { margin-top:14px; font-size:1.2em; color:#7de8ff; }
+  .lantern-spin { margin-top:24px; width:46px; height:46px; border-radius:50%; border:5px solid #ffd166; border-top-color:transparent; animation:spin 0.9s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* ---------- Top HUD ---------- */
+  #hud-top {
+    position:fixed; top:0; left:0; right:0; z-index:20; display:flex; justify-content:space-between;
+    padding:12px 14px; pointer-events:none;
+  }
+  #coin-box, #collect-btn {
+    pointer-events:auto; background:linear-gradient(135deg,#2b1650,#3d1f6e); border:2px solid #ffd166;
+    border-radius:16px; padding:8px 16px; color:#ffe9a8; font-family:'Jua',sans-serif; font-size:1.15em;
+    box-shadow:0 4px 14px rgba(0,0,0,0.4); display:flex; align-items:center; gap:8px;
+  }
+  #collect-btn { border-color:#7de8ff; color:#d8faff; cursor:pointer; }
+  #collect-btn:active { transform:scale(0.96); }
+  #title-badge {
+    position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:19; pointer-events:none;
+    font-family:'Jua',sans-serif; color:#ff88c8; font-size:1em; text-shadow:0 0 10px #ff2d95aa;
+    background:rgba(20,8,40,0.5); padding:4px 14px; border-radius:12px; white-space:nowrap;
+  }
+
+  /* ---------- Interaction prompt ---------- */
+  #prompt {
+    position:fixed; bottom:22%; left:50%; transform:translateX(-50%) scale(0.92); z-index:20;
+    display:flex; flex-direction:column; gap:8px; align-items:center;
+    opacity:0; pointer-events:none; transition:opacity 0.2s, transform 0.2s;
+  }
+  #prompt.show { opacity:1; transform:translateX(-50%) scale(1); }
+  .prompt-btn {
+    pointer-events:auto; border:none; cursor:pointer; white-space:nowrap; text-align:center;
+    background:linear-gradient(135deg,#ff2d95,#7c3aed); color:#fff; font-family:'Jua',sans-serif;
+    padding:10px 22px; border-radius:18px; font-size:1.05em; box-shadow:0 6px 18px rgba(255,45,149,0.5);
+  }
+  .prompt-btn .sub { display:block; font-size:0.68em; color:#ffe9a8; margin-top:2px; }
+  .prompt-btn:active { transform:scale(0.95); }
+  .prompt-btn.disabled { opacity:0.45; }
+
+  /* ---------- Mobile controls ---------- */
+  #mobile-controls { position:fixed; inset:0; z-index:15; pointer-events:none; display:none; }
+  #joystick-zone {
+    position:absolute; left:26px; bottom:26px; width:128px; height:128px; border-radius:50%;
+    background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.25); pointer-events:auto;
+  }
+  #joystick-knob {
+    position:absolute; left:50%; top:50%; width:56px; height:56px; margin:-28px 0 0 -28px; border-radius:50%;
+    background:rgba(255,111,184,0.55); border:2px solid #ff6fb8;
+  }
+  /* ---------- Gacha pull modal ---------- */
+  #pull-overlay {
+    position:fixed; inset:0; z-index:60; display:none; align-items:center; justify-content:center;
+    background:rgba(8,3,20,0.72); backdrop-filter:blur(2px);
+  }
+  #pull-overlay.show { display:flex; }
+  .capsule-stage { position:relative; width:220px; height:220px; display:flex; align-items:center; justify-content:center; }
+  .capsule {
+    width:120px; height:120px; border-radius:50%; position:relative; cursor:pointer;
+    box-shadow:0 0 40px 6px currentColor; animation:capsuleDrop 0.5s ease-out, capsuleFloat 1.4s ease-in-out 0.5s infinite;
+  }
+  .capsule .top, .capsule .bottom { position:absolute; left:0; width:100%; height:50%; }
+  .capsule .top { top:0; border-radius:120px 120px 0 0; background:linear-gradient(145deg,#fff,#ddd); }
+  .capsule .bottom { bottom:0; border-radius:0 0 120px 120px; }
+  @keyframes capsuleDrop { from { transform:translateY(-180px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+  @keyframes capsuleFloat { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-10px); } }
+  .capsule.cracked { animation:crack 0.35s ease-out forwards; }
+  @keyframes crack { to { transform:scale(1.5); opacity:0; } }
+  #tap-hint { position:absolute; bottom:-34px; width:100%; text-align:center; color:#ffe9a8; font-family:'Jua',sans-serif; font-size:0.95em; animation:pulseHint 1s ease-in-out infinite; }
+  @keyframes pulseHint { 0%,100%{opacity:0.5;} 50%{opacity:1;} }
+
+  /* ---------- 동전 넣기 + 다이얼 돌리기 (직접 스와이프하는 상호작용) ---------- */
+  #coin-dial-stage { display:none; flex-direction:column; align-items:center; gap:14px; }
+  #coin-dial-stage.show { display:flex; }
+  .cd-label { color:#ffe9a8; font-family:'Jua',sans-serif; font-size:1.05em; text-align:center; }
+  .cd-label b { color:#7de8ff; }
+
+  #cd-step-coin { display:flex; flex-direction:column; align-items:center; gap:14px; }
+  #cd-track { position:relative; width:80px; height:130px; border:3px solid #7de8ff; border-radius:16px; background:rgba(255,255,255,0.05); }
+  #cd-slot { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); width:56px; height:8px; background:#1a1a1a; border-radius:4px; }
+  #cd-coin { position:absolute; top:8px; left:50%; margin-left:-27px; width:54px; height:54px; line-height:54px; text-align:center; font-size:2.2em; cursor:grab; touch-action:none; filter:drop-shadow(0 0 12px #ffd166); user-select:none; }
+
+  #cd-step-dial { display:flex; flex-direction:column; align-items:center; gap:14px; }
+  #cd-dial-wrap { position:relative; width:140px; height:140px; border-radius:50%; border:4px solid #ff2d95; background:rgba(255,255,255,0.05); touch-action:none; display:flex; align-items:center; justify-content:center; }
+  #cd-dial { font-size:3.2em; filter:drop-shadow(0 0 12px #ff2d95); user-select:none; pointer-events:none; }
+  #cd-dial-arrow { position:absolute; top:6px; left:50%; transform:translateX(-50%); color:#ffd166; font-size:1.3em; }
+
+  .result-card {
+    display:none; width:260px; background:linear-gradient(160deg,#231043,#150a2e); border-radius:22px; padding:22px 18px;
+    text-align:center; border:3px solid var(--rc); box-shadow:0 0 50px var(--rc);
+    animation:cardPop 0.4s cubic-bezier(.2,1.4,.4,1);
+  }
+  @keyframes cardPop { from{ transform:scale(0.4); opacity:0;} to{ transform:scale(1); opacity:1;} }
+  .result-card.show { display:block; }
+  .rarity-tag {
+    display:inline-block; padding:4px 14px; border-radius:12px; font-family:'Jua',sans-serif; font-size:0.85em;
+    background:var(--rc); color:#1a0a2e; margin-bottom:10px; letter-spacing:1px;
+  }
+  .item-icon { font-size:3.2em; margin:6px 0; filter:drop-shadow(0 0 14px var(--rc)); }
+  .item-icon-img { width:110px; height:110px; margin:6px auto; display:block; filter:drop-shadow(0 0 14px var(--rc)); }
+  .item-name { font-family:'Jua',sans-serif; color:#fff; font-size:1.25em; margin-bottom:4px; }
+  .item-owner { color:#b9a8e8; font-size:0.95em; margin-bottom:16px; }
+  .close-btn {
+    background:linear-gradient(135deg,#ff2d95,#7c3aed); border:none; color:#fff; font-family:'Jua',sans-serif;
+    padding:10px 26px; border-radius:14px; font-size:1em; cursor:pointer;
+  }
+  .close-btn:active { transform:scale(0.95); }
+
+  /* ---------- 코인 타이밍 미니게임 ---------- */
+  #minigame-overlay {
+    position:fixed; inset:0; z-index:65; display:none; align-items:center; justify-content:center;
+    background:rgba(8,3,20,0.82); backdrop-filter:blur(2px);
+  }
+  #minigame-overlay.show { display:flex; }
+  #mg-title { font-family:'Jua',sans-serif; color:#ffd166; font-size:1.2em; margin-bottom:6px; }
+  #mg-hint { color:#ffe9a8; font-size:0.85em; margin-bottom:14px; max-width:270px; font-family:'Gaegu'; font-weight:700; }
+  #mg-bar-wrap { position:relative; width:270px; height:34px; background:rgba(255,255,255,0.08); border-radius:18px; border:2px solid #ffd166; overflow:hidden; margin:0 auto; }
+  #mg-zone-silver { position:absolute; top:0; bottom:0; left:35%; width:30%; background:rgba(190,210,230,0.35); }
+  #mg-zone-gold { position:absolute; top:0; bottom:0; left:44%; width:12%; background:rgba(255,209,102,0.65); z-index:1; }
+  #mg-marker { position:absolute; top:-2px; bottom:-2px; width:6px; background:#ff2d95; border-radius:3px; z-index:2; box-shadow:0 0 8px #ff2d95; }
+  #mg-round { color:#b9a8e8; font-size:0.85em; margin-top:12px; font-family:'Jua',sans-serif; }
+  #mg-earn { color:#ffd166; font-family:'Jua',sans-serif; font-size:1.25em; margin:6px 0 10px; min-height:1.2em; }
+  #mg-tap-btn { width:100%; font-size:1.15em; padding:13px; }
+
+  #bgm-btn {
+    pointer-events:auto; background:linear-gradient(135deg,#2b1650,#3d1f6e); border:2px solid #b76bff;
+    border-radius:16px; padding:8px 12px; font-size:1.15em; cursor:pointer; opacity:0.55;
+    box-shadow:0 4px 14px rgba(0,0,0,0.4);
+  }
+  #bgm-btn.on { opacity:1; border-color:#ff6fb8; }
+
+  /* ---------- 자랑하기 오버레이 ---------- */
+  #brag-overlay {
+    position:fixed; inset:0; z-index:80; display:none; align-items:center; justify-content:center;
+    background:rgba(8,3,20,0.9); backdrop-filter:blur(3px);
+  }
+  #brag-overlay.show { display:flex; }
+  #brag-stage { position:relative; text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px; }
+  #brag-fanfare {
+    font-size:2.8em; animation:fanfarePop 0.7s cubic-bezier(.2,1.6,.4,1);
+  }
+  @keyframes fanfarePop { from{transform:scale(0) rotate(-30deg);opacity:0;} to{transform:scale(1) rotate(0deg);opacity:1;} }
+  #brag-rays {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:340px; height:340px; border-radius:50%;
+    background:conic-gradient(rgba(255,209,102,0.18) 0deg 20deg, transparent 20deg 40deg, rgba(255,209,102,0.18) 40deg 60deg, transparent 60deg 80deg, rgba(255,209,102,0.18) 80deg 100deg, transparent 100deg 120deg, rgba(255,209,102,0.18) 120deg 140deg, transparent 140deg 160deg, rgba(255,209,102,0.18) 160deg 180deg, transparent 180deg 200deg, rgba(255,209,102,0.18) 200deg 220deg, transparent 220deg 240deg, rgba(255,209,102,0.18) 240deg 260deg, transparent 260deg 280deg, rgba(255,209,102,0.18) 280deg 300deg, transparent 300deg 320deg, rgba(255,209,102,0.18) 320deg 340deg, transparent 340deg 360deg);
+    animation:rayspin 3s linear infinite; pointer-events:none; z-index:-1;
+  }
+  @keyframes rayspin { to{transform:translate(-50%,-50%) rotate(360deg);} }
+  #brag-img { width:140px; height:140px; filter:drop-shadow(0 0 28px #ffd166); animation:bragItemPop 0.5s cubic-bezier(.2,1.6,.4,1) 0.3s both; }
+  #brag-emoji { font-size:5em; filter:drop-shadow(0 0 28px #ffd166); animation:bragItemPop 0.5s cubic-bezier(.2,1.6,.4,1) 0.3s both; }
+  @keyframes bragItemPop { from{transform:scale(0.3) translateY(30px);opacity:0;} to{transform:scale(1) translateY(0);opacity:1;} }
+  #brag-rarity-tag {
+    padding:5px 18px; border-radius:14px; font-family:'Jua',sans-serif; font-size:0.9em; letter-spacing:1px;
+    background:var(--brc,#ffd166); color:#1a0a2e; animation:fadeSlide 0.4s ease 0.6s both;
+  }
+  #brag-name { font-family:'Jua',sans-serif; color:#fff; font-size:1.5em; animation:fadeSlide 0.4s ease 0.7s both; }
+  #brag-owner { color:#ffe9a8; font-size:0.95em; font-family:'Gaegu'; font-weight:700; animation:fadeSlide 0.4s ease 0.8s both; }
+  @keyframes fadeSlide { from{opacity:0;transform:translateY(14px);} to{opacity:1;transform:translateY(0);} }
+  .confetti-piece {
+    position:absolute; width:10px; height:10px; border-radius:2px; pointer-events:none;
+    animation:confettiFall linear forwards;
+  }
+  @keyframes confettiFall { from{transform:translateY(-60px) rotate(0deg);opacity:1;} to{transform:translateY(160px) rotate(720deg);opacity:0;} }
+
+  /* ---------- NPC 말풍선 ---------- */
+  .npc-bubble {
+    position:fixed; z-index:14; transform:translate(-50%,-100%); pointer-events:none;
+    background:rgba(255,255,255,0.94); color:#2a1a52; font-family:'Gaegu'; font-weight:700; font-size:0.82em;
+    padding:5px 12px; border-radius:14px; white-space:nowrap; box-shadow:0 3px 10px rgba(0,0,0,0.3);
+    opacity:0; transition:opacity 0.25s;
+  }
+  .npc-bubble.show { opacity:1; }
+  .npc-bubble::after {
+    content:''; position:absolute; left:50%; bottom:-6px; transform:translateX(-50%);
+    border-left:6px solid transparent; border-right:6px solid transparent; border-top:7px solid rgba(255,255,255,0.94);
+  }
+
+  /* ---------- 집게(인형뽑기) 조준 미니게임 ---------- */
+  #claw-overlay {
+    position:fixed; inset:0; z-index:65; display:none; align-items:center; justify-content:center;
+    background:rgba(8,3,20,0.82); backdrop-filter:blur(2px);
+  }
+  #claw-overlay.show { display:flex; }
+  .claw-box {
+    background:linear-gradient(160deg,#231043,#150a2e); border:3px solid #00e5ff; border-radius:22px;
+    padding:16px; text-align:center; box-shadow:0 0 40px rgba(0,229,255,0.5);
+  }
+  #claw-hint { color:#ffe9a8; font-family:'Jua',sans-serif; font-size:0.92em; margin-bottom:10px; max-width:280px; }
+  #claw-canvas { border-radius:14px; touch-action:none; display:block; background:#150a2e; }
+  #claw-drop-btn { width:100%; margin-top:12px; }
+
+  /* ---------- Collection panel ---------- */
+  #collect-panel {
+    position:fixed; inset:0; z-index:50; display:none; background:rgba(8,3,20,0.85); backdrop-filter:blur(2px);
+    align-items:center; justify-content:center;
+  }
+  #collect-panel.show { display:flex; }
+  .collect-box {
+    width:min(92vw, 480px); max-height:80vh; overflow-y:auto; background:linear-gradient(160deg,#241148,#160b30);
+    border:3px solid #7de8ff; border-radius:22px; padding:20px;
+  }
+  .collect-box h2 { font-family:'Jua',sans-serif; color:#7de8ff; text-align:center; margin-bottom:14px; }
+  .collect-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .collect-item { background:rgba(255,255,255,0.06); border:2px solid var(--rc,#555); border-radius:14px; padding:8px; text-align:center; }
+  .collect-item .ic { font-size:1.8em; }
+  .collect-item .nm { font-size:0.78em; color:#fff; margin-top:2px; line-height:1.2; font-family:'Gaegu'; font-weight:700;}
+  .collect-item .ct { font-size:0.7em; color:#ffd166; }
+  .collect-empty { color:#b9a8e8; text-align:center; padding:20px; }
+  .collect-close { display:block; margin:16px auto 0; }
+  .collect-item { cursor:pointer; }
+  .collect-item:active { transform:scale(0.95); }
+
+  /* ---------- 아이템 상세보기 (인형 꾹꾹이 / 키캡 누르기) ---------- */
+  #detail-modal {
+    position:fixed; inset:0; z-index:70; display:none; align-items:center; justify-content:center;
+    background:rgba(8,3,20,0.85); backdrop-filter:blur(2px);
+  }
+  #detail-modal.show { display:flex; }
+  .detail-box {
+    width:min(85vw,300px); background:linear-gradient(160deg,#231043,#150a2e); border-radius:22px;
+    padding:22px 18px; text-align:center; border:3px solid var(--rc,#7de8ff); box-shadow:0 0 40px var(--rc,#7de8ff);
+  }
+  #detail-visual-wrap { margin:14px 0; display:flex; align-items:center; justify-content:center; height:130px; }
+  #detail-img { width:130px; height:130px; filter:drop-shadow(0 0 16px var(--rc,#7de8ff)); cursor:pointer; user-select:none; touch-action:manipulation; }
+  #detail-emoji { font-size:5em; cursor:pointer; user-select:none; touch-action:manipulation; filter:drop-shadow(0 0 16px var(--rc,#7de8ff)); }
+  #detail-name { font-family:'Jua',sans-serif; color:#fff; font-size:1.2em; margin-bottom:6px; }
+  #detail-hint { color:#ffe9a8; font-size:0.85em; margin-bottom:14px; font-family:'Gaegu'; }
+  .squish-anim { animation: squishKf 0.32s ease; }
+  @keyframes squishKf { 0%{transform:scale(1);} 45%{transform:scale(1.18,0.78);} 100%{transform:scale(1);} }
+  .press-anim { animation: pressKf 0.14s ease; }
+  @keyframes pressKf { 0%{transform:translateY(0) scale(1);} 50%{transform:translateY(8px) scale(0.94,1.04);} 100%{transform:translateY(0) scale(1);} }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <h1>가챠가쟈 일본 가자 🎏</h1>
+  <p>쭈노오빠가 가챠샵에 입장 준비중... <span style="color:#7de8ff;">v2.0</span></p>
+  <div class="lantern-spin"></div>
+</div>
+
+<div id="title-badge">🏮 쭈노's 가챠 아케이드 🏮</div>
+
+<div id="login-overlay">
+  <div class="login-box">
+    <h1>가챠가쟈 일본 가자 🎏</h1>
+    <p class="login-sub">누구세요? 이름을 고르거나 새로 입력하세요</p>
+    <div id="login-list" class="login-list"></div>
+    <input id="login-name" type="text" maxlength="10" placeholder="새 이름 입력 (최대 10자)">
+    <button class="close-btn" id="login-start-btn">입장하기!</button>
+    <p class="login-note" id="login-status"></p>
+  </div>
+</div>
+
+<div id="rank-panel">
+  <div class="collect-box">
+    <h2>🏆 랭킹</h2>
+    <div id="rank-list"></div>
+    <button class="close-btn collect-close" id="rank-close-btn">닫기</button>
+  </div>
+</div>
+
+<div id="hud-top">
+  <div id="coin-box">🪙 <span id="coin-count">100000</span>원</div>
+  <div id="bgm-btn">🎵</div>
+  <div id="rank-btn">🏆</div>
+  <div id="collect-btn">🗄️ 저장함 (<span id="collect-count">0</span>)</div>
+</div>
+
+<div id="prompt"></div>
+
+<div id="canvas-wrap"></div>
+
+<div id="mobile-controls">
+  <div id="joystick-zone"><div id="joystick-knob"></div></div>
+</div>
+
+<div id="pull-overlay">
+  <div id="coin-dial-stage">
+    <div id="cd-step-coin">
+      <div class="cd-label">동전을 슬롯 아래로 <b>스와이프</b>해서 넣으세요</div>
+      <div id="cd-track">
+        <div id="cd-coin">🪙</div>
+        <div id="cd-slot"></div>
+      </div>
+    </div>
+    <div id="cd-step-dial" style="display:none;">
+      <div class="cd-label">손가락으로 다이얼을 <b>돌려</b>보세요</div>
+      <div id="cd-dial-wrap">
+        <div id="cd-dial-arrow">▼</div>
+        <div id="cd-dial">🔘</div>
+      </div>
+    </div>
+  </div>
+  <div class="capsule-stage" id="capsule-stage">
+    <div class="capsule" id="capsule-el">
+      <div class="top"></div>
+      <div class="bottom"></div>
+    </div>
+    <div id="tap-hint">탭해서 열기!</div>
+  </div>
+  <div class="result-card" id="result-card">
+    <div class="rarity-tag" id="result-rarity">RARE</div>
+    <img class="item-icon-img" id="result-icon-img" style="display:none;">
+    <div class="item-icon" id="result-icon">⚔️</div>
+    <div class="item-name" id="result-name">사무라이 도</div>
+    <div class="item-owner" id="result-owner">쭈노의 칼날</div>
+    <button class="close-btn" id="result-close">계속하기</button>
+  </div>
+</div>
+
+<div id="minigame-overlay">
+  <div class="claw-box" style="border-color:#ffd166; box-shadow:0 0 40px rgba(255,209,102,0.5);">
+    <div id="mg-title">🪙 코인 타이밍 게임</div>
+    <div id="mg-hint">황금 구간에서 탭! 정확할수록 코인을 많이 받아요 (3번 도전)</div>
+    <div id="mg-bar-wrap">
+      <div id="mg-zone-gold"></div>
+      <div id="mg-zone-silver"></div>
+      <div id="mg-marker"></div>
+    </div>
+    <div id="mg-round">1 / 3</div>
+    <div id="mg-earn">+0원</div>
+    <button class="close-btn" id="mg-tap-btn">탭!</button>
+  </div>
+</div>
+
+<div id="claw-overlay">
+  <div class="claw-box">
+    <div id="claw-hint">드래그해서 좌우/앞뒤로 조준하고, 버튼을 눌러 집게를 내려보세요!</div>
+    <canvas id="claw-canvas" width="300" height="300"></canvas>
+    <button class="close-btn" id="claw-drop-btn">⬇️ 집게 내리기</button>
+  </div>
+</div>
+
+<div id="collect-panel">
+  <div class="collect-box">
+    <h2>🗄️ 내 저장함</h2>
+    <div class="collect-grid" id="collect-grid"></div>
+    <button class="close-btn collect-close" id="collect-close-btn">닫기</button>
+  </div>
+</div>
+
+<div id="brag-overlay">
+  <div id="brag-stage">
+    <div id="brag-fanfare">🎺🎺🎺</div>
+    <div id="brag-rays"></div>
+    <img id="brag-img" style="display:none;">
+    <div id="brag-emoji"></div>
+    <div id="brag-rarity-tag"></div>
+    <div id="brag-name"></div>
+    <div id="brag-owner"></div>
+    <div id="brag-confetti-wrap"></div>
+  </div>
+</div>
+
+<div id="detail-modal">
+  <div class="detail-box">
+    <div class="rarity-tag" id="detail-rarity">RARE</div>
+    <div id="detail-visual-wrap">
+      <img id="detail-img" style="display:none;">
+      <div id="detail-emoji"></div>
+    </div>
+    <div id="detail-name"></div>
+    <div id="detail-hint"></div>
+    <button class="close-btn" id="detail-brag-btn" style="background:linear-gradient(135deg,#ffd166,#ff6b3d); margin-bottom:8px; width:100%;">📣 자랑하기!</button>
+    <button class="close-btn" id="detail-close-btn">닫기</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.52.1/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ============================================================
+   가챠가쟈 일본 가자 - 게임 로직
+   ============================================================ */
+
+/* ---------- 아이템 풀 정의 ---------- */
+const RARITY = {
+  common:   { label:'일반',    color:'#9aa0ac', weight:'w1' },
+  rare:     { label:'레어',    color:'#4fc3ff', weight:'w2' },
+  epic:     { label:'에픽',    color:'#b76bff', weight:'w3' },
+  legendary:{ label:'레전더리', color:'#ffd166', weight:'w4' },
+};
+
+const ITEM_POOLS = {
+  juno: {
+    name: '쭈노의 피규어',
+    common: [
+      {n:'교복 소년', i:'🧑', fig:{hair:'#3a2a1a',outfit:'#28418f',skin:'#ffd8b1',accent:'#ffffff',accessory:null}},
+      {n:'반다나 소년', i:'🧑', fig:{hair:'#111111',outfit:'#5a5a5a',skin:'#ffd8b1',accent:'#d7263d',accessory:'bandana'}},
+      {n:'병아리옷 소년', i:'🐥', fig:{hair:'#f2c14e',outfit:'#ffe08a',skin:'#ffd8b1',accent:'#ff9a3d',accessory:'chick'}},
+    ],
+    rare: [
+      {n:'닌자 소년', i:'🥷', fig:{hair:'#1a1a1a',outfit:'#222244',skin:'#ffd8b1',accent:'#4fc3ff',accessory:'mask'}},
+      {n:'사무라이 소년', i:'🎌', fig:{hair:'#5a3a1e',outfit:'#8a1526',skin:'#ffd8b1',accent:'#ffd166',accessory:'headband'}},
+      {n:'우주비행사 소년', i:'🧑‍🚀', fig:{hair:'#ffffff',outfit:'#e8f4ff',skin:'#ffd8b1',accent:'#4fc3ff',accessory:'helmet'}},
+    ],
+    epic: [
+      {n:'도깨비 소년', i:'👹', fig:{hair:'#d7263d',outfit:'#7c3aed',skin:'#ffd8b1',accent:'#ffd700',accessory:'horn'}},
+      {n:'벚꽃요괴 소년', i:'🌸', fig:{hair:'#111111',outfit:'#ffb6c1',skin:'#ffd8b1',accent:'#ff6fb8',accessory:'flower'}},
+      {n:'불꽃무사 소년', i:'🔥', fig:{hair:'#ff6b3d',outfit:'#8a1526',skin:'#ffd8b1',accent:'#ffae42',accessory:'flame'}},
+    ],
+    legendary: [
+      {n:'황금용사', i:'🐉', fig:{hair:'#ffd700',outfit:'#fff4cc',skin:'#ffd8b1',accent:'#ff2d95',accessory:'crown'}},
+      {n:'은하전사', i:'🌌', fig:{hair:'#7de8ff',outfit:'#1a0a2e',skin:'#ffd8b1',accent:'#b76bff',accessory:'star'}},
+      {n:'신비여우소년', i:'🦊', fig:{hair:'#ff9a3d',outfit:'#ffffff',skin:'#ffd8b1',accent:'#ffd700',accessory:'foxear'}},
+    ],
+  },
+  lani: {
+    name: '라니의 피규어',
+    common: [
+      {n:'교복 소녀', i:'👧', fig:{hair:'#2b1b12',outfit:'#8a1526',skin:'#ffd8b1',accent:'#ffffff',accessory:null}},
+      {n:'리본 소녀', i:'🎀', fig:{hair:'#5a3a1e',outfit:'#ffb6c1',skin:'#ffd8b1',accent:'#ff2d95',accessory:'ribbon'}},
+      {n:'인형옷 소녀', i:'🧸', fig:{hair:'#f2c14e',outfit:'#d8b4ff',skin:'#ffd8b1',accent:'#ffffff',accessory:'bow'}},
+    ],
+    rare: [
+      {n:'마법소녀', i:'🪄', fig:{hair:'#b76bff',outfit:'#7c3aed',skin:'#ffd8b1',accent:'#ffd166',accessory:'star'}},
+      {n:'인어소녀', i:'🧜', fig:{hair:'#4fc3ff',outfit:'#00e5ff',skin:'#ffd8b1',accent:'#ffffff',accessory:'shell'}},
+      {n:'별빛소녀', i:'⭐', fig:{hair:'#1a1a1a',outfit:'#1a0a2e',skin:'#ffd8b1',accent:'#ffd166',accessory:'star'}},
+    ],
+    epic: [
+      {n:'벚꽃요괴 소녀', i:'🌸', fig:{hair:'#ff6fb8',outfit:'#ffb6c1',skin:'#ffd8b1',accent:'#ffffff',accessory:'flower'}},
+      {n:'여우소녀', i:'🦊', fig:{hair:'#ff9a3d',outfit:'#fff4cc',skin:'#ffd8b1',accent:'#ff6b3d',accessory:'foxear'}},
+      {n:'파도무녀', i:'🌊', fig:{hair:'#00e5ff',outfit:'#ffffff',skin:'#ffd8b1',accent:'#4fc3ff',accessory:'wave'}},
+    ],
+    legendary: [
+      {n:'여신소녀', i:'👑', fig:{hair:'#ffd700',outfit:'#ffffff',skin:'#ffd8b1',accent:'#ffd166',accessory:'halo'}},
+      {n:'오로라소녀', i:'💫', fig:{hair:'#7de8ff',outfit:'#b76bff',skin:'#ffd8b1',accent:'#00e5ff',accessory:'aurora'}},
+      {n:'달빛무녀', i:'🌙', fig:{hair:'#e8e8e8',outfit:'#1a0a2e',skin:'#ffd8b1',accent:'#7de8ff',accessory:'moon'}},
+    ],
+  },
+  plush: {
+    name: '인형뽑기 코너',
+    common: [ {n:'토끼 인형', i:'🐰'}, {n:'곰 인형', i:'🧸'}, {n:'고양이 인형', i:'🐱'} ],
+    rare: [ {n:'판다 인형', i:'🐼'}, {n:'펭귄 인형', i:'🐧'}, {n:'강아지 인형', i:'🐶'} ],
+    epic: [ {n:'유니콘 인형', i:'🦄'}, {n:'드래곤 인형', i:'🐲'} ],
+    legendary: [ {n:'황금곰 인형', i:'🌟'}, {n:'무지개 인형', i:'🌈'} ],
+  },
+  plush_food: {
+    name: '간식 인형뽑기',
+    common: [ {n:'주먹밥 쿠션', i:'🍙'}, {n:'도넛 쿠션', i:'🍩'}, {n:'딸기 쿠션', i:'🍓'} ],
+    rare: [ {n:'초밥 인형', i:'🍣'}, {n:'타코야키 인형', i:'🐙'}, {n:'라멘 인형', i:'🍜'} ],
+    epic: [ {n:'케이크 인형', i:'🍰'}, {n:'파르페 인형', i:'🍨'} ],
+    legendary: [ {n:'황금 도넛', i:'✨'}, {n:'무지개 케이크', i:'🌈'} ],
+  },
+  plush_sea: {
+    name: '바다친구 인형뽑기',
+    common: [ {n:'복어 인형', i:'🐡'}, {n:'문어 인형', i:'🐙'}, {n:'게 인형', i:'🦀'} ],
+    rare: [ {n:'돌고래 인형', i:'🐬'}, {n:'거북이 인형', i:'🐢'} ],
+    epic: [ {n:'상어 인형', i:'🦈'}, {n:'인어 인형', i:'🧜'} ],
+    legendary: [ {n:'황금 고래', i:'🐋'}, {n:'무지개 산호', i:'🌈'} ],
+  },
+  keycap: {
+    name: '키캡 키링 뽑기',
+    common: [
+      {n:'스페이스바 키캡', i:'⌨️', kt:'space'},
+      {n:'알파벳 키캡', i:'🔤', kt:'abc'},
+      {n:'하트 키캡', i:'💗', kt:'heart'},
+    ],
+    rare: [
+      {n:'네온 키캡', i:'💡', kt:'neon'},
+      {n:'별 키캡', i:'⭐', kt:'star'},
+    ],
+    epic: [
+      {n:'홀로그램 키캡', i:'🌈', kt:'hologram'},
+      {n:'고양이발 키캡', i:'🐾', kt:'paw'},
+    ],
+    legendary: [
+      {n:'황금 키캡', i:'🏆', kt:'gold'},
+      {n:'무지개 키캡', i:'🌈', kt:'rainbow'},
+      {n:'유니콘 키캡', i:'🦄', kt:'unicorn'},
+    ],
+  }
+};
+
+/* 인형뽑기 확률 (실패 확률 포함) */
+const CLAW_WEIGHTS = { common:35, rare:20, epic:8, legendary:2, fail:35 };
+
+/* 4단계 가챠 기계 - 가격과 등급 확률이 다름 (화려할수록 비쌈) */
+const TIERS = [
+  { price:100,  weights:{common:70, rare:25, epic:5,  legendary:0},  color:0xb5651d, label:'동전 뽑기', glow:0xffaa55 },
+  { price:300,  weights:{common:50, rare:35, epic:13, legendary:2},  color:0xc0c0c0, label:'실버 뽑기', glow:0xcfe8ff },
+  { price:800,  weights:{common:25, rare:40, epic:28, legendary:7},  color:0xffd700, label:'골드 뽑기',  glow:0xffe08a },
+  { price:2000, weights:{common:5,  rare:25, epic:45, legendary:25}, color:0xff2d95, label:'프리미엄 뽑기', glow:0xff6fb8 },
+];
+
+/* ---------- 상태 ---------- */
+const state = {
+  coins: 100000,
+  inventory: {}, // key: "line|name" -> {count, rarity, icon, line}
+};
+
+function pickRarity(weights){
+  const keys = Object.keys(weights);
+  const total = keys.reduce((s,k)=>s+weights[k], 0);
+  let r = Math.random()*total;
+  for(const key of keys){
+    if(r < weights[key]) return key;
+    r -= weights[key];
+  }
+  return keys[0];
+}
+
+function pickItem(line, rarity){
+  const pool = ITEM_POOLS[line][rarity];
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+function addToInventory(line, rarity, item){
+  const key = line+'|'+item.n;
+  if(!state.inventory[key]) state.inventory[key] = { count:0, rarity, icon:item.i, fig:item.fig||null, kt:item.kt||null, name:item.n, line };
+  state.inventory[key].count++;
+}
+
+function totalCollected(){
+  return Object.values(state.inventory).reduce((a,b)=>a+b.count,0);
+}
+
+/* ---------- UI refs ---------- */
+const coinCountEl = document.getElementById('coin-count');
+const collectCountEl = document.getElementById('collect-count');
+const promptEl = document.getElementById('prompt');
+const pullOverlay = document.getElementById('pull-overlay');
+const capsuleStage = document.getElementById('capsule-stage');
+const capsuleEl = document.getElementById('capsule-el');
+const resultCard = document.getElementById('result-card');
+const collectPanel = document.getElementById('collect-panel');
+
+function refreshHUD(){
+  coinCountEl.textContent = state.coins;
+  collectCountEl.textContent = totalCollected();
+  if(typeof scheduleSave === 'function') scheduleSave();
+}
+
+/* ---------- 사운드 (Web Audio 간단 합성) ---------- */
+let actx;
+function sfx(freqs, dur=0.12, type='sine', gain=0.18){
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    freqs.forEach((f,idx)=>{
+      const o = actx.createOscillator(); const g = actx.createGain();
+      o.type = type; o.frequency.value = f;
+      g.gain.value = gain;
+      o.connect(g); g.connect(actx.destination);
+      const t0 = actx.currentTime + idx*0.05;
+      g.gain.setValueAtTime(gain, t0);
+      g.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+      o.start(t0); o.stop(t0+dur+0.02);
+    });
+  }catch(e){}
+}
+const SND = {
+  coin: () => sfx([880,1320], 0.1, 'triangle', 0.15),
+  deny: () => sfx([180,140], 0.18, 'sawtooth', 0.12),
+  crack: () => sfx([440,660,880], 0.15, 'square', 0.1),
+  legendary: () => sfx([523,659,784,1046], 0.3, 'sine', 0.16),
+  // 말랑이: 강한 저음 어택 + 살짝 튕기는 작은 바운스 (실제 영상 포락선 분석 반영)
+  squish: () => {
+    try{
+      actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+      const t0 = actx.currentTime;
+      const o1 = actx.createOscillator(), g1 = actx.createGain();
+      o1.type = 'sine';
+      o1.frequency.setValueAtTime(150, t0);
+      o1.frequency.exponentialRampToValueAtTime(65, t0+0.1);
+      g1.gain.setValueAtTime(0.001, t0);
+      g1.gain.exponentialRampToValueAtTime(0.24, t0+0.015);
+      g1.gain.exponentialRampToValueAtTime(0.001, t0+0.11);
+      o1.connect(g1); g1.connect(actx.destination);
+      o1.start(t0); o1.stop(t0+0.12);
+
+      const o2 = actx.createOscillator(), g2 = actx.createGain();
+      o2.type = 'sine'; o2.frequency.value = 95;
+      g2.gain.setValueAtTime(0.001, t0+0.03);
+      g2.gain.exponentialRampToValueAtTime(0.09, t0+0.04);
+      g2.gain.exponentialRampToValueAtTime(0.001, t0+0.09);
+      o2.connect(g2); g2.connect(actx.destination);
+      o2.start(t0+0.03); o2.stop(t0+0.1);
+    }catch(e){}
+  },
+  // 키캡: 경쾌한 고음 틱(스위치 접점) + 살짝 낮은 딸깍(바텀아웃)이 거의 동시에
+  keyclick: () => {
+    try{
+      actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+      const t0 = actx.currentTime;
+      // 쫀득+경쾌 달칵: 낮은 thock + 살짝 높은 click 동시에
+      const o1 = actx.createOscillator(), g1 = actx.createGain();
+      o1.type = 'sine'; o1.frequency.value = 240;
+      g1.gain.setValueAtTime(0.22, t0); g1.gain.exponentialRampToValueAtTime(0.001, t0+0.07);
+      o1.connect(g1); g1.connect(actx.destination);
+      o1.start(t0); o1.stop(t0+0.08);
+
+      const o2 = actx.createOscillator(), g2 = actx.createGain();
+      o2.type = 'square'; o2.frequency.value = 1800;
+      g2.gain.setValueAtTime(0.07, t0+0.002); g2.gain.exponentialRampToValueAtTime(0.001, t0+0.022);
+      o2.connect(g2); g2.connect(actx.destination);
+      o2.start(t0+0.002); o2.stop(t0+0.03);
+    }catch(e){}
+  },
+};
+
+/* ============================================================
+   THREE.JS 3D 씬
+   ============================================================ */
+const wrap = document.getElementById('canvas-wrap');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x120a28);
+scene.fog = new THREE.Fog(0x120a28, 18, 46);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 200);
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = false;
+wrap.appendChild(renderer.domElement);
+
+window.addEventListener('resize', ()=>{
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ---------- 조명 ---------- */
+scene.add(new THREE.AmbientLight(0x6a5acd, 0.75));
+scene.add(new THREE.HemisphereLight(0x8a6fff, 0x1a0a2e, 0.6));
+const moon = new THREE.DirectionalLight(0xffe9d6, 0.8);
+moon.position.set(10,20,6);
+scene.add(moon);
+
+/* 네온 포인트라이트들 */
+function neonLight(color, x,y,z, intensity=1.4, dist=10){
+  const l = new THREE.PointLight(color, intensity, dist);
+  l.position.set(x,y,z);
+  scene.add(l);
+  return l;
+}
+neonLight(0xff2d95, 0, 6, -10, 2, 30);
+neonLight(0x00e5ff, -10, 5, -2, 1.6, 20);
+neonLight(0xffd166, 10, 5, -2, 1.6, 20);
+
+/* ---------- 바닥/벽 (번쩍거리는 아케이드 스타일) ---------- */
+const floorMat = new THREE.MeshStandardMaterial({ color:0x140a2c, roughness:0.15, metalness:0.55 });
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(40,40), floorMat);
+floor.rotation.x = -Math.PI/2; floor.receiveShadow = true;
+scene.add(floor);
+
+// 바닥 네온 그리드 (반짝이는 타일 느낌)
+const grid = new THREE.GridHelper(40, 26, 0xff2d95, 0x2a1a6d);
+grid.position.y = 0.02;
+grid.material.transparent = true;
+grid.material.opacity = 0.55;
+scene.add(grid);
+const grid2 = new THREE.GridHelper(40, 13, 0x00e5ff, 0x1a0d3d);
+grid2.position.y = 0.015;
+grid2.material.transparent = true;
+grid2.material.opacity = 0.35;
+scene.add(grid2);
+
+function wallSeg(w,h,x,y,z,ry=0,color=0x2a1a52){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,0.4), new THREE.MeshStandardMaterial({color, roughness:0.6, metalness:0.25}));
+  m.position.set(x,y,z); m.rotation.y = ry; m.receiveShadow = true; m.castShadow=false;
+  scene.add(m);
+  return m;
+}
+wallSeg(40,8,0,4,-20);      // 뒤쪽 벽
+wallSeg(40,8,-20,4,0,Math.PI/2);  // 왼쪽 벽
+wallSeg(40,8,20,4,0,Math.PI/2);   // 오른쪽 벽
+
+// 벽에 번쩍이는 네온 트림 스트립
+function neonStrip(w,h,x,y,z,ry,color){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,0.06), new THREE.MeshBasicMaterial({color}));
+  m.position.set(x,y,z); m.rotation.y = ry;
+  scene.add(m);
+}
+[1.2, 4, 6.8].forEach((y,idx)=>{
+  const c = idx%2===0 ? 0xff2d95 : 0x00e5ff;
+  neonStrip(39.5, 0.12, 0, y, -19.75, 0, c);
+  neonStrip(39.5, 0.12, -19.75, y, 0, Math.PI/2, c);
+  neonStrip(39.5, 0.12, 19.75, y, 0, Math.PI/2, c);
+});
+
+/* ---------- 입구 도리이(鳥居) ---------- */
+function buildTorii(z){
+  const g = new THREE.Group();
+  const postMat = new THREE.MeshStandardMaterial({color:0xd7263d, roughness:0.6});
+  const barMat = new THREE.MeshStandardMaterial({color:0x8a1526, roughness:0.6});
+  const postGeo = new THREE.CylinderGeometry(0.28,0.32,6,12);
+  [-3.2,3.2].forEach(x=>{
+    const p = new THREE.Mesh(postGeo, postMat); p.position.set(x,3,z); p.castShadow=true; g.add(p);
+  });
+  const topBar = new THREE.Mesh(new THREE.BoxGeometry(8.4,0.5,0.6), barMat);
+  topBar.position.set(0,5.9,z); g.add(topBar);
+  const topBar2 = new THREE.Mesh(new THREE.BoxGeometry(9.2,0.35,0.4), postMat);
+  topBar2.position.set(0,6.35,z); g.add(topBar2);
+  const midBar = new THREE.Mesh(new THREE.BoxGeometry(7.2,0.35,0.4), barMat);
+  midBar.position.set(0,4.7,z); g.add(midBar);
+  scene.add(g);
+}
+buildTorii(11);
+
+/* ---------- 종이초롱(랜턴) ---------- */
+function lantern(x,y,z){
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.45,12,12), new THREE.MeshStandardMaterial({color:0xff6b3d, emissive:0xff5522, emissiveIntensity:0.6}));
+  g.add(body);
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.18,0.15,10), new THREE.MeshStandardMaterial({color:0x333}));
+  cap.position.y = 0.5; g.add(cap);
+  g.position.set(x,y,z);
+  scene.add(g);
+  neonLight(0xff8a4d, x,y-0.3,z, 0.8, 6);
+}
+[-14,-7,0,7,14].forEach(x=>{ lantern(x, 6.6, -18.5); });
+
+/* ---------- 플레이어 (쭈노오빠) ---------- */
+const player = new THREE.Group();
+const bodyMat = new THREE.MeshStandardMaterial({color:0x3d5afe, roughness:0.55});
+const skinMat = new THREE.MeshStandardMaterial({color:0xffd8b1, roughness:0.7});
+const hairMat = new THREE.MeshStandardMaterial({color:0x2b1b12, roughness:0.8});
+
+const pBody = new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.4,1.0,14), bodyMat);
+pBody.position.y = 0.75; pBody.castShadow = true;
+player.add(pBody);
+
+const pHead = new THREE.Mesh(new THREE.SphereGeometry(0.3,16,16), skinMat);
+pHead.position.y = 1.55; pHead.castShadow = true;
+player.add(pHead);
+
+const pHair = new THREE.Mesh(new THREE.SphereGeometry(0.32,16,16,0,Math.PI*2,0,Math.PI*0.55), hairMat);
+pHair.position.y = 1.68;
+player.add(pHair);
+
+// 눈 (정면/이동 방향을 알 수 있도록)
+const pEyeMat = new THREE.MeshStandardMaterial({ color:0x2b1b12 });
+const pEyeGeo = new THREE.SphereGeometry(0.038,8,8);
+const pEyeL = new THREE.Mesh(pEyeGeo, pEyeMat); pEyeL.position.set(-0.11, 1.58, 0.27); player.add(pEyeL);
+const pEyeR = new THREE.Mesh(pEyeGeo, pEyeMat); pEyeR.position.set(0.11, 1.58, 0.27); player.add(pEyeR);
+// 볼터치
+const pCheekMat = new THREE.MeshStandardMaterial({ color:0xff6fb8 });
+const pCheekGeo = new THREE.SphereGeometry(0.035,8,8);
+const pCheekL = new THREE.Mesh(pCheekGeo, pCheekMat); pCheekL.position.set(-0.18, 1.5, 0.22); player.add(pCheekL);
+const pCheekR = new THREE.Mesh(pCheekGeo, pCheekMat); pCheekR.position.set(0.18, 1.5, 0.22); player.add(pCheekR);
+
+// 팔
+const armMat = bodyMat;
+const armGeo = new THREE.CylinderGeometry(0.09,0.09,0.7,8);
+const armL = new THREE.Mesh(armGeo, armMat); armL.position.set(0.42,0.85,0); armL.rotation.z = 0.15; player.add(armL);
+const armR = new THREE.Mesh(armGeo, armMat); armR.position.set(-0.42,0.85,0); armR.rotation.z = -0.15; player.add(armR);
+
+// 검 (칼날 테마에 맞게 항상 소지)
+const sword = new THREE.Group();
+const blade = new THREE.Mesh(new THREE.BoxGeometry(0.06,0.7,0.02), new THREE.MeshStandardMaterial({color:0xe8f4ff, metalness:0.7, roughness:0.2, emissive:0x3355ff, emissiveIntensity:0.25}));
+blade.position.y = 0.55;
+const hilt = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.28,8), new THREE.MeshStandardMaterial({color:0x5a3a1e}));
+hilt.position.y = 0.05;
+sword.add(blade, hilt);
+sword.position.set(-0.5, 0.55, 0.1);
+sword.rotation.z = 0.5;
+player.add(sword);
+
+// 다리
+const legGeo = new THREE.CylinderGeometry(0.13,0.13,0.55,10);
+const legMat = new THREE.MeshStandardMaterial({color:0x1a1a2e});
+const legL = new THREE.Mesh(legGeo, legMat); legL.position.set(0.16,0.28,0); player.add(legL);
+const legR = new THREE.Mesh(legGeo, legMat); legR.position.set(-0.16,0.28,0); player.add(legR);
+
+player.position.set(0, 0, 8);
+player.castShadow = true;
+scene.add(player);
+
+/* ---------- 가챠 기계 생성 ---------- */
+const spots = []; // {x, z, units:[bottomUnitData, topUnitData?]}
+
+// 별 모양 그리기 (액세서리용)
+function drawStarShape(ctx, cx, cy, spikes, outerR, innerR){
+  let rot = Math.PI/2*3;
+  const step = Math.PI/spikes;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy-outerR);
+  for(let i=0;i<spikes;i++){
+    let x = cx + Math.cos(rot)*outerR, y = cy + Math.sin(rot)*outerR;
+    ctx.lineTo(x,y); rot += step;
+    x = cx + Math.cos(rot)*innerR; y = cy + Math.sin(rot)*innerR;
+    ctx.lineTo(x,y); rot += step;
+  }
+  ctx.lineTo(cx, cy-outerR);
+  ctx.closePath();
+  ctx.fill();
+}
+
+// 오리지널 치비 캐릭터 초상화를 캔버스에 직접 그리는 함수 (칼 대신 "그림"으로 보여줄 캐릭터)
+function drawChibi(ctx, cx, cy, scale, fig){
+  if(!fig) return;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(scale, scale);
+
+  // 몸
+  ctx.fillStyle = fig.outfit;
+  ctx.beginPath(); ctx.ellipse(0, 46, 30, 34, 0, 0, Math.PI*2); ctx.fill();
+  // 옷깃 포인트
+  ctx.fillStyle = fig.accent || '#fff';
+  ctx.beginPath(); ctx.ellipse(0, 24, 14, 6, 0, 0, Math.PI*2); ctx.fill();
+  // 머리(살구색)
+  ctx.fillStyle = fig.skin || '#ffd8b1';
+  ctx.beginPath(); ctx.arc(0, -6, 30, 0, Math.PI*2); ctx.fill();
+  // 머리카락 (뒤)
+  ctx.fillStyle = fig.hair;
+  ctx.beginPath(); ctx.arc(0, -12, 31, Math.PI, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(-26,-2,8,16,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(26,-2,8,16,0,0,Math.PI*2); ctx.fill();
+  // 눈
+  ctx.fillStyle = '#2b1b12';
+  ctx.beginPath(); ctx.arc(-10,-4,3.4,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(10,-4,3.4,0,Math.PI*2); ctx.fill();
+  // 볼터치
+  ctx.fillStyle = 'rgba(255,120,150,0.5)';
+  ctx.beginPath(); ctx.arc(-17,5,4.5,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(17,5,4.5,0,Math.PI*2); ctx.fill();
+  // 입
+  ctx.strokeStyle = '#2b1b12'; ctx.lineWidth = 1.8;
+  ctx.beginPath(); ctx.arc(0,2,4,0.15*Math.PI,0.85*Math.PI); ctx.stroke();
+
+  // 액세서리 (레어도/캐릭터별 특징)
+  ctx.fillStyle = fig.accent || '#fff';
+  switch(fig.accessory){
+    case 'bandana': ctx.fillRect(-30,-20,60,8); break;
+    case 'headband': ctx.fillRect(-30,-18,60,6); break;
+    case 'mask':
+      ctx.fillStyle = '#333'; ctx.beginPath(); ctx.ellipse(0,4,16,10,0,0,Math.PI*2); ctx.fill();
+      break;
+    case 'helmet':
+      ctx.strokeStyle = fig.accent; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(0,-6,33,0,Math.PI*2); ctx.stroke();
+      break;
+    case 'horn':
+      ctx.beginPath(); ctx.moveTo(-14,-30); ctx.lineTo(-8,-48); ctx.lineTo(-2,-30); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(14,-30); ctx.lineTo(8,-48); ctx.lineTo(2,-30); ctx.fill();
+      break;
+    case 'flower':
+      for(let i=0;i<5;i++){ const a=i/5*Math.PI*2; ctx.beginPath(); ctx.ellipse(20+Math.cos(a)*7,-30+Math.sin(a)*7,4,3,a,0,Math.PI*2); ctx.fill(); }
+      break;
+    case 'flame':
+      ctx.beginPath(); ctx.moveTo(0,-32); ctx.quadraticCurveTo(11,-48,0,-58); ctx.quadraticCurveTo(-11,-48,0,-32); ctx.fill();
+      break;
+    case 'crown':
+      ctx.beginPath(); ctx.moveTo(-16,-32); ctx.lineTo(-16,-46); ctx.lineTo(-8,-37); ctx.lineTo(0,-48); ctx.lineTo(8,-37); ctx.lineTo(16,-46); ctx.lineTo(16,-32); ctx.closePath(); ctx.fill();
+      break;
+    case 'star': drawStarShape(ctx, 22,-32,5,9,4); break;
+    case 'foxear':
+      ctx.fillStyle = fig.hair;
+      ctx.beginPath(); ctx.moveTo(-20,-28); ctx.lineTo(-27,-48); ctx.lineTo(-9,-34); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(20,-28); ctx.lineTo(27,-48); ctx.lineTo(9,-34); ctx.closePath(); ctx.fill();
+      break;
+    case 'ribbon': case 'bow':
+      ctx.beginPath(); ctx.ellipse(-16,-30,8,5,0.5,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(16,-30,8,5,-0.5,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(0,-30,3.5,0,Math.PI*2); ctx.fill();
+      break;
+    case 'shell': ctx.beginPath(); ctx.arc(22,-28,7,0,Math.PI*2); ctx.fill(); break;
+    case 'wave':
+      ctx.strokeStyle = fig.accent; ctx.lineWidth = 3.5;
+      ctx.beginPath(); ctx.moveTo(-30,-30); ctx.quadraticCurveTo(-20,-42,-10,-30); ctx.quadraticCurveTo(0,-18,10,-30); ctx.quadraticCurveTo(20,-42,30,-30); ctx.stroke();
+      break;
+    case 'halo':
+      ctx.strokeStyle = fig.accent; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.ellipse(0,-44,16,6,0,0,Math.PI*2); ctx.stroke();
+      break;
+    case 'aurora':
+      ctx.strokeStyle = fig.accent; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.arc(0,10,52,Math.PI*1.12,Math.PI*1.88); ctx.stroke();
+      break;
+    case 'moon':
+      ctx.beginPath(); ctx.arc(22,-32,7,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#150a2e'; ctx.beginPath(); ctx.arc(25,-34,6,0,Math.PI*2); ctx.fill();
+      break;
+    case 'chick':
+      ctx.fillStyle = '#ff9a3d';
+      ctx.beginPath(); ctx.moveTo(0,-30); ctx.lineTo(-6,-22); ctx.lineTo(6,-22); ctx.closePath(); ctx.fill();
+      break;
+    default: break;
+  }
+  ctx.restore();
+}
+
+// 치비 캐릭터를 이미지(dataURL)로 렌더링 - 결과 카드/저장함에서 <img>로 사용
+const chibiCache = new Map();
+function chibiDataURL(fig, size){
+  size = size || 150;
+  const key = JSON.stringify(fig)+'|'+size;
+  if(chibiCache.has(key)) return chibiCache.get(key);
+  const cvs = document.createElement('canvas');
+  cvs.width = size; cvs.height = size;
+  const ctx = cvs.getContext('2d');
+  drawChibi(ctx, size/2, size*0.58, size/150, fig);
+  const url = cvs.toDataURL();
+  chibiCache.set(key, url);
+  return url;
+}
+
+// 키캡 아이템은 이모티콘이 아니라 실제 3D 키캡 모델을 스냅샷 렌더링해서 이미지로 사용
+const keycapSnapCache = new Map();
+let keycapSnapRenderer, keycapSnapScene, keycapSnapCamera;
+function initKeycapSnap(){
+  if(keycapSnapRenderer) return;
+  const cvs = document.createElement('canvas');
+  cvs.width = 220; cvs.height = 220;
+  keycapSnapRenderer = new THREE.WebGLRenderer({ canvas:cvs, antialias:true, alpha:true });
+  keycapSnapRenderer.setSize(220,220,false);
+  keycapSnapRenderer.setClearColor(0x000000, 0);
+  keycapSnapScene = new THREE.Scene();
+  keycapSnapScene.add(new THREE.AmbientLight(0xffffff, 0.9));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.8);
+  dl.position.set(2,3,2);
+  keycapSnapScene.add(dl);
+  keycapSnapCamera = new THREE.PerspectiveCamera(32, 1, 0.05, 10);
+  keycapSnapCamera.position.set(0.34, 0.3, 0.4);
+  keycapSnapCamera.lookAt(0, 0.04, 0);
+}
+function keycapDataURL(colorHex, size, kt){
+  size = size || 160;
+  const key = (kt||'default')+'|'+size;
+  if(keycapSnapCache.has(key)) return keycapSnapCache.get(key);
+  initKeycapSnap();
+  while(keycapSnapScene.children.length > 2){ keycapSnapScene.remove(keycapSnapScene.children[2]); }
+  const mesh = buildKeycapMesh(colorHex, kt);
+  mesh.rotation.y = 0.5;
+  keycapSnapScene.add(mesh);
+  keycapSnapRenderer.setSize(size,size,false);
+  keycapSnapRenderer.render(keycapSnapScene, keycapSnapCamera);
+  const url = keycapSnapRenderer.domElement.toDataURL();
+  keycapSnapCache.set(key, url);
+  return url;
+}
+
+// 상품 박스아트 캔버스 (기계 상단 디스플레이 창에 들어가는 이미지) - 치비 캐릭터 4명 콜라주
+function createBoxArtCanvas(line, tier){
+
+  const cvs = document.createElement('canvas');
+  cvs.width = 220; cvs.height = 170;
+  const ctx = cvs.getContext('2d');
+  const grad = ctx.createLinearGradient(0,0,0,170);
+  const c1 = '#'+tier.glow.toString(16).padStart(6,'0');
+  grad.addColorStop(0, c1); grad.addColorStop(1, '#1a0d38');
+  ctx.fillStyle = grad; ctx.fillRect(0,0,220,170);
+
+  // 대표 캐릭터 4명 그림 콜라주
+  const pool = ITEM_POOLS[line];
+  const picks = [...pool.rare, ...pool.epic].slice(0,4);
+  const positions = [[55,58],[165,58],[55,122],[165,122]];
+  picks.forEach((it,idx)=>{ drawChibi(ctx, positions[idx][0], positions[idx][1], 0.42, it.fig); });
+
+  ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0,134,220,36);
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign='center';
+  ctx.fillText(pool.name, 110, 152);
+  return new THREE.CanvasTexture(cvs);
+}
+
+// 가격/등급 표시 다이얼 라벨
+function createDialLabelCanvas(tier){
+  const cvs = document.createElement('canvas');
+  cvs.width = 128; cvs.height = 128;
+  const ctx = cvs.getContext('2d');
+  ctx.fillStyle = '#f4f4f4'; ctx.beginPath(); ctx.arc(64,64,62,0,Math.PI*2); ctx.fill();
+  ctx.lineWidth = 8; ctx.strokeStyle = '#'+tier.glow.toString(16).padStart(6,'0');
+  ctx.beginPath(); ctx.arc(64,64,58,0,Math.PI*2); ctx.stroke();
+  ctx.fillStyle = '#e63946';
+  ctx.beginPath(); ctx.moveTo(64,20); ctx.lineTo(78,44); ctx.lineTo(50,44); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#222'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(tier.price+'원', 64, 82);
+  return new THREE.CanvasTexture(cvs);
+}
+
+// 상단 사인보드(가격/등급명)
+function createSignCanvas(text, sub){
+  const cvs = document.createElement('canvas');
+  cvs.width = 256; cvs.height = 96;
+  const ctx = cvs.getContext('2d');
+  ctx.fillStyle = '#1a0d38'; ctx.fillRect(0,0,256,96);
+  ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 6; ctx.strokeRect(4,4,248,88);
+  ctx.fillStyle = '#ffe9a8'; ctx.font = 'bold 30px sans-serif'; ctx.textAlign='center';
+  ctx.fillText(text, 128, 42);
+  ctx.fillStyle = '#7de8ff'; ctx.font = '22px sans-serif';
+  ctx.fillText(sub, 128, 74);
+  return new THREE.CanvasTexture(cvs);
+}
+
+// 공용 재질/텍스처 캐시 (기계 수가 많아져도 GPU 부담을 늘리지 않기 위함)
+const sharedPlasticMat = new THREE.MeshStandardMaterial({ color:0xf0f0f0, roughness:0.35, metalness:0.05 });
+const sharedSlotMat = new THREE.MeshStandardMaterial({ color:0x1a1a1a });
+const sharedOutSlotMat = new THREE.MeshStandardMaterial({ color:0x111111 });
+const sharedTrayMat = new THREE.MeshStandardMaterial({ color:0x2a2a2a });
+const sharedCaseMat = new THREE.MeshStandardMaterial({ color:0xe4e4e4, roughness:0.3 });
+const sharedAcrylicMat = new THREE.MeshPhysicalMaterial({ color:0xffffff, transparent:true, opacity:0.12, roughness:0.05, metalness:0.1 });
+const sharedCapTopMat = new THREE.MeshStandardMaterial({ color:0xffffff, roughness:0.4 });
+const capsuleBallColors = [0xff2d95,0x00e5ff,0xffd166,0xb76bff,0x4fc3ff];
+const capsuleBallMats = capsuleBallColors.map(c=> new THREE.MeshStandardMaterial({ color:c }));
+
+const trimMatCache = new Map();
+function getTrimMat(tier){
+  if(!trimMatCache.has(tier.price)){
+    trimMatCache.set(tier.price, new THREE.MeshStandardMaterial({ color:tier.glow, roughness:0.4, metalness:0.2, emissive:tier.glow, emissiveIntensity:0.35 }));
+  }
+  return trimMatCache.get(tier.price);
+}
+const dialMatCache = new Map();
+function getDialMat(tier){
+  if(!dialMatCache.has(tier.price)){
+    dialMatCache.set(tier.price, new THREE.MeshStandardMaterial({ map:createDialLabelCanvas(tier), roughness:0.3 }));
+  }
+  return dialMatCache.get(tier.price);
+}
+const boxArtMatCache = new Map();
+function getBoxArtMat(line, tier){
+  const key = line+'|'+tier.price;
+  if(!boxArtMatCache.has(key)){
+    boxArtMatCache.set(key, new THREE.MeshBasicMaterial({ map:createBoxArtCanvas(line, tier) }));
+  }
+  return boxArtMatCache.get(key);
+}
+
+// 실사형 반다이 가샤폰 스타일 기계 "유닛" 하나 (y=0 기준으로 만들고 나중에 쌓음)
+function createMachineUnit(tier, line){
+  const g = new THREE.Group();
+  const trimMat = getTrimMat(tier);
+
+  const lowerBody = new THREE.Mesh(new THREE.BoxGeometry(0.68,0.85,0.56), sharedPlasticMat);
+  lowerBody.position.y = 0.43;
+  g.add(lowerBody);
+
+  const coinPanel = new THREE.Mesh(new THREE.BoxGeometry(0.7,0.14,0.02), trimMat);
+  coinPanel.position.set(0, 0.78, 0.29);
+  g.add(coinPanel);
+
+  const slot = new THREE.Mesh(new THREE.BoxGeometry(0.16,0.045,0.03), sharedSlotMat);
+  slot.position.set(0, 0.78, 0.31);
+  g.add(slot);
+
+  const dial = new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,0.04,16), getDialMat(tier));
+  dial.rotation.x = Math.PI/2;
+  dial.position.set(0, 0.52, 0.3);
+  g.add(dial);
+  const dialRing = new THREE.Mesh(new THREE.TorusGeometry(0.17,0.02,6,16), trimMat);
+  dialRing.rotation.x = Math.PI/2;
+  dialRing.position.set(0,0.52,0.3);
+  g.add(dialRing);
+
+  const outSlot = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.16,0.06), sharedOutSlotMat);
+  outSlot.position.set(0, 0.16, 0.29);
+  g.add(outSlot);
+  const tray = new THREE.Mesh(new THREE.BoxGeometry(0.34,0.05,0.16), sharedTrayMat);
+  tray.position.set(0, 0.06, 0.36);
+  g.add(tray);
+
+  const caseFrame = new THREE.Mesh(new THREE.BoxGeometry(0.7,0.62,0.6), sharedCaseMat);
+  caseFrame.position.y = 1.16;
+  g.add(caseFrame);
+
+  const boxArt = new THREE.Mesh(new THREE.PlaneGeometry(0.58,0.5), getBoxArtMat(line, tier));
+  boxArt.position.set(0, 1.17, 0.305);
+  g.add(boxArt);
+
+  const acrylic = new THREE.Mesh(new THREE.PlaneGeometry(0.66,0.58), sharedAcrylicMat);
+  acrylic.position.set(0,1.17,0.315);
+  g.add(acrylic);
+
+  const capTop = new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.36,0.22,12), sharedCapTopMat);
+  capTop.position.y = 1.53;
+  g.add(capTop);
+  for(let i=0;i<4;i++){
+    const ang = (i/4)*Math.PI*2;
+    const c = new THREE.Mesh(new THREE.SphereGeometry(0.06,6,6), capsuleBallMats[i%capsuleBallMats.length]);
+    c.position.set(Math.cos(ang)*0.24, 1.62, Math.sin(ang)*0.24);
+    g.add(c);
+  }
+
+  const logoStrip = new THREE.Mesh(new THREE.BoxGeometry(0.72,0.08,0.62), trimMat);
+  logoStrip.position.y = 1.49;
+  g.add(logoStrip);
+
+  const data = { price:tier.price, weights:tier.weights, line, label:tier.label, type:'gacha', dialMesh:dial, unitGroup:g };
+  return { group:g, data };
+}
+
+// 가챠 기계 2개를 세로로 쌓은 "타워" (위=쭈노의 칼날, 아래=라니의 칼날)
+const UNIT_H = 1.72;
+function createTower(x, z, bottomTier, bottomLine, topTier, topLine, ry){
+  const tower = new THREE.Group();
+  const bottom = createMachineUnit(bottomTier, bottomLine);
+  bottom.group.position.y = 0;
+  tower.add(bottom.group);
+  const top = createMachineUnit(topTier, topLine);
+  top.group.position.y = UNIT_H;
+  tower.add(top.group);
+  tower.position.set(x,0,z);
+  if(ry) tower.rotation.y = ry;
+  scene.add(tower);
+  spots.push({ x, z, units:[bottom.data, top.data] });
+  return tower;
+}
+
+// 인형뽑기(UFO캐처) 기계
+const sharedGlassMat = new THREE.MeshPhysicalMaterial({ color:0xffffff, transparent:true, opacity:0.15, roughness:0.05, metalness:0.1 });
+const sharedEdgeMat = new THREE.LineBasicMaterial({ color:0x00e5ff });
+const plushColors = [0xffb6c1,0xffe08a,0x9be8ff,0xd8b4ff,0xffffff,0xff9a6b];
+const plushBodyMats = plushColors.map(c=> new THREE.MeshStandardMaterial({ color:c, roughness:0.8 }));
+const plushEarMats = plushColors.map(c=> new THREE.MeshStandardMaterial({ color:c }));
+const sharedClawArmMat = new THREE.MeshStandardMaterial({ color:0x999999 });
+const sharedClawHeadMat = new THREE.MeshStandardMaterial({ color:0xcccccc, metalness:0.6, roughness:0.3 });
+const sharedClawBaseMat = new THREE.MeshStandardMaterial({ color:0x2a0a3d, roughness:0.4 });
+const sharedNeonTrimMat = new THREE.MeshStandardMaterial({ color:0xff2d95, emissive:0xff2d95, emissiveIntensity:0.5 });
+const sharedStickMat = new THREE.MeshStandardMaterial({ color:0xff2d95 });
+const sharedStickBallMat = new THREE.MeshStandardMaterial({ color:0xff2d95, emissive:0xff2d95, emissiveIntensity:0.3 });
+
+// 칸마다 인형이 다르도록 여러 테마 풀 중 하나를 배정
+const CLAW_POOL_KEYS = ['plush','plush_food','plush_sea','keycap'];
+const clawSignMatCache = new Map();
+function getClawSignMat(poolKey){
+  if(!clawSignMatCache.has(poolKey)){
+    const tex = createSignCanvas(ITEM_POOLS[poolKey].name, '1000원');
+    clawSignMatCache.set(poolKey, new THREE.MeshBasicMaterial({ map:tex, transparent:true }));
+  }
+  return clawSignMatCache.get(poolKey);
+}
+
+function createClawMachine(x, z, ry, forcedPool){
+  const poolKey = forcedPool || CLAW_POOL_KEYS[Math.floor(Math.random()*CLAW_POOL_KEYS.length)];
+  const g = new THREE.Group();
+
+  const glass = new THREE.Mesh(new THREE.BoxGeometry(1.1,1.5,1.0), sharedGlassMat);
+  glass.position.y = 1.15;
+  g.add(glass);
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(glass.geometry), sharedEdgeMat);
+  edges.position.copy(glass.position);
+  g.add(edges);
+
+  for(let i=0;i<10;i++){
+    const px = (Math.random()-0.5)*0.8, pz = (Math.random()-0.5)*0.6;
+    const p = new THREE.Mesh(new THREE.SphereGeometry(0.13,8,8), plushBodyMats[i%plushBodyMats.length]);
+    p.position.set(px, 0.55+Math.random()*0.3, pz);
+    g.add(p);
+    const ear = new THREE.Mesh(new THREE.SphereGeometry(0.045,6,6), plushEarMats[i%plushEarMats.length]);
+    ear.position.set(px+0.08, p.position.y+0.12, pz);
+    g.add(ear);
+  }
+
+  const clawGroup = new THREE.Group();
+  const clawArm = new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.035,0.4,8), sharedClawArmMat);
+  clawArm.position.y = 1.72;
+  clawGroup.add(clawArm);
+  const clawHead = new THREE.Mesh(new THREE.ConeGeometry(0.09,0.16,4), sharedClawHeadMat);
+  clawHead.position.y = 1.5; clawHead.rotation.x = Math.PI;
+  clawGroup.add(clawHead);
+  g.add(clawGroup);
+
+  const base = new THREE.Mesh(new THREE.BoxGeometry(1.16,0.55,1.06), sharedClawBaseMat);
+  base.position.y = 0.12;
+  g.add(base);
+  const neonTrim = new THREE.Mesh(new THREE.BoxGeometry(1.18,0.06,1.08), sharedNeonTrimMat);
+  neonTrim.position.y = 0.4;
+  g.add(neonTrim);
+
+  const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.16,8), sharedStickMat);
+  stick.position.set(0,0.44,0.5); stick.rotation.x = 0.3;
+  g.add(stick);
+  const stickBall = new THREE.Mesh(new THREE.SphereGeometry(0.05,8,8), sharedStickBallMat);
+  stickBall.position.set(0,0.52,0.55);
+  g.add(stickBall);
+
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.9,0.34), getClawSignMat(poolKey));
+  sign.position.set(0, 2.02, 0.51);
+  g.add(sign);
+
+  g.position.set(x,0,z);
+  if(ry) g.rotation.y = ry;
+  scene.add(g);
+
+  const data = { price:1000, weights:CLAW_WEIGHTS, line:poolKey, label:ITEM_POOLS[poolKey].name, type:'claw', clawGroupRef:clawGroup };
+  spots.push({ x, z, units:[data] });
+}
+
+// 가운데 아일랜드 (입구와 뒷벽 사이에 자유롭게 서있는 기계들)
+(function buildMiddleIsland(){
+  const islandZ = 1.5;
+  const xs = [-4.2,-1.4,1.4,4.2];
+  xs.forEach((x,idx)=>{
+    const bottomTier = TIERS[(idx+1) % 4];
+    const topTier = TIERS[(idx+3) % 4];
+    createTower(x, islandZ, bottomTier, 'lani', topTier, 'juno');
+  });
+})();
+
+// 좌우 벽면: 집게(인형뽑기) 기계를 훨씬 빽빽하게, 사이사이 가챠 타워도 배치
+function buildSideArcade(xPos, ry){
+  const gap = 0.06;
+  const pattern = ['claw','claw','tower','claw','claw','tower','claw','claw','tower','claw','claw'];
+  const items = [];
+  let towerIdx = 0;
+  pattern.forEach(type=>{
+    if(type === 'claw'){ items.push({ type:'claw', width:1.2 }); }
+    else { items.push({ type:'tower', width:0.75, idx:towerIdx }); towerIdx++; }
+  });
+  const totalWidth = items.reduce((s,it)=>s+it.width,0) + gap*(items.length-1);
+  let cursor = -totalWidth/2;
+  items.forEach(it=>{
+    const centerZ = cursor + it.width/2;
+    if(it.type === 'claw'){
+      createClawMachine(xPos, centerZ, ry);
+    } else {
+      const bottomTier = TIERS[it.idx % 4], topTier = TIERS[(it.idx+2) % 4];
+      createTower(xPos, centerZ, bottomTier, 'lani', topTier, 'juno', ry);
+    }
+    cursor += it.width + gap;
+  });
+}
+buildSideArcade(-19, Math.PI/2);
+buildSideArcade(19, -Math.PI/2);
+
+// 코인 벌기 미니게임 부스 (입구 근처)
+(function buildMinigameBooth(){
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1.4,1.6,0.8),
+    new THREE.MeshStandardMaterial({ color:0x3d1f6e, roughness:0.4 }));
+  body.position.y = 0.8;
+  g.add(body);
+  const trim = new THREE.Mesh(new THREE.BoxGeometry(1.46,0.1,0.86),
+    new THREE.MeshStandardMaterial({ color:0xffd166, emissive:0xffd166, emissiveIntensity:0.5 }));
+  trim.position.y = 1.62;
+  g.add(trim);
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(1.1,0.7),
+    new THREE.MeshBasicMaterial({ map:createSignCanvas('🪙 코인 게임', '무료!') }));
+  screen.position.set(0, 1.1, 0.41);
+  g.add(screen);
+  const coinDeco = new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.22,0.05,20),
+    new THREE.MeshStandardMaterial({ color:0xffd700, metalness:0.8, roughness:0.2, emissive:0xffaa00, emissiveIntensity:0.3 }));
+  coinDeco.rotation.x = Math.PI/2;
+  coinDeco.position.set(0, 2.0, 0);
+  g.add(coinDeco);
+  g.position.set(8, 0, 8);
+  scene.add(g);
+  spots.push({ x:8, z:8, units:[{ price:0, line:null, label:'🪙 코인 게임 (무료)', type:'minigame' }] });
+  // 코인 장식 회전
+  (function spinCoin(){ coinDeco.rotation.z += 0.02; requestAnimationFrame(spinCoin); })();
+})();
+
+// 오락실 벽면 배치: 인형뽑기 - 가챠 타워 10개 - 인형뽑기 순서로 빽빽하게 한 줄에 배치
+(function buildArcadeWall(){
+  const wallZ = -12.4;
+  const gap = 0.05;
+  const items = [];
+  for(let i=0;i<4;i++) items.push({ type:'claw', width:1.2 });
+  for(let i=0;i<10;i++) items.push({ type:'tower', width:0.75, idx:i });
+  for(let i=0;i<4;i++) items.push({ type:'claw', width:1.2 });
+
+  const totalWidth = items.reduce((s,it)=>s+it.width,0) + gap*(items.length-1);
+  let cursor = -totalWidth/2;
+  items.forEach(it=>{
+    const centerX = cursor + it.width/2;
+    if(it.type === 'claw'){
+      createClawMachine(centerX, wallZ);
+    } else {
+      const bottomTier = TIERS[it.idx % 4];
+      const topTier = TIERS[(it.idx + 2) % 4];
+      createTower(centerX, wallZ, bottomTier, 'lani', topTier, 'juno');
+    }
+    cursor += it.width + gap;
+  });
+})();
+
+/* ---------- 움직임/입력 ---------- */
+const keys = {};
+window.addEventListener('keydown', e=>{
+  keys[e.key.toLowerCase()] = true;
+  if(e.key.toLowerCase()==='e' && nearestSpot){ attemptPull(nearestSpot.units[0]); }
+});
+window.addEventListener('keyup', e=>{ keys[e.key.toLowerCase()] = false; });
+
+let joyVec = {x:0,y:0};
+let joyActive = false;
+const joyZone = document.getElementById('joystick-zone');
+const joyKnob = document.getElementById('joystick-knob');
+
+function isMobile(){ return 'ontouchstart' in window || navigator.maxTouchPoints > 0; }
+if(isMobile()){ document.getElementById('mobile-controls').style.display = 'block'; }
+
+function joyHandle(clientX, clientY){
+  const rect = joyZone.getBoundingClientRect();
+  const cx = rect.left+rect.width/2, cy = rect.top+rect.height/2;
+  let dx = clientX-cx, dy = clientY-cy;
+  const max = rect.width/2;
+  const dist = Math.min(Math.hypot(dx,dy), max);
+  const ang = Math.atan2(dy,dx);
+  dx = Math.cos(ang)*dist; dy = Math.sin(ang)*dist;
+  joyKnob.style.left = (64+dx)+'px'; joyKnob.style.top = (64+dy)+'px';
+  joyVec.x = dx/max; joyVec.y = dy/max;
+}
+joyZone.addEventListener('touchstart', e=>{ joyActive=true; joyHandle(e.touches[0].clientX,e.touches[0].clientY); e.preventDefault(); });
+joyZone.addEventListener('touchmove', e=>{ if(joyActive) joyHandle(e.touches[0].clientX,e.touches[0].clientY); e.preventDefault(); });
+joyZone.addEventListener('touchend', e=>{ joyActive=false; joyVec={x:0,y:0}; joyKnob.style.left='50%'; joyKnob.style.top='50%'; joyKnob.style.transform='translate(-28px,-28px)'; joyKnob.style.left='64px'; joyKnob.style.top='64px'; });
+
+const clock = new THREE.Clock();
+const desiredCamPos = new THREE.Vector3();
+
+/* ---------- 로블록스 스타일 카메라: 드래그로 회전, 휠/핀치로 줌 ---------- */
+let camYaw = 0;
+let camPitch = 0.6;
+let camDist = 10.9;
+let camDragging = false, camLastX = 0, camLastY = 0;
+let pinchStartDist = null, pinchStartCamDist = camDist;
+
+const canvasEl = renderer.domElement;
+canvasEl.addEventListener('mousedown', e=>{ camDragging = true; camLastX = e.clientX; camLastY = e.clientY; });
+window.addEventListener('mouseup', ()=>{ camDragging = false; });
+window.addEventListener('mousemove', e=>{
+  if(!camDragging) return;
+  const dx = e.clientX - camLastX, dy = e.clientY - camLastY;
+  camLastX = e.clientX; camLastY = e.clientY;
+  camYaw -= dx*0.006;
+  camPitch = THREE.MathUtils.clamp(camPitch - dy*0.004, 0.15, 1.3);
+});
+canvasEl.addEventListener('wheel', e=>{
+  camDist = THREE.MathUtils.clamp(camDist + e.deltaY*0.02, 4, 22);
+  e.preventDefault();
+}, { passive:false });
+
+canvasEl.addEventListener('touchstart', e=>{
+  if(e.touches.length === 1){
+    camDragging = true; camLastX = e.touches[0].clientX; camLastY = e.touches[0].clientY;
+  } else if(e.touches.length === 2){
+    camDragging = false;
+    pinchStartDist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+    pinchStartCamDist = camDist;
+  }
+}, { passive:true });
+canvasEl.addEventListener('touchmove', e=>{
+  if(e.touches.length === 1 && camDragging){
+    const dx = e.touches[0].clientX-camLastX, dy = e.touches[0].clientY-camLastY;
+    camLastX = e.touches[0].clientX; camLastY = e.touches[0].clientY;
+    camYaw -= dx*0.007;
+    camPitch = THREE.MathUtils.clamp(camPitch - dy*0.005, 0.15, 1.3);
+  } else if(e.touches.length === 2 && pinchStartDist){
+    const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+    camDist = THREE.MathUtils.clamp(pinchStartCamDist - (d-pinchStartDist)*0.03, 4, 22);
+  }
+}, { passive:true });
+canvasEl.addEventListener('touchend', e=>{ if(e.touches.length===0){ camDragging=false; pinchStartDist=null; } });
+
+function updateMovement(dt){
+  let mx=0, mz=0;
+  if(keys['w']||keys['arrowup']) mz -= 1;
+  if(keys['s']||keys['arrowdown']) mz += 1;
+  if(keys['a']||keys['arrowleft']) mx -= 1;
+  if(keys['d']||keys['arrowright']) mx += 1;
+  if(joyActive){ mx += joyVec.x; mz += joyVec.y; }
+
+  const len = Math.hypot(mx,mz);
+  if(len > 0.05){
+    mx/=len; mz/=len;
+    // 카메라를 회전시켜도 조이스틱/키가 항상 "화면에 보이는 방향" 기준으로 움직이도록 변환
+    const cs = Math.sin(camYaw), cc = Math.cos(camYaw);
+    const wx = mx*cc + mz*cs;
+    const wz = -mx*cs + mz*cc;
+    const speed = 5.2;
+    player.position.x += wx*speed*dt;
+    player.position.z += wz*speed*dt;
+    player.position.x = THREE.MathUtils.clamp(player.position.x, -17.4, 17.4);
+    player.position.z = THREE.MathUtils.clamp(player.position.z, -11.6, 13);
+    const targetRot = Math.atan2(wx, wz);
+    let diff = targetRot - player.rotation.y;
+    diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+    player.rotation.y += diff * Math.min(1, dt*10);
+    // 걷기 애니메이션
+    const t = performance.now()*0.012;
+    legL.rotation.x = Math.sin(t)*0.5; legR.rotation.x = -Math.sin(t)*0.5;
+    armL.rotation.x = -Math.sin(t)*0.4; armR.rotation.x = Math.sin(t)*0.4;
+  } else {
+    legL.rotation.x *= 0.8; legR.rotation.x *= 0.8;
+    armL.rotation.x *= 0.8; armR.rotation.x *= 0.8;
+  }
+}
+
+function updateCamera(dt){
+  const offX = camDist*Math.cos(camPitch)*Math.sin(camYaw);
+  const offZ = camDist*Math.cos(camPitch)*Math.cos(camYaw);
+  const offY = camDist*Math.sin(camPitch);
+  desiredCamPos.set(player.position.x+offX, offY, player.position.z+offZ);
+  camera.position.lerp(desiredCamPos, Math.min(1, dt*6));
+  const lookTarget = new THREE.Vector3(player.position.x, 1.2, player.position.z);
+  camera.lookAt(lookTarget);
+}
+
+let nearestSpot = null;
+function updateNearestSpot(){
+  let nearest=null, nd=Infinity;
+  spots.forEach(s=>{
+    const d = Math.hypot(s.x-player.position.x, s.z-player.position.z);
+    if(d < nd){ nd = d; nearest = s; }
+  });
+  if(nearest && nd < 2.6){
+    nearestSpot = nearest;
+    renderPrompt(nearest);
+  } else {
+    nearestSpot = null;
+    promptEl.classList.remove('show');
+    promptEl.innerHTML = '';
+  }
+}
+
+function renderPrompt(spot){
+  promptEl.innerHTML = '';
+  // 타워면 위쪽 유닛을 먼저 보여주고, 그 아래에 아래쪽 유닛 버튼
+  const ordered = spot.units.length > 1 ? [spot.units[1], spot.units[0]] : spot.units;
+  ordered.forEach(u=>{
+    const btn = document.createElement('button');
+    if(u.type === 'minigame'){
+      btn.className = 'prompt-btn';
+      btn.innerHTML = `${u.label}<span class="sub">코인을 벌어보세요!</span>`;
+    } else {
+      btn.className = 'prompt-btn' + (state.coins < u.price ? ' disabled' : '');
+      const poolName = ITEM_POOLS[u.line].name;
+      btn.innerHTML = `${u.label}<span class="sub">${poolName} · ${u.price}원</span>`;
+    }
+    btn.addEventListener('click', ()=> attemptPull(u));
+    promptEl.appendChild(btn);
+  });
+  promptEl.classList.add('show');
+}
+
+/* ---------- 뽑기 실행 ---------- */
+let pulling = false;
+function attemptPull(unit){
+  if(pulling) return;
+  if(unit.type === 'minigame'){ pulling = true; openMinigame(); return; }
+  if(state.coins < unit.price){ SND.deny(); return; }
+  state.coins -= unit.price;
+  SND.coin();
+  refreshHUD();
+  pulling = true;
+  if(typeof npcNoticePull === 'function') npcNoticePull();
+  if(unit.type === 'claw'){
+    openClawAim(unit);
+  } else {
+    startCoinDialInteractive(unit, ()=> openPullOverlay(unit));
+  }
+}
+
+/* ---------- 코인 타이밍 미니게임 ---------- */
+const mgOverlay = document.getElementById('minigame-overlay');
+let mgRound = 0, mgTotal = 0, mgDir = 1, mgPos = 0, mgRunning = false, mgRAF = null;
+const mgMarker = document.getElementById('mg-marker');
+
+function openMinigame(){
+  mgRound = 0; mgTotal = 0;
+  document.getElementById('mg-earn').textContent = '+0원';
+  mgOverlay.classList.add('show');
+  startMgRound();
+}
+function startMgRound(){
+  mgRound++;
+  document.getElementById('mg-round').textContent = `${mgRound} / 3`;
+  document.getElementById('mg-tap-btn').textContent = '탭!';
+  mgPos = 0; mgDir = 1; mgRunning = true;
+  const speed = 1.3 + mgRound*0.45; // 라운드마다 빨라짐
+  let last = performance.now();
+  (function loop(){
+    if(!mgRunning) return;
+    const now = performance.now();
+    const dt = (now-last)/1000; last = now;
+    mgPos += mgDir*speed*dt;
+    if(mgPos > 1){ mgPos = 1; mgDir = -1; }
+    if(mgPos < 0){ mgPos = 0; mgDir = 1; }
+    mgMarker.style.left = `calc(${(mgPos*100).toFixed(1)}% - 3px)`;
+    mgRAF = requestAnimationFrame(loop);
+  })();
+}
+document.getElementById('mg-tap-btn').addEventListener('click', ()=>{
+  if(!mgRunning){
+    // 종료 화면에서 닫기
+    mgOverlay.classList.remove('show');
+    pulling = false;
+    return;
+  }
+  mgRunning = false;
+  cancelAnimationFrame(mgRAF);
+  // 골드: 44~56%, 실버: 35~65%
+  let earn = 0;
+  if(mgPos >= 0.44 && mgPos <= 0.56){ earn = 2000; SND.legendary(); }
+  else if(mgPos >= 0.35 && mgPos <= 0.65){ earn = 800; SND.coin(); }
+  else { earn = 100; SND.deny(); }
+  mgTotal += earn;
+  state.coins += earn;
+  refreshHUD();
+  document.getElementById('mg-earn').textContent = `+${mgTotal}원`;
+  if(mgRound < 3){
+    setTimeout(startMgRound, 700);
+  } else {
+    document.getElementById('mg-tap-btn').textContent = `총 +${mgTotal}원! 닫기`;
+  }
+});
+
+/* ---------- 동전 넣기 + 다이얼 돌리기: 사용자가 직접 스와이프/드래그로 조작 ---------- */
+let pendingCoinDialUnit = null;
+let coinDialResolveCb = null;
+
+function startCoinDialInteractive(unit, cb){
+  pullOverlay.classList.add('show');
+  resultCard.classList.remove('show');
+  capsuleEl.style.display = 'none';
+  document.getElementById('tap-hint').style.display = 'none';
+
+  pendingCoinDialUnit = unit;
+  coinDialResolveCb = cb;
+
+  document.getElementById('coin-dial-stage').classList.add('show');
+  document.getElementById('cd-step-coin').style.display = 'flex';
+  document.getElementById('cd-step-dial').style.display = 'none';
+
+  const coinEl = document.getElementById('cd-coin');
+  coinEl.style.transition = '';
+  coinEl.style.opacity = '1';
+  coinEl.style.transform = 'translateY(0px)';
+
+  const dialEl = document.getElementById('cd-dial');
+  dialEl.style.transform = 'rotate(0deg)';
+  dialAccum = 0;
+  dialDone = false;
+}
+
+// --- 1단계: 동전 스와이프해서 넣기 ---
+const cdCoin = document.getElementById('cd-coin');
+let coinDragging = false, coinStartY = 0;
+
+function coinDragStart(y){ coinDragging = true; coinStartY = y; }
+function coinDragMove(y){
+  if(!coinDragging) return;
+  const dy = Math.max(0, Math.min(y-coinStartY, 95));
+  cdCoin.style.transform = `translateY(${dy}px)`;
+}
+function coinDragEnd(y){
+  if(!coinDragging) return;
+  coinDragging = false;
+  const dy = Math.max(0, Math.min(y-coinStartY, 95));
+  if(dy > 60){
+    completeCoinStep();
+  } else {
+    cdCoin.style.transition = 'transform 0.25s ease-out';
+    cdCoin.style.transform = 'translateY(0px)';
+    setTimeout(()=>{ cdCoin.style.transition = ''; }, 260);
+  }
+}
+cdCoin.addEventListener('mousedown', e=>{ coinDragStart(e.clientY); });
+window.addEventListener('mousemove', e=>{ coinDragMove(e.clientY); });
+window.addEventListener('mouseup', e=>{ coinDragEnd(e.clientY); });
+cdCoin.addEventListener('touchstart', e=>{ coinDragStart(e.touches[0].clientY); e.preventDefault(); }, { passive:false });
+cdCoin.addEventListener('touchmove', e=>{ coinDragMove(e.touches[0].clientY); e.preventDefault(); }, { passive:false });
+cdCoin.addEventListener('touchend', e=>{ coinDragEnd(e.changedTouches[0].clientY); });
+
+function completeCoinStep(){
+  SND.coin();
+  if(pendingCoinDialUnit) play3dCoinFly(pendingCoinDialUnit);
+  cdCoin.style.transition = 'transform 0.2s ease-in, opacity 0.2s';
+  cdCoin.style.transform = 'translateY(100px) scale(0.4)';
+  cdCoin.style.opacity = '0';
+  setTimeout(()=>{
+    document.getElementById('cd-step-coin').style.display = 'none';
+    document.getElementById('cd-step-dial').style.display = 'flex';
+    cdCoin.style.transition = '';
+    cdCoin.style.transform = 'translateY(0px)';
+    cdCoin.style.opacity = '1';
+  }, 260);
+}
+
+// --- 2단계: 다이얼을 손가락으로 돌리기 ---
+const cdDialWrap = document.getElementById('cd-dial-wrap');
+const cdDial = document.getElementById('cd-dial');
+let dialDragging = false, dialLastAngle = 0, dialAccum = 0, dialDone = false;
+
+function angleFromPoint(x,y){
+  const rect = cdDialWrap.getBoundingClientRect();
+  const cx = rect.left+rect.width/2, cy = rect.top+rect.height/2;
+  return Math.atan2(y-cy, x-cx);
+}
+function dialDragStart(x,y){ if(dialDone) return; dialDragging = true; dialLastAngle = angleFromPoint(x,y); }
+function dialDragMove(x,y){
+  if(!dialDragging || dialDone) return;
+  const a = angleFromPoint(x,y);
+  let delta = a - dialLastAngle;
+  while(delta > Math.PI) delta -= Math.PI*2;
+  while(delta < -Math.PI) delta += Math.PI*2;
+  dialAccum += delta;
+  dialLastAngle = a;
+  cdDial.style.transform = `rotate(${dialAccum}rad)`;
+  if(Math.abs(dialAccum) >= Math.PI*2 && !dialDone){
+    dialDone = true;
+    dialDragging = false;
+    completeDialStep();
+  }
+}
+function dialDragEnd(){ dialDragging = false; }
+cdDialWrap.addEventListener('mousedown', e=> dialDragStart(e.clientX, e.clientY));
+window.addEventListener('mousemove', e=> dialDragMove(e.clientX, e.clientY));
+window.addEventListener('mouseup', ()=> dialDragEnd());
+cdDialWrap.addEventListener('touchstart', e=>{ dialDragStart(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }, { passive:false });
+cdDialWrap.addEventListener('touchmove', e=>{ dialDragMove(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }, { passive:false });
+cdDialWrap.addEventListener('touchend', ()=> dialDragEnd());
+
+function completeDialStep(){
+  SND.crack();
+  if(pendingCoinDialUnit) play3dDialSpin(pendingCoinDialUnit);
+  setTimeout(()=>{
+    document.getElementById('coin-dial-stage').classList.remove('show');
+    const cb = coinDialResolveCb;
+    coinDialResolveCb = null;
+    pendingCoinDialUnit = null;
+    if(cb) cb();
+  }, 300);
+}
+
+// --- 3D 월드 속 덤 연출 (플레이어가 실제 동작을 완료했을 때 함께 재생) ---
+function play3dCoinFly(unit){
+  const grp = unit.unitGroup;
+  if(!grp) return;
+  const coin = new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.012,12),
+    new THREE.MeshStandardMaterial({ color:0xffd700, metalness:0.85, roughness:0.2, transparent:true }));
+  coin.rotation.x = Math.PI/2;
+  coin.position.set(0, 0.95, 0.55);
+  grp.add(coin);
+  const t0 = performance.now();
+  (function animCoin(){
+    const t = Math.min((performance.now()-t0)/350, 1);
+    coin.position.z = 0.55 - t*0.28;
+    coin.position.y = 0.95 - t*0.17;
+    coin.material.opacity = 1-t;
+    if(t < 1){ requestAnimationFrame(animCoin); } else { grp.remove(coin); }
+  })();
+}
+function play3dDialSpin(unit){
+  const dial = unit.dialMesh;
+  if(!dial) return;
+  const t0 = performance.now();
+  (function animDial(){
+    const t = Math.min((performance.now()-t0)/450, 1);
+    dial.rotation.x = Math.PI/2 + t*Math.PI*4;
+    if(t < 1){ requestAnimationFrame(animDial); } else { dial.rotation.x = Math.PI/2; }
+  })();
+}
+
+function openPullOverlay(machine){
+  pulling = true;
+  resultCard.classList.remove('show');
+  capsuleEl.classList.remove('cracked');
+  capsuleEl.style.display = 'block';
+  document.getElementById('tap-hint').style.display = 'block';
+  const rarity = pickRarity(machine.weights);
+  const item = pickItem(machine.line, rarity);
+  const rc = RARITY[rarity].color;
+  capsuleEl.style.color = rc;
+  capsuleEl.querySelector('.bottom').style.background = rc;
+  document.documentElement.style.setProperty('--rc', rc);
+
+  pullOverlay.classList.add('show');
+
+  function onTap(){
+    capsuleEl.removeEventListener('click', onTap);
+    capsuleEl.classList.add('cracked');
+    SND.crack();
+    if(rarity === 'legendary') setTimeout(()=>SND.legendary(), 150);
+    setTimeout(()=>{
+      capsuleEl.style.display = 'none';
+      showResult(machine, rarity, item);
+    }, 320);
+  }
+  capsuleEl.addEventListener('click', onTap);
+}
+
+function showResult(machine, rarity, item){
+  addToInventory(machine.line, rarity, item);
+  refreshHUD();
+  const iconEl = document.getElementById('result-icon');
+  const imgEl = document.getElementById('result-icon-img');
+  if(item.fig){
+    imgEl.src = chibiDataURL(item.fig, 160);
+    imgEl.style.display = 'block';
+    iconEl.style.display = 'none';
+  } else if(machine.line === 'keycap'){
+    imgEl.src = keycapDataURL(RARITY[rarity].color, 160, item.kt);
+    imgEl.style.display = 'block';
+    iconEl.style.display = 'none';
+  } else {
+    iconEl.textContent = item.i;
+    iconEl.style.display = 'block';
+    imgEl.style.display = 'none';
+  }
+  document.getElementById('result-rarity').textContent = RARITY[rarity].label;
+  document.getElementById('result-rarity').style.setProperty('--rc', RARITY[rarity].color);
+  document.getElementById('result-name').textContent = item.n;
+  document.getElementById('result-owner').textContent = ITEM_POOLS[machine.line].name;
+  resultCard.style.setProperty('--rc', RARITY[rarity].color);
+  resultCard.classList.add('show');
+  if(typeof npcReactToResult === 'function') npcReactToResult(rarity);
+}
+
+/* ---------- 집게(인형뽑기) 조준 미니게임 - 실제 3D 씬 ---------- */
+const clawOverlay = document.getElementById('claw-overlay');
+const clawCanvas = document.getElementById('claw-canvas');
+
+const sceneMini = new THREE.Scene();
+sceneMini.background = new THREE.Color(0x150a2e);
+const cameraMini = new THREE.PerspectiveCamera(42, clawCanvas.width/clawCanvas.height, 0.1, 20);
+cameraMini.position.set(0, 2.5, 2.7);
+cameraMini.lookAt(0, 0.3, -0.1);
+const rendererMini = new THREE.WebGLRenderer({ canvas:clawCanvas, antialias:true });
+rendererMini.setSize(clawCanvas.width, clawCanvas.height, false);
+
+sceneMini.add(new THREE.AmbientLight(0xffffff, 0.8));
+const clawLight = new THREE.DirectionalLight(0xffffff, 0.6);
+clawLight.position.set(2,4,3);
+sceneMini.add(clawLight);
+
+// 바닥 + 유리 박스 테두리
+const clawFloor = new THREE.Mesh(new THREE.PlaneGeometry(2.4,2.2), new THREE.MeshStandardMaterial({color:0x2a1a52, roughness:0.9}));
+clawFloor.rotation.x = -Math.PI/2;
+sceneMini.add(clawFloor);
+const clawBoxEdges = new THREE.LineSegments(
+  new THREE.EdgesGeometry(new THREE.BoxGeometry(2.4,1.9,2.2)),
+  new THREE.LineBasicMaterial({color:0x00e5ff})
+);
+clawBoxEdges.position.y = 0.95;
+sceneMini.add(clawBoxEdges);
+
+// 슈트(투입구) 표시
+const CHUTE = { x:1.0, z:-0.85 };
+const chuteMark = new THREE.Mesh(new THREE.RingGeometry(0.14,0.2,20), new THREE.MeshBasicMaterial({color:0xffd166, side:THREE.DoubleSide}));
+chuteMark.rotation.x = -Math.PI/2;
+chuteMark.position.set(CHUTE.x, 0.02, CHUTE.z);
+sceneMini.add(chuteMark);
+
+// 플러시 인형을 실제 3D로 모델링 (이모티콘 대신)
+const plushMatCache = new Map();
+function plushMat(color){
+  if(!plushMatCache.has(color)) plushMatCache.set(color, new THREE.MeshStandardMaterial({ color, roughness:0.85 }));
+  return plushMatCache.get(color);
+}
+const plushEyeMat = new THREE.MeshStandardMaterial({ color:0x2b1b12 });
+const plushNoseMat = new THREE.MeshStandardMaterial({ color:0xff6fb8 });
+function buildPlushMesh(color){
+  const grp = new THREE.Group();
+  const bMat = plushMat(color);
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.17,10,10), bMat);
+  body.scale.set(1,0.85,1);
+  grp.add(body);
+  const earGeo = new THREE.SphereGeometry(0.06,8,8);
+  const earL = new THREE.Mesh(earGeo, bMat); earL.position.set(-0.11,0.14,0); grp.add(earL);
+  const earR = new THREE.Mesh(earGeo, bMat); earR.position.set(0.11,0.14,0); grp.add(earR);
+  const eyeGeo = new THREE.SphereGeometry(0.02,6,6);
+  const eyeL = new THREE.Mesh(eyeGeo, plushEyeMat); eyeL.position.set(-0.06,0.03,0.15); grp.add(eyeL);
+  const eyeR = new THREE.Mesh(eyeGeo, plushEyeMat); eyeR.position.set(0.06,0.03,0.15); grp.add(eyeR);
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.024,6,6), plushNoseMat); nose.position.set(0,0,0.17); grp.add(nose);
+  return grp;
+}
+
+// 키캡 키링 3D 모델 (플러시와 다른 모양)
+const keycapMatCache = new Map();
+function keycapMat(color){
+  if(!keycapMatCache.has(color)) keycapMatCache.set(color, new THREE.MeshStandardMaterial({ color, roughness:0.35, metalness:0.15 }));
+  return keycapMatCache.get(color);
+}
+const keycapTopMat = new THREE.MeshStandardMaterial({ color:0xffffff, roughness:0.25 });
+const keycapRingMat = new THREE.MeshStandardMaterial({ color:0xcccccc, metalness:0.7, roughness:0.25 });
+// 키캡 타입별 개성 있는 3D 모델
+const keycapRingMat2 = new THREE.MeshStandardMaterial({ color:0xcccccc, metalness:0.7, roughness:0.25 });
+const goldMat = new THREE.MeshStandardMaterial({ color:0xffd700, metalness:0.9, roughness:0.1, emissive:0xffaa00, emissiveIntensity:0.2 });
+
+function keycapBase(color, w, h, d){
+  w=w||0.22; h=h||0.15; d=d||0.22;
+  const mat = typeof color === 'number'
+    ? new THREE.MeshStandardMaterial({ color, roughness:0.3, metalness:0.1 })
+    : color;
+  const cap = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+  return cap;
+}
+function addRing(grp, y){
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.05,0.013,8,16), keycapRingMat2);
+  ring.position.y = y; ring.rotation.x = Math.PI/2;
+  grp.add(ring);
+}
+
+// 캔버스에 텍스트/그림 그려서 텍스처로 (키캡 위에 올림)
+function makeCapLabel(fn){
+  const c = document.createElement('canvas'); c.width=128; c.height=128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle='rgba(255,255,255,0)'; ctx.fillRect(0,0,128,128);
+  fn(ctx);
+  return new THREE.CanvasTexture(c);
+}
+
+function buildKeycapMesh(colorHex, kt){
+  const grp = new THREE.Group();
+  kt = kt || 'abc';
+
+  if(kt === 'rainbow'){
+    // 무지개색 그라디언트 + 흰 구름 모양 각인
+    const tex = makeCapLabel(ctx=>{
+      const g = ctx.createLinearGradient(0,0,128,128);
+      g.addColorStop(0,'#ff0000'); g.addColorStop(0.17,'#ff7700');
+      g.addColorStop(0.33,'#ffff00'); g.addColorStop(0.5,'#00cc00');
+      g.addColorStop(0.67,'#0066ff'); g.addColorStop(0.83,'#8800ff');
+      g.addColorStop(1,'#ff0088');
+      ctx.fillStyle=g; ctx.fillRect(0,0,128,128);
+      // 구름
+      ctx.fillStyle='rgba(255,255,255,0.9)';
+      [[64,80,28],[44,90,20],[84,90,20],[36,78,16],[92,78,16]].forEach(([x,y,r])=>{
+        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+      });
+    });
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.15,0.22), new THREE.MeshStandardMaterial({map:tex, roughness:0.3}));
+    grp.add(cap);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(0.15,0.025,0.15), new THREE.MeshStandardMaterial({map:tex}));
+    top.position.y = 0.088; grp.add(top);
+
+  } else if(kt === 'unicorn'){
+    // 은은한 오로라색 바디 + 무지개 뿔
+    const auroraColor = 0xa8d8ea;
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.15,0.22), new THREE.MeshStandardMaterial({color:auroraColor, roughness:0.25, metalness:0.15, emissive:0x7ec8e3, emissiveIntensity:0.18}));
+    grp.add(cap);
+    const hornColors = [0xff0000,0xff7700,0xffff00,0x00cc00,0x0066ff,0x8800ff];
+    hornColors.forEach((c,i)=>{
+      const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.018-i*0.0025, 0.022-i*0.0025, 0.028, 8),
+        new THREE.MeshStandardMaterial({color:c, emissive:c, emissiveIntensity:0.3}));
+      seg.position.y = 0.09 + i*0.028;
+      grp.add(seg);
+    });
+
+  } else if(kt === 'abc'){
+    const tex = makeCapLabel(ctx=>{
+      ctx.fillStyle='#f0f0f0'; ctx.fillRect(0,0,128,128);
+      ctx.fillStyle='#333'; ctx.font='bold 56px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('ABC',64,64);
+    });
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.15,0.22), new THREE.MeshStandardMaterial({color:0xf0f0f0, roughness:0.35}));
+    grp.add(cap);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(0.18,0.18), new THREE.MeshBasicMaterial({map:tex, transparent:true}));
+    face.position.set(0,0.076,0); face.rotation.x=-Math.PI/2; grp.add(face);
+
+  } else if(kt === 'heart'){
+    const tex = makeCapLabel(ctx=>{
+      ctx.fillStyle='#ffb6c1'; ctx.fillRect(0,0,128,128);
+      ctx.fillStyle='#ff2d95'; ctx.font='72px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('♥',64,68);
+    });
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.15,0.22), new THREE.MeshStandardMaterial({color:0xffb6c1, roughness:0.3}));
+    grp.add(cap);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(0.18,0.18), new THREE.MeshBasicMaterial({map:tex, transparent:true}));
+    face.position.set(0,0.076,0); face.rotation.x=-Math.PI/2; grp.add(face);
+
+  } else if(kt === 'star'){
+    const tex = makeCapLabel(ctx=>{
+      ctx.fillStyle='#1a1a3e'; ctx.fillRect(0,0,128,128);
+      ctx.fillStyle='#ffd166'; ctx.font='72px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('★',64,68);
+    });
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.15,0.22), new THREE.MeshStandardMaterial({color:0x1a1a3e, roughness:0.3}));
+    grp.add(cap);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(0.18,0.18), new THREE.MeshBasicMaterial({map:tex, transparent:true}));
+    face.position.set(0,0.076,0); face.rotation.x=-Math.PI/2; grp.add(face);
+
+  } else if(kt === 'neon'){
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.15,0.22),
+      new THREE.MeshStandardMaterial({color:0x0d0d1a, roughness:0.2, emissive:0x00e5ff, emissiveIntensity:0.4}));
+    grp.add(cap);
+    const tex = makeCapLabel(ctx=>{
+      ctx.fillStyle='rgba(0,0,0,0)'; ctx.fillRect(0,0,128,128);
+      ctx.strokeStyle='#00e5ff'; ctx.lineWidth=6; ctx.shadowColor='#00e5ff'; ctx.shadowBlur=20;
+      ctx.strokeRect(20,20,88,88);
+      ctx.font='bold 40px sans-serif'; ctx.fillStyle='#7de8ff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('ON',64,64);
+    });
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(0.18,0.18), new THREE.MeshBasicMaterial({map:tex, transparent:true}));
+    face.position.set(0,0.076,0); face.rotation.x=-Math.PI/2; grp.add(face);
+
+  } else if(kt === 'paw'){
+    const tex = makeCapLabel(ctx=>{
+      ctx.fillStyle='#ffe4e1'; ctx.fillRect(0,0,128,128);
+      ctx.fillStyle='#ff9a8b';
+      [[64,72,20],[38,40,14],[90,40,14],[25,60,12],[103,60,12]].forEach(([x,y,r])=>{
+        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+      });
+    });
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.15,0.22), new THREE.MeshStandardMaterial({color:0xffe4e1, roughness:0.4}));
+    grp.add(cap);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(0.18,0.18), new THREE.MeshBasicMaterial({map:tex, transparent:true}));
+    face.position.set(0,0.076,0); face.rotation.x=-Math.PI/2; grp.add(face);
+
+  } else if(kt === 'hologram'){
+    const tex = makeCapLabel(ctx=>{
+      const g = ctx.createLinearGradient(0,0,128,128);
+      g.addColorStop(0,'#b76bff'); g.addColorStop(0.5,'#7de8ff'); g.addColorStop(1,'#ff6fb8');
+      ctx.fillStyle=g; ctx.fillRect(0,0,128,128);
+      ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='bold 48px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('✦',64,64);
+    });
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.15,0.22), new THREE.MeshStandardMaterial({map:tex, roughness:0.15, metalness:0.3}));
+    grp.add(cap);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(0.15,0.025,0.15), new THREE.MeshStandardMaterial({map:tex}));
+    top.position.y = 0.088; grp.add(top);
+
+  } else if(kt === 'gold'){
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.15,0.22), goldMat); grp.add(cap);
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.07,0.04,5), goldMat);
+    crown.position.y = 0.1; grp.add(crown);
+
+  } else if(kt === 'space'){
+    const tex = makeCapLabel(ctx=>{
+      ctx.fillStyle='#f4f4f4'; ctx.fillRect(0,0,128,128);
+      ctx.fillStyle='#555'; ctx.font='bold 28px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('SPACE',64,64);
+    });
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.38,0.12,0.22), new THREE.MeshStandardMaterial({color:0xf4f4f4, roughness:0.3}));
+    grp.add(cap);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(0.34,0.18), new THREE.MeshBasicMaterial({map:tex, transparent:true}));
+    face.position.set(0,0.062,0); face.rotation.x=-Math.PI/2; grp.add(face);
+
+  } else {
+    // 기본 키캡
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.15,0.22),
+      new THREE.MeshStandardMaterial({color: colorHex || 0xf0f0f0, roughness:0.3}));
+    grp.add(cap);
+  }
+
+  addRing(grp, 0.17);
+  return grp;
+}
+
+// 집게 (실제 3D 오브젝트, 위/아래/좌우/앞뒤로 움직임)
+const clawMiniGroup = new THREE.Group();
+const clawHeadMat = new THREE.MeshStandardMaterial({ color:0xdddddd, metalness:0.4, roughness:0.3 });
+const clawHead = new THREE.Mesh(new THREE.SphereGeometry(0.07,10,10), clawHeadMat);
+clawMiniGroup.add(clawHead);
+const pincerMat = new THREE.MeshStandardMaterial({ color:0xaaaaaa, metalness:0.5, roughness:0.3 });
+[-1,1].forEach(sign=>{
+  const p = new THREE.Mesh(new THREE.ConeGeometry(0.026,0.17,8), pincerMat);
+  p.position.set(sign*0.055,-0.09,0);
+  p.rotation.z = sign*0.55;
+  clawMiniGroup.add(p);
+});
+sceneMini.add(clawMiniGroup);
+const RAIL_Y = 1.85;
+const ropeMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.012,1,6), new THREE.MeshBasicMaterial({color:0xcccccc}));
+sceneMini.add(ropeMesh);
+function updateRope(){
+  const headY = clawMiniGroup.position.y;
+  const len = Math.max(RAIL_Y-headY, 0.02);
+  ropeMesh.scale.y = len;
+  ropeMesh.position.set(clawMiniGroup.position.x, headY+len/2, clawMiniGroup.position.z);
+}
+
+let clawState = 'idle'; // idle | descending | rising | carrying
+let clawPrizes = [];
+let clawMiniRunning = false;
+function clawRenderLoop(){
+  if(!clawMiniRunning) return;
+  rendererMini.render(sceneMini, cameraMini);
+  requestAnimationFrame(clawRenderLoop);
+}
+
+// 뭉쳐있을 때도, 흩어져 있을 때도 있도록 무작위 배치
+let clawPoolKey = 'plush';
+function layoutPrizes(poolKey){
+  const rarityPlan = ['common','common','common','rare','rare','epic','legendary'];
+  const clusterCount = Math.random() < 0.5 ? 1 : 2;
+  const clusters = [];
+  for(let i=0;i<clusterCount;i++){
+    clusters.push({ x: Math.random()*1.3-0.65, z: Math.random()*0.9-0.5 });
+  }
+  return rarityPlan.map(r=>{
+    const item = pickItem(poolKey, r);
+    let x, z;
+    if(Math.random() < 0.7){
+      const c = clusters[Math.floor(Math.random()*clusters.length)];
+      x = c.x + (Math.random()*0.34-0.17);
+      z = c.z + (Math.random()*0.34-0.17);
+    } else {
+      x = Math.random()*1.6-0.8;
+      z = Math.random()*1.0-0.55;
+    }
+    x = THREE.MathUtils.clamp(x, -0.95, 0.95);
+    z = THREE.MathUtils.clamp(z, -0.75, 0.55);
+    return { x, z, r, item, grabbed:false, mesh:null };
+  });
+}
+
+function openClawAim(unit){
+  clawPoolKey = unit.line;
+  document.getElementById('claw-hint').textContent = `드래그해서 좌우/앞뒤로 조준하고, 버튼을 눌러 ${ITEM_POOLS[unit.line].name}을(를) 뽑아보세요!`;
+  clawOverlay.classList.add('show');
+  setupClawGame();
+  clawMiniRunning = true;
+  clawRenderLoop();
+}
+
+function setupClawGame(){
+  clawPrizes.forEach(p=>{ if(p.mesh && p.mesh.parent) p.mesh.parent.remove(p.mesh); });
+  clawPrizes = layoutPrizes(clawPoolKey);
+  clawPrizes.forEach(p=>{
+    const mesh = clawPoolKey === 'keycap' ? buildKeycapMesh(RARITY[p.r].color, p.item.kt) : buildPlushMesh(RARITY[p.r].color);
+    mesh.position.set(p.x, 0.1, p.z);
+    sceneMini.add(mesh);
+    p.mesh = mesh;
+  });
+  clawMiniGroup.position.set(0, 1.6, 0);
+  updateRope();
+  clawState = 'idle';
+}
+
+// 드래그로 좌우/앞뒤 조준 (상대 이동 방식)
+let clawDragging = false, clawLastX = 0, clawLastY = 0;
+function clawDragStart(x,y){ if(clawState!=='idle') return; clawDragging = true; clawLastX = x; clawLastY = y; }
+function clawDragMove(x,y){
+  if(!clawDragging || clawState!=='idle') return;
+  const dx = x-clawLastX, dy = y-clawLastY;
+  clawLastX = x; clawLastY = y;
+  clawMiniGroup.position.x = THREE.MathUtils.clamp(clawMiniGroup.position.x + dx*0.006, -0.95, 0.95);
+  clawMiniGroup.position.z = THREE.MathUtils.clamp(clawMiniGroup.position.z + dy*0.006, -0.75, 0.55);
+  updateRope();
+}
+clawCanvas.addEventListener('mousedown', e=> clawDragStart(e.clientX, e.clientY));
+window.addEventListener('mousemove', e=> clawDragMove(e.clientX, e.clientY));
+window.addEventListener('mouseup', ()=>{ clawDragging = false; });
+clawCanvas.addEventListener('touchstart', e=>{ clawDragStart(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }, { passive:false });
+clawCanvas.addEventListener('touchmove', e=>{ clawDragMove(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }, { passive:false });
+clawCanvas.addEventListener('touchend', ()=>{ clawDragging = false; });
+
+document.getElementById('claw-drop-btn').addEventListener('click', ()=>{
+  if(clawState !== 'idle') return;
+  clawState = 'descending';
+  const startY = clawMiniGroup.position.y, targetY = 0.2;
+  const t0 = performance.now();
+  (function down(){
+    const t = Math.min((performance.now()-t0)/550, 1);
+    clawMiniGroup.position.y = startY + t*(targetY-startY);
+    updateRope();
+    if(t < 1){ requestAnimationFrame(down); } else { resolveClawGrab(); }
+  })();
+});
+
+function resolveClawGrab(){
+  let best=null, bd=Infinity;
+  clawPrizes.forEach(p=>{
+    if(p.grabbed) return;
+    const d = Math.hypot(p.x-clawMiniGroup.position.x, p.z-clawMiniGroup.position.z);
+    if(d < bd){ bd=d; best=p; }
+  });
+  const RADIUS = 0.32;
+  let grabbedNow = false;
+  if(best && bd < RADIUS){
+    const penalty = { common:0, rare:0.1, epic:0.25, legendary:0.4 }[best.r] || 0;
+    const prob = THREE.MathUtils.clamp(0.85 - penalty - (bd/RADIUS)*0.35, 0.15, 0.9);
+    if(Math.random() < prob){ grabbedNow = true; best.grabbed = true; }
+  }
+  SND.crack();
+  if(grabbedNow){
+    sceneMini.remove(best.mesh);
+    clawMiniGroup.add(best.mesh);
+    best.mesh.position.set(0,-0.14,0);
+  }
+  riseThenCarry(best, grabbedNow);
+}
+
+function riseThenCarry(best, grabbedNow){
+  clawState = 'rising';
+  const startY = clawMiniGroup.position.y, t0 = performance.now();
+  (function up(){
+    const t = Math.min((performance.now()-t0)/500, 1);
+    clawMiniGroup.position.y = startY + t*(1.6-startY);
+    updateRope();
+    if(t < 1){ requestAnimationFrame(up); }
+    else if(!grabbedNow){ finishClaw(false, null, 300); }
+    else { carryToChute(best); }
+  })();
+}
+
+// 잡았어도 옮기는 도중에 가끔 놓칠 수 있음 (그렇다고 항상 놓치지는 않음)
+function carryToChute(best){
+  clawState = 'carrying';
+  const startX = clawMiniGroup.position.x, startZ = clawMiniGroup.position.z;
+  const t0 = performance.now();
+  const willSlip = Math.random() < 0.28;
+  const slipAtT = 0.3 + Math.random()*0.4;
+  let slipped = false;
+  (function move(){
+    const t = Math.min((performance.now()-t0)/900, 1);
+    clawMiniGroup.position.x = startX + t*(CHUTE.x-startX);
+    clawMiniGroup.position.z = startZ + t*(CHUTE.z-startZ);
+    updateRope();
+    if(!slipped && willSlip && t >= slipAtT){
+      slipped = true;
+      const mesh = best.mesh;
+      clawMiniGroup.remove(mesh);
+      sceneMini.add(mesh);
+      mesh.position.set(clawMiniGroup.position.x, clawMiniGroup.position.y-0.14, clawMiniGroup.position.z);
+      animatePlushFall(mesh);
+      SND.deny();
+      finishClaw(false, null, 500);
+      return;
+    }
+    if(!slipped && t < 1){ requestAnimationFrame(move); }
+    else if(!slipped){ finishClaw(true, best, 300); }
+  })();
+}
+
+function animatePlushFall(mesh){
+  const startY = mesh.position.y, t0 = performance.now();
+  (function fall(){
+    const t = Math.min((performance.now()-t0)/500, 1);
+    mesh.position.y = startY - t*t*0.6;
+    mesh.scale.setScalar(1-t*0.7);
+    if(t < 1){ requestAnimationFrame(fall); } else { sceneMini.remove(mesh); }
+  })();
+}
+
+function finishClaw(success, best, delay){
+  clawState = 'idle';
+  setTimeout(()=>{
+    clawMiniRunning = false;
+    clawOverlay.classList.remove('show');
+    pullOverlay.classList.add('show');
+    capsuleEl.style.display = 'none';
+    document.getElementById('tap-hint').style.display = 'none';
+    if(success && best){
+      if(best.r === 'legendary') SND.legendary();
+      showResult({ line:clawPoolKey }, best.r, best.item);
+    } else {
+      showFailResult();
+    }
+  }, delay || 250);
+}
+
+function showFailResult(){
+  document.getElementById('result-icon-img').style.display = 'none';
+  const iconEl = document.getElementById('result-icon');
+  iconEl.style.display = 'block';
+  document.getElementById('result-rarity').textContent = '꽝';
+  document.getElementById('result-rarity').style.setProperty('--rc', '#777777');
+  iconEl.textContent = '😢';
+  document.getElementById('result-name').textContent = '다음 기회에!';
+  document.getElementById('result-owner').textContent = '인형을 놓쳤어요';
+  resultCard.style.setProperty('--rc', '#777777');
+  resultCard.classList.add('show');
+}
+
+document.getElementById('result-close').addEventListener('click', ()=>{
+  resultCard.classList.remove('show');
+  pullOverlay.classList.remove('show');
+  pulling = false;
+});
+
+/* ---------- 컬렉션 패널 ---------- */
+document.getElementById('collect-btn').addEventListener('click', ()=>{
+  const grid = document.getElementById('collect-grid');
+  grid.innerHTML = '';
+  const items = Object.values(state.inventory);
+  if(items.length === 0){
+    grid.innerHTML = '<div class="collect-empty">아직 저장함이 비어있어요.<br>가챠샵을 둘러보세요! 🎏</div>';
+  } else {
+    items.sort((a,b)=> (['legendary','epic','rare','common'].indexOf(a.rarity) - ['legendary','epic','rare','common'].indexOf(b.rarity)));
+    items.forEach(it=>{
+      const div = document.createElement('div');
+      div.className = 'collect-item';
+      div.style.setProperty('--rc', RARITY[it.rarity].color);
+      const iconHtml = it.fig
+        ? `<img src="${chibiDataURL(it.fig, 90)}" style="width:44px;height:44px;">`
+        : it.line === 'keycap'
+          ? `<img src="${keycapDataURL(RARITY[it.rarity].color, 90, it.kt)}" style="width:44px;height:44px;">`
+          : `<div class="ic">${it.icon}</div>`;
+      div.innerHTML = `${iconHtml}<div class="nm">${it.name}</div><div class="ct">${RARITY[it.rarity].label} × ${it.count}</div>`;
+      div.addEventListener('click', ()=> openDetail(it));
+      grid.appendChild(div);
+    });
+  }
+  collectPanel.classList.add('show');
+});
+document.getElementById('collect-close-btn').addEventListener('click', ()=>{
+  collectPanel.classList.remove('show');
+});
+
+/* ---------- 아이템 상세보기: 인형은 꾹꾹이(squish), 키캡은 누르기(press) ---------- */
+const detailModal = document.getElementById('detail-modal');
+const detailImg = document.getElementById('detail-img');
+const detailEmoji = document.getElementById('detail-emoji');
+function itemKind(it){
+  if(it.line === 'keycap') return 'keycap';
+  if(it.line === 'plush' || it.line === 'plush_food' || it.line === 'plush_sea') return 'plush';
+  return 'figure';
+}
+function openDetail(it){
+  currentBragItem = it;
+  const kind = itemKind(it);
+  detailModal.style.setProperty('--rc', RARITY[it.rarity].color);
+  document.getElementById('detail-rarity').textContent = RARITY[it.rarity].label;
+  document.getElementById('detail-rarity').style.setProperty('--rc', RARITY[it.rarity].color);
+  document.getElementById('detail-name').textContent = it.name;
+
+  const usesImage = !!it.fig || it.line === 'keycap';
+  if(it.fig){
+    detailImg.src = chibiDataURL(it.fig, 220);
+    detailImg.style.display = 'block';
+    detailEmoji.style.display = 'none';
+  } else if(it.line === 'keycap'){
+    detailImg.src = keycapDataURL(RARITY[it.rarity].color, 220, it.kt);
+    detailImg.style.display = 'block';
+    detailEmoji.style.display = 'none';
+  } else {
+    detailEmoji.textContent = it.icon;
+    detailEmoji.style.display = 'block';
+    detailImg.style.display = 'none';
+  }
+
+  const hint = document.getElementById('detail-hint');
+  const visual = usesImage ? detailImg : detailEmoji;
+  visual.onclick = null;
+  visual.classList.remove('squish-anim','press-anim');
+
+  if(kind === 'plush'){
+    hint.textContent = '인형을 눌러서 꾹꾹이 해보세요!';
+    visual.onclick = ()=>{
+      SND.squish();
+      visual.classList.remove('squish-anim'); void visual.offsetWidth; visual.classList.add('squish-anim');
+    };
+  } else if(kind === 'keycap'){
+    hint.textContent = '키캡을 눌러보세요!';
+    visual.onclick = ()=>{
+      SND.keyclick();
+      visual.classList.remove('press-anim'); void visual.offsetWidth; visual.classList.add('press-anim');
+    };
+  } else {
+    hint.textContent = '';
+  }
+
+  detailModal.classList.add('show');
+}
+document.getElementById('detail-close-btn').addEventListener('click', ()=>{
+  detailModal.classList.remove('show');
+});
+
+/* ---------- 자랑하기 ---------- */
+const bragOverlay = document.getElementById('brag-overlay');
+const BRAG_LINES = ['부럽다~','와 저거 가지고 싶어','어떻게 뽑은 거야...','대박이다 진짜','나도 저거 노려봐야지','헐 저거 레어 아니야?','쟤 운 좋다','진짜 부럽네...','나중에 나도 꼭 뽑을 거야'];
+const CONFETTI_COLORS = ['#ffd166','#ff2d95','#7de8ff','#b76bff','#4fc3ff','#ff6b3d','#ffffff'];
+
+function playfanfareSFX(){
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state === 'suspended') actx.resume();
+    const notes = [523,659,784,1046,784,880,1046];
+    notes.forEach((f,i)=>{
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = 'triangle'; o.frequency.value = f;
+      const t = actx.currentTime + i*0.11;
+      g.gain.setValueAtTime(0.18, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t+0.18);
+      o.connect(g); g.connect(actx.destination);
+      o.start(t); o.stop(t+0.2);
+    });
+  }catch(e){}
+}
+
+function spawnConfetti(){
+  const wrap = document.getElementById('brag-confetti-wrap');
+  wrap.innerHTML = '';
+  for(let i=0;i<38;i++){
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.left = (Math.random()*340-50)+'px';
+    el.style.top = (Math.random()*80-120)+'px';
+    el.style.background = CONFETTI_COLORS[Math.floor(Math.random()*CONFETTI_COLORS.length)];
+    el.style.width = (7+Math.random()*10)+'px';
+    el.style.height = (7+Math.random()*10)+'px';
+    el.style.borderRadius = Math.random()>0.5?'50%':'2px';
+    el.style.animationDuration = (0.9+Math.random()*1.2)+'s';
+    el.style.animationDelay = (Math.random()*0.5)+'s';
+    wrap.appendChild(el);
+  }
+}
+
+let currentBragItem = null;
+document.getElementById('detail-brag-btn').addEventListener('click', ()=>{
+  if(!currentBragItem) return;
+  const it = currentBragItem;
+  detailModal.classList.remove('show');
+  const bi = document.getElementById('brag-img');
+  const be = document.getElementById('brag-emoji');
+  if(it.fig){
+    bi.src = chibiDataURL(it.fig, 200); bi.style.display='block'; be.style.display='none';
+  } else if(it.line === 'keycap'){
+    bi.src = keycapDataURL(RARITY[it.rarity].color, 200, it.kt); bi.style.display='block'; be.style.display='none';
+  } else {
+    be.textContent = it.icon; be.style.display='block'; bi.style.display='none';
+  }
+  document.getElementById('brag-rarity-tag').textContent = RARITY[it.rarity].label;
+  bragOverlay.style.setProperty('--brc', RARITY[it.rarity].color);
+  document.getElementById('brag-name').textContent = it.name;
+  document.getElementById('brag-owner').textContent = ITEM_POOLS[it.line]?.name || '';
+  bragOverlay.classList.add('show');
+  playfanfareSFX();
+  setTimeout(spawnConfetti, 350);
+
+  // Supabase로 전체 방송 (접속자들에게)
+  if(typeof presenceChannel !== 'undefined' && presenceChannel && playerName){
+    presenceChannel.send({ type:'broadcast', event:'brag', payload:{
+      name:playerName, item:it.name, rarity:it.rarity, icon:it.icon
+    }});
+  }
+
+  // NPC들이 수군거리며 부럽다 반응
+  const watchers = [...npcs].sort(()=>Math.random()-0.5).slice(0, 3+Math.floor(Math.random()*2));
+  watchers.forEach((npc,idx)=>{
+    setTimeout(()=>{
+      npcSay(npc, BRAG_LINES[Math.floor(Math.random()*BRAG_LINES.length)], 3500);
+      npc.state = 'watch'; npc.idleUntil = performance.now()+5000;
+    }, 600+idx*500);
+  });
+
+  setTimeout(()=>{ bragOverlay.classList.remove('show'); }, 5500);
+});
+
+// 다른 플레이어가 자랑할 때 NPC + 나한테도 알림
+if(typeof presenceChannel !== 'undefined'){
+  // 아래 쪽 startPresence에서 brag 이벤트도 구독
+}
+bragOverlay.addEventListener('click', ()=>{ bragOverlay.classList.remove('show'); });
+
+/* ---------- 메인 루프 ---------- */
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  updateMovement(dt);
+  updateCamera(dt);
+  updateNearestSpot();
+  if(typeof updatePeers === 'function') updatePeers(dt);
+  if(typeof npcUpdate === 'function') npcUpdate(dt);
+  renderer.render(scene, camera);
+}
+
+/* ============================================================
+   아케이드 BGM (Web Audio 칩튠 루프)
+   ============================================================ */
+let bgmOn = false, bgmTimer = null, bgmStep = 0;
+const BGM_BPM = 132;
+// 밝은 아케이드풍 8비트 멜로디 (E major pentatonic 느낌)
+const BGM_MELODY = [659,0,784,659, 988,0,784,659, 587,0,659,587, 494,0,587,494,
+                    659,0,784,880, 988,880,784,659, 587,659,494,587, 659,0,0,0];
+const BGM_BASS   = [165,0,165,0, 196,0,196,0, 147,0,147,0, 123,0,123,0,
+                    165,0,165,0, 196,0,196,0, 147,0,147,0, 165,0,165,0];
+function bgmTick(){
+  if(!bgmOn) return;
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    const t0 = actx.currentTime;
+    const m = BGM_MELODY[bgmStep % BGM_MELODY.length];
+    const b = BGM_BASS[bgmStep % BGM_BASS.length];
+    if(m > 0){
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = 'square'; o.frequency.value = m;
+      g.gain.setValueAtTime(0.045, t0);
+      g.gain.exponentialRampToValueAtTime(0.001, t0+0.18);
+      o.connect(g); g.connect(actx.destination);
+      o.start(t0); o.stop(t0+0.2);
+    }
+    if(b > 0 && bgmStep % 2 === 0){
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = 'triangle'; o.frequency.value = b;
+      g.gain.setValueAtTime(0.07, t0);
+      g.gain.exponentialRampToValueAtTime(0.001, t0+0.2);
+      o.connect(g); g.connect(actx.destination);
+      o.start(t0); o.stop(t0+0.22);
+    }
+  }catch(e){}
+  bgmStep++;
+}
+document.getElementById('bgm-btn').addEventListener('click', ()=>{
+  bgmOn = !bgmOn;
+  document.getElementById('bgm-btn').classList.toggle('on', bgmOn);
+  if(bgmOn){
+    try{ actx = actx || new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume(); }catch(e){}
+    bgmTimer = setInterval(bgmTick, 60000/BGM_BPM/2); // 8분음표
+  } else {
+    clearInterval(bgmTimer);
+  }
+});
+
+/* ============================================================
+   NPC 손님 시스템: 배회 + 잡담 + 뽑기 관전 반응
+   ============================================================ */
+const NPC_NAMES = ['하늘','민준','서연','도윤','지아','예준','수아','시우'];
+const NPC_COLORS = [0xff8a4d,0x6bcb77,0xffd93d,0x9b5de5,0x4cc9f0,0xf15bb5];
+const NPC_SOLO_LINES = [
+  '오늘은 레전더리 각이야!','어떤 거 뽑지~','용돈 아껴야 하는데...','키캡 소리 너무 좋아',
+  '인형뽑기 한 판만...','골드 뽑기 해볼까?','여기 처음 와봤는데 대박이다','프리미엄은 너무 비싸~'
+];
+const NPC_PAIR_LINES = [
+  ['너 뭐 뽑을 거야?','난 인형뽑기!'],
+  ['한 판만 더 하자','그러다 용돈 다 써~'],
+  ['나 아까 에픽 나옴!','헐 진짜? 부럽다'],
+  ['같이 코인 게임 할래?','좋아 가자!'],
+  ['이 기계가 잘 나온대','오 그럼 여기서 뽑자'],
+];
+const NPC_WATCH_LINES = ['와... 좋겠다','대박!!','나도 뽑고 싶다','오오 뭐 나왔어?','부럽다~'];
+const NPC_LEGENDARY_LINES = ['헐 레전더리다!!!','미쳤다 진짜!!','와 대박 사건!!','전설급이야!!'];
+
+const npcs = [];
+const npcMats = NPC_COLORS.map(c=> new THREE.MeshStandardMaterial({ color:c, roughness:0.55 }));
+
+function buildNpc(name, colorIdx){
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.38,0.95,10), npcMats[colorIdx % npcMats.length]);
+  body.position.y = 0.72; g.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.28,10,10), skinMat);
+  head.position.y = 1.48; g.add(head);
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.3,10,10,0,Math.PI*2,0,Math.PI*0.55), hairMat);
+  hair.position.y = 1.6; g.add(hair);
+  const eGeo = new THREE.SphereGeometry(0.034,6,6);
+  const eL = new THREE.Mesh(eGeo, pEyeMat); eL.position.set(-0.1,1.51,0.25); g.add(eL);
+  const eR = new THREE.Mesh(eGeo, pEyeMat); eR.position.set(0.1,1.51,0.25); g.add(eR);
+  scene.add(g);
+  const bubble = document.createElement('div');
+  bubble.className = 'npc-bubble';
+  document.body.appendChild(bubble);
+  return {
+    name, group:g, bubble,
+    state:'wander', // wander | idle | watch
+    target:{x:0,z:0}, speed:1.4+Math.random()*0.7,
+    idleUntil:0, bubbleUntil:0, nextChat: performance.now() + 3000+Math.random()*6000,
+    partner:null, isFollower:false,
+  };
+}
+
+function npcRandomPoint(){
+  return { x: Math.random()*28-14, z: Math.random()*18-9 };
+}
+
+function npcSay(npc, text, dur){
+  npc.bubble.textContent = text;
+  npc.bubble.classList.add('show');
+  npc.bubbleUntil = performance.now() + (dur||2600);
+}
+
+// 스폰: 혼자 온 손님 3명 + 친구 둘이 온 팀 1쌍
+(function spawnNpcs(){
+  const shuffled = [...NPC_NAMES].sort(()=>Math.random()-0.5);
+  for(let i=0;i<3;i++){
+    const n = buildNpc(shuffled[i], i);
+    const p = npcRandomPoint();
+    n.group.position.set(p.x, 0, p.z);
+    n.target = npcRandomPoint();
+    npcs.push(n);
+  }
+  const leader = buildNpc(shuffled[3], 3);
+  const friend = buildNpc(shuffled[4], 4);
+  const lp = npcRandomPoint();
+  leader.group.position.set(lp.x,0,lp.z);
+  leader.target = npcRandomPoint();
+  friend.group.position.set(lp.x+0.9,0,lp.z+0.4);
+  friend.partner = leader; friend.isFollower = true;
+  leader.partner = friend;
+  npcs.push(leader, friend);
+})();
+
+function npcUpdate(dt){
+  const now = performance.now();
+  npcs.forEach(npc=>{
+    // 말풍선 수명
+    if(npc.bubbleUntil && now > npc.bubbleUntil){ npc.bubble.classList.remove('show'); npc.bubbleUntil = 0; }
+
+    // 잡담 타이밍
+    if(now > npc.nextChat){
+      npc.nextChat = now + 7000 + Math.random()*9000;
+      if(npc.partner && !npc.isFollower && Math.random()<0.6){
+        const pair = NPC_PAIR_LINES[Math.floor(Math.random()*NPC_PAIR_LINES.length)];
+        npcSay(npc, pair[0]);
+        const buddy = npc.partner;
+        setTimeout(()=> npcSay(buddy, pair[1]), 1400);
+      } else if(!npc.partner){
+        npcSay(npc, NPC_SOLO_LINES[Math.floor(Math.random()*NPC_SOLO_LINES.length)]);
+      }
+    }
+
+    // 이동 로직
+    if(npc.state === 'watch'){
+      // 플레이어 쪽 바라보기
+      const dx = player.position.x - npc.group.position.x;
+      const dz = player.position.z - npc.group.position.z;
+      npc.group.rotation.y = Math.atan2(dx, dz);
+      if(now > npc.idleUntil){ npc.state = 'wander'; npc.target = npcRandomPoint(); }
+    } else if(npc.state === 'idle'){
+      if(now > npc.idleUntil){ npc.state = 'wander'; npc.target = npcRandomPoint(); }
+    } else {
+      let tx = npc.target.x, tz = npc.target.z;
+      if(npc.isFollower && npc.partner){
+        tx = npc.partner.group.position.x + 0.9;
+        tz = npc.partner.group.position.z + 0.3;
+      }
+      const dx = tx - npc.group.position.x;
+      const dz = tz - npc.group.position.z;
+      const d = Math.hypot(dx,dz);
+      if(d > 0.3){
+        npc.group.position.x += dx/d * npc.speed * dt;
+        npc.group.position.z += dz/d * npc.speed * dt;
+        npc.group.rotation.y = Math.atan2(dx, dz);
+        // 걷기 흔들림
+        npc.group.position.y = Math.abs(Math.sin(now*0.008))*0.04;
+      } else if(!npc.isFollower){
+        npc.state = 'idle';
+        npc.idleUntil = now + 2000 + Math.random()*4000;
+        npc.group.position.y = 0;
+      }
+    }
+
+    // 말풍선 화면 투영
+    if(npc.bubbleUntil){
+      const pos = new THREE.Vector3(npc.group.position.x, 2.05, npc.group.position.z);
+      pos.project(camera);
+      if(pos.z < 1){
+        npc.bubble.style.display = 'block';
+        npc.bubble.style.left = ((pos.x*0.5+0.5)*window.innerWidth)+'px';
+        npc.bubble.style.top = ((-pos.y*0.5+0.5)*window.innerHeight)+'px';
+      } else {
+        npc.bubble.style.display = 'none';
+      }
+    }
+  });
+}
+
+// 플레이어가 뽑기 시작하면 가장 가까운 NPC 2명이 달려와서 말 걸고 구경
+function npcNoticePull(){
+  const sorted = [...npcs].sort((a,b)=>{
+    const da = Math.hypot(a.group.position.x-player.position.x, a.group.position.z-player.position.z);
+    const db = Math.hypot(b.group.position.x-player.position.x, b.group.position.z-player.position.z);
+    return da-db;
+  });
+  const comers = sorted.slice(0,2);
+  const APPROACH_LINES = ['오 뭐 뽑아요?','고수인가 봐...','와 어떤 거 나올까!','저도 뽑고 싶다~'];
+  comers.forEach((npc,idx)=>{
+    // 플레이어 주변으로 타겟 이동
+    const angle = (idx * Math.PI) + Math.random()*0.5;
+    npc.target = {
+      x: player.position.x + Math.cos(angle)*1.4,
+      z: player.position.z + Math.sin(angle)*1.4,
+    };
+    npc.state = 'wander'; // wander 상태로 타겟까지 이동
+    npc.idleUntil = performance.now() + 8000;
+    setTimeout(()=>{
+      npcSay(npc, APPROACH_LINES[Math.floor(Math.random()*APPROACH_LINES.length)], 2500);
+      npc.state = 'watch';
+      npc.idleUntil = performance.now() + 7000;
+    }, 800 + idx*300);
+  });
+}
+
+// 뽑기 결과가 나오면 구경하던 NPC들이 반응
+function npcReactToResult(rarity){
+  npcs.forEach(npc=>{
+    if(npc.state !== 'watch') return;
+    const lines = rarity === 'legendary' ? NPC_LEGENDARY_LINES : NPC_WATCH_LINES;
+    setTimeout(()=>{
+      npcSay(npc, lines[Math.floor(Math.random()*lines.length)], 3000);
+      // 신나서 폴짝 점프
+      const g = npc.group, t0 = performance.now();
+      (function hop(){
+        const t = (performance.now()-t0)/400;
+        if(t < 1){ g.position.y = Math.sin(t*Math.PI)*0.3; requestAnimationFrame(hop); }
+        else g.position.y = 0;
+      })();
+    }, 300 + Math.random()*800);
+  });
+}
+
+/* ============================================================
+   Supabase: 로그인 / 진행 저장 / 랭킹 / 실시간 멀티플레이
+   ============================================================ */
+const SUPABASE_URL = 'https://cpxyozkhijzlaukbybrz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Ex7i1023EL3Qmy4ApZzP-A_iExrPqBR';
+const sb = (typeof supabase !== 'undefined') ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+let playerName = null;
+let saveTimer = null;
+
+function legendaryCount(){
+  return Object.values(state.inventory).filter(i=>i.rarity==='legendary').reduce((a,b)=>a+b.count,0);
+}
+
+async function loadPlayerList(){
+  const statusEl = document.getElementById('login-status');
+  if(!sb){ statusEl.textContent = '오프라인 모드 (저장 안 됨)'; return; }
+  try{
+    const { data, error } = await sb.from('gacha_players').select('name').order('updated_at', { ascending:false }).limit(20);
+    if(error) throw error;
+    const list = document.getElementById('login-list');
+    list.innerHTML = '';
+    (data||[]).forEach(row=>{
+      const chip = document.createElement('div');
+      chip.className = 'login-chip';
+      chip.textContent = row.name;
+      chip.addEventListener('click', ()=>{
+        document.querySelectorAll('.login-chip').forEach(c=>c.classList.remove('selected'));
+        chip.classList.add('selected');
+        document.getElementById('login-name').value = row.name;
+      });
+      list.appendChild(chip);
+    });
+  }catch(e){
+    statusEl.textContent = '서버 연결 실패 — 오프라인 모드로 시작해요';
+  }
+}
+
+async function loadPlayerData(name){
+  if(!sb) return;
+  try{
+    const { data } = await sb.from('gacha_players').select('*').eq('name', name).maybeSingle();
+    if(data){
+      state.coins = data.coins ?? 100000;
+      state.inventory = data.inventory || {};
+    } else {
+      await sb.from('gacha_players').insert({ name, coins:state.coins, inventory:state.inventory });
+    }
+  }catch(e){ console.warn('load fail', e); }
+}
+
+function scheduleSave(){
+  if(!sb || !playerName) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async ()=>{
+    try{
+      await sb.from('gacha_players').upsert({
+        name: playerName,
+        coins: state.coins,
+        inventory: state.inventory,
+        total_items: totalCollected(),
+        legendary_count: legendaryCount(),
+        updated_at: new Date().toISOString(),
+      });
+    }catch(e){ console.warn('save fail', e); }
+  }, 800);
+}
+
+/* ---------- 랭킹 ---------- */
+document.getElementById('rank-btn').addEventListener('click', async ()=>{
+  const listEl = document.getElementById('rank-list');
+  listEl.innerHTML = '<div class="collect-empty">불러오는 중...</div>';
+  document.getElementById('rank-panel').classList.add('show');
+  if(!sb){ listEl.innerHTML = '<div class="collect-empty">오프라인 모드에서는 랭킹을 볼 수 없어요</div>'; return; }
+  try{
+    const { data, error } = await sb.from('gacha_players')
+      .select('name,total_items,legendary_count')
+      .order('legendary_count', { ascending:false })
+      .order('total_items', { ascending:false })
+      .limit(20);
+    if(error) throw error;
+    listEl.innerHTML = '';
+    (data||[]).forEach((row,idx)=>{
+      const div = document.createElement('div');
+      div.className = 'rank-row' + (row.name===playerName ? ' me' : '');
+      const medal = idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':`${idx+1}위`;
+      div.innerHTML = `<span>${medal} <span class="rr-name">${row.name}</span></span><span class="rr-stat">⭐${row.legendary_count||0} · 🎁${row.total_items||0}</span>`;
+      listEl.appendChild(div);
+    });
+    if(!data || data.length===0) listEl.innerHTML = '<div class="collect-empty">아직 아무도 없어요!</div>';
+  }catch(e){
+    listEl.innerHTML = '<div class="collect-empty">랭킹을 불러오지 못했어요</div>';
+  }
+});
+document.getElementById('rank-close-btn').addEventListener('click', ()=>{
+  document.getElementById('rank-panel').classList.remove('show');
+});
+
+/* ---------- 실시간 멀티플레이: 다른 플레이어 아바타 표시 ---------- */
+const peers = new Map(); // name -> { group, label, lastSeen, target:{x,z,ry} }
+const peerBodyMat = new THREE.MeshStandardMaterial({ color:0xff8a4d, roughness:0.55 });
+function buildPeerAvatar(name){
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.34,0.4,1.0,12), peerBodyMat);
+  body.position.y = 0.75; g.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.3,12,12), skinMat);
+  head.position.y = 1.55; g.add(head);
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.32,12,12,0,Math.PI*2,0,Math.PI*0.55), hairMat);
+  hair.position.y = 1.68; g.add(hair);
+  const eGeo = new THREE.SphereGeometry(0.038,6,6);
+  const eL = new THREE.Mesh(eGeo, pEyeMat); eL.position.set(-0.11,1.58,0.27); g.add(eL);
+  const eR = new THREE.Mesh(eGeo, pEyeMat); eR.position.set(0.11,1.58,0.27); g.add(eR);
+  scene.add(g);
+  const label = document.createElement('div');
+  label.className = 'peer-label';
+  label.textContent = name;
+  document.body.appendChild(label);
+  return { group:g, label, lastSeen:performance.now(), target:{x:0,z:8,ry:0} };
+}
+
+var presenceChannel = null;
+function startPresence(){
+  if(!sb || !playerName) return;
+  presenceChannel = sb.channel('gacha-arcade', { config: { broadcast: { self:false } } });
+  presenceChannel.on('broadcast', { event:'brag' }, ({ payload })=>{
+    if(!payload || !npcs.length) return;
+    const BRAG_HEAR_LINES = [
+      `${payload.name}이(가) ${payload.item} 뽑았대!`,
+      `오 ${payload.name} 부럽다~`,
+      `${payload.item}?? 나도 갖고 싶다`,
+      `${payload.name} 운 좋겠다...`,
+    ];
+    const watchers = [...npcs].sort(()=>Math.random()-0.5).slice(0,3);
+    watchers.forEach((npc,idx)=>{
+      setTimeout(()=>{
+        npcSay(npc, BRAG_HEAR_LINES[idx % BRAG_HEAR_LINES.length], 3000);
+      }, idx*600);
+    });
+  });
+  presenceChannel.on('broadcast', { event:'pos' }, ({ payload })=>{
+    if(!payload || payload.name === playerName) return;
+    let peer = peers.get(payload.name);
+    if(!peer){ peer = buildPeerAvatar(payload.name); peers.set(payload.name, peer); }
+    peer.target = { x:payload.x, z:payload.z, ry:payload.ry };
+    peer.lastSeen = performance.now();
+  });
+  presenceChannel.subscribe();
+  setInterval(()=>{
+    if(presenceChannel){
+      presenceChannel.send({ type:'broadcast', event:'pos', payload:{
+        name:playerName, x:player.position.x, z:player.position.z, ry:player.rotation.y
+      }});
+    }
+  }, 150);
+}
+
+function updatePeers(dt){
+  const now = performance.now();
+  peers.forEach((peer, name)=>{
+    if(now - peer.lastSeen > 8000){
+      scene.remove(peer.group);
+      peer.label.remove();
+      peers.delete(name);
+      return;
+    }
+    // 부드러운 보간 이동
+    peer.group.position.x += (peer.target.x - peer.group.position.x) * Math.min(1, dt*8);
+    peer.group.position.z += (peer.target.z - peer.group.position.z) * Math.min(1, dt*8);
+    let rdiff = peer.target.ry - peer.group.rotation.y;
+    rdiff = Math.atan2(Math.sin(rdiff), Math.cos(rdiff));
+    peer.group.rotation.y += rdiff * Math.min(1, dt*8);
+    // 이름표를 화면 좌표로 투영
+    const pos = new THREE.Vector3(peer.group.position.x, 2.15, peer.group.position.z);
+    pos.project(camera);
+    if(pos.z < 1){
+      peer.label.style.display = 'block';
+      peer.label.style.left = ((pos.x*0.5+0.5)*window.innerWidth)+'px';
+      peer.label.style.top = ((-pos.y*0.5+0.5)*window.innerHeight)+'px';
+    } else {
+      peer.label.style.display = 'none';
+    }
+  });
+}
+
+/* ---------- 로그인 흐름 ---------- */
+document.getElementById('login-start-btn').addEventListener('click', async ()=>{
+  const name = document.getElementById('login-name').value.trim();
+  if(!name){ document.getElementById('login-status').textContent = '이름을 입력해주세요!'; return; }
+  playerName = name;
+  document.getElementById('login-status').textContent = '불러오는 중...';
+  await loadPlayerData(name);
+  refreshHUD();
+  document.getElementById('login-overlay').classList.add('hidden');
+  document.getElementById('title-badge').textContent = `🏮 ${name}'s 가챠 아케이드 🏮`;
+  startPresence();
+});
+document.getElementById('login-name').addEventListener('keydown', e=>{
+  if(e.key==='Enter') document.getElementById('login-start-btn').click();
+});
+
+refreshHUD();
+loadPlayerList();
+setTimeout(()=>{
+  document.getElementById('loading').style.display = 'none';
+  animate();
+}, 600);
+</script>
+</body>
+</html>

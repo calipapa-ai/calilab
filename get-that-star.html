@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>겟 더 스타! ⭐</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#0d0221; font-family:'Nunito',sans-serif; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; overscroll-behavior:none; -webkit-tap-highlight-color:transparent; }
+  input { -webkit-user-select:text; user-select:text; }
+  canvas { display:block; }
+
+  #hud { position:fixed; top:0; left:0; width:100%; pointer-events:none; z-index:10; font-family:'Baloo 2',sans-serif; }
+
+  .timerWrap { position:absolute; top:14px; width:42%; }
+  .timerWrap.blue { left:14px; }
+  .timerWrap.pink { right:14px; }
+  .teamLabel { color:#fff; font-weight:800; font-size:15px; text-shadow:0 2px 4px rgba(0,0,0,.5); display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+  .timerWrap.pink .teamLabel { justify-content:flex-end; }
+  .barBg { height:20px; border-radius:10px; background:rgba(0,0,0,.35); border:2px solid rgba(255,255,255,.4); overflow:hidden; }
+  .barFill { height:100%; border-radius:8px; transition:width .15s linear; }
+  .barFill.blue { background:linear-gradient(90deg,#4facfe,#00c6ff); box-shadow:0 0 10px #4facfe; }
+  .barFill.pink { background:linear-gradient(90deg,#ff6fb0,#ff3d9a); box-shadow:0 0 10px #ff6fb0; margin-left:auto; }
+
+  #teamBadge { position:absolute; top:56px; left:50%; transform:translateX(-50%); color:#fff; font-weight:800; font-size:13px; background:rgba(0,0,0,.4); padding:4px 14px; border-radius:10px; text-shadow:0 1px 3px rgba(0,0,0,.5); white-space:nowrap; }
+  #roomBadge { position:absolute; top:84px; left:50%; transform:translateX(-50%); color:#ffe27a; font-weight:700; font-size:11px; background:rgba(0,0,0,.3); padding:3px 10px; border-radius:8px; white-space:nowrap; }
+  #centerBanner { position:absolute; top:108px; left:50%; transform:translateX(-50%); color:#fff; font-weight:800; font-size:18px; text-shadow:0 2px 6px rgba(0,0,0,.6); text-align:center; width:90%; }
+
+  .coins { position:absolute; top:52px; width:42%; font-size:14px; color:#ffe27a; font-weight:700; text-shadow:0 1px 3px rgba(0,0,0,.6); }
+  .coins.blueCoins { left:14px; } .coins.pinkCoins { right:14px; text-align:right; }
+
+  #inventory { position:absolute; bottom:14px; width:100%; display:flex; justify-content:space-between; padding:0 16px; }
+  .invBox { color:#fff; background:rgba(0,0,0,.4); border-radius:12px; padding:8px 14px; font-size:13px; font-weight:700; line-height:1.5; }
+
+  .overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:30; background:radial-gradient(ellipse at center, rgba(30,10,50,.85), rgba(5,2,15,.96)); overflow-y:auto; padding:16px 0; }
+  .hidden { display:none !important; }
+
+  .card { background:#1c1030; border:3px solid #ffd166; border-radius:24px; padding:22px 26px; max-width:480px; width:90%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.6); max-height:calc(100vh - 32px); overflow-y:auto; }
+  .title { font-family:'Baloo 2',sans-serif; font-size:30px; font-weight:800; color:#ffd166; text-shadow:0 3px 0 #b4780a, 0 0 24px rgba(255,209,102,.5); letter-spacing:1px; margin-bottom:6px; }
+  .subtitle { color:#c9b8e8; font-size:12px; margin-bottom:14px; font-weight:600; }
+
+  .teamPickRow { display:flex; gap:10px; justify-content:center; margin-bottom:10px; }
+  .teamPickBtn { flex:1; max-width:130px; padding:10px 8px; border-radius:14px; font-family:'Baloo 2'; font-weight:800; font-size:14px; cursor:pointer; border:2px solid; pointer-events:all; transition:.15s; color:#fff; line-height:1.5; }
+  .teamPickBtn.blue { background:rgba(79,172,254,.15); border-color:#4facfe; }
+  .teamPickBtn.pink { background:rgba(255,111,176,.15); border-color:#ff6fb0; }
+  .teamPickBtn.selected.blue { background:#4facfe; box-shadow:0 0 14px rgba(79,172,254,.6); }
+  .teamPickBtn.selected.pink { background:#ff6fb0; box-shadow:0 0 14px rgba(255,111,176,.6); }
+
+  .nameInput { width:100%; padding:9px 12px; border-radius:10px; border:2px solid #5b3d8f; background:#2c1a4a; color:#fff; font-family:'Nunito'; font-weight:700; font-size:13px; margin-bottom:10px; pointer-events:all; text-align:center; }
+  .nameInput::placeholder { color:#8a7ab5; }
+
+  .modeRow { display:flex; gap:8px; justify-content:center; margin-bottom:12px; flex-wrap:wrap; }
+  .modeBtn { flex:1; min-width:100px; background:#2c1a4a; border:2px solid #5b3d8f; color:#fff; border-radius:14px; padding:9px 6px; cursor:pointer; font-family:'Baloo 2'; font-weight:700; font-size:12px; pointer-events:all; transition:.15s; }
+  .modeBtn:hover { border-color:#ffd166; transform:translateY(-2px); }
+  .modeBtn.selected { background:#4a2c85; border-color:#ffd166; box-shadow:0 0 14px rgba(255,209,102,.4); }
+
+  .netBox { background:rgba(0,0,0,.22); border-radius:14px; padding:12px; margin-bottom:12px; }
+  .netStatus { color:#c9b8e8; font-size:12px; font-weight:700; margin-top:6px; }
+  .roomCodeBig { font-family:'Baloo 2'; font-size:30px; font-weight:800; color:#ffd166; letter-spacing:6px; margin:6px 0; }
+  .lobbyList { display:flex; flex-direction:column; gap:4px; margin-top:6px; max-height:100px; overflow-y:auto; }
+  .lobbyItem { background:rgba(255,255,255,.08); border-radius:8px; padding:5px 10px; font-size:12px; color:#fff; text-align:left; font-weight:700; }
+
+  .bigBtn { pointer-events:all; cursor:pointer; font-family:'Baloo 2'; font-weight:800; font-size:16px; color:#1c1030; background:linear-gradient(180deg,#ffe27a,#ffc94d); border:none; border-radius:14px; padding:11px 30px; box-shadow:0 6px 0 #b4780a, 0 10px 20px rgba(0,0,0,.3); transition:.1s; }
+  .bigBtn.small { font-size:13px; padding:9px 20px; }
+  .bigBtn:active { transform:translateY(4px); box-shadow:0 2px 0 #b4780a; }
+  .bigBtn:disabled { opacity:.4; cursor:not-allowed; }
+
+  .instructions { text-align:left; background:rgba(0,0,0,.25); border-radius:12px; padding:10px 14px; font-size:11px; color:#e4dbf7; line-height:1.5; margin-bottom:14px; }
+  .instructions b { color:#ffd166; }
+
+  .shopGrid { display:flex; gap:16px; margin-bottom:20px; }
+  .shopCol { flex:1; background:rgba(0,0,0,.25); border-radius:16px; padding:16px; }
+  .shopCol.blueCol { border:2px solid #4facfe; } .shopCol.pinkCol { border:2px solid #ff6fb0; }
+  .shopColTitle { font-weight:800; font-size:16px; margin-bottom:10px; }
+  .shopColTitle.b { color:#4facfe; } .shopColTitle.p { color:#ff6fb0; }
+  .shopCoinLine { color:#ffe27a; font-size:13px; font-weight:700; margin-bottom:10px; }
+  .shopItem { display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,.06); border-radius:10px; padding:8px 10px; margin-bottom:8px; font-size:13px; color:#fff; }
+  .shopItem button { pointer-events:all; cursor:pointer; font-family:'Baloo 2'; font-weight:700; background:#ffd166; border:none; border-radius:8px; padding:5px 10px; font-size:12px; color:#1c1030; }
+  .shopItem button:disabled { opacity:.35; cursor:not-allowed; }
+  .invCount { font-size:11px; color:#a89ad0; margin-top:2px; }
+
+  #touchControls { position:fixed; inset:0; z-index:20; pointer-events:none; touch-action:none; }
+  .joyWrap { position:absolute; left:20px; bottom:78px; width:120px; height:120px; }
+  .joyBase { position:relative; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,.12); border:2px solid rgba(255,255,255,.35); pointer-events:all; touch-action:none; }
+  .joyKnob { position:absolute; left:50%; top:50%; width:52px; height:52px; margin:-26px 0 0 -26px; border-radius:50%; background:rgba(255,209,102,.85); border:2px solid #fff; pointer-events:none; }
+  .actWrap { position:absolute; right:20px; bottom:78px; display:flex; flex-direction:column; gap:10px; align-items:flex-end; }
+  .actBtn { pointer-events:all; touch-action:none; width:60px; height:60px; border-radius:50%; border:2px solid rgba(255,255,255,.4); background:rgba(28,16,48,.55); color:#fff; font-size:10px; font-weight:800; font-family:'Nunito',sans-serif; line-height:1.2; }
+  .actBtn.actThrow { width:70px; height:70px; background:rgba(255,209,102,.35); }
+  .actBtn:active { background:rgba(255,209,102,.6); }
+
+  #chatToggleBtn { position:fixed; right:20px; bottom:230px; z-index:22; width:52px; height:52px; border-radius:50%; border:2px solid rgba(255,255,255,.4); background:rgba(28,16,48,.6); color:#fff; font-size:22px; pointer-events:all; }
+  #chatPanel { position:fixed; right:20px; bottom:290px; z-index:22; background:rgba(20,10,35,.92); border:2px solid #5b3d8f; border-radius:16px; padding:10px; display:grid; grid-template-columns:1fr 1fr; gap:6px; width:220px; pointer-events:all; }
+  .chatPhrase { pointer-events:all; cursor:pointer; font-family:'Nunito'; font-weight:700; font-size:12px; background:#2c1a4a; color:#fff; border:1px solid #5b3d8f; border-radius:8px; padding:7px 4px; }
+  .chatPhrase:active { background:#4a2c85; }
+
+  #bubbleLayer { position:fixed; inset:0; z-index:15; pointer-events:none; }
+  .chatBubble { position:absolute; left:0; top:0; background:#fff; color:#1c1030; font-weight:800; font-size:12px; padding:6px 10px; border-radius:12px; white-space:nowrap; box-shadow:0 4px 10px rgba(0,0,0,.3); }
+
+  #errBanner { display:none; position:fixed; top:0; left:0; width:100%; background:#c0392b; color:#fff; font-weight:700; font-size:12px; padding:8px 14px; z-index:999; font-family:monospace; }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+<div id="errBanner"></div>
+<div id="bubbleLayer"></div>
+
+<div id="hud">
+  <div class="timerWrap blue">
+    <div class="teamLabel">🔵 BLUE</div>
+    <div class="barBg"><div class="barFill blue" id="blueBar" style="width:0%"></div></div>
+  </div>
+  <div class="timerWrap pink">
+    <div class="teamLabel">PINK 🌸</div>
+    <div class="barBg"><div class="barFill pink" id="pinkBar" style="width:0%"></div></div>
+  </div>
+  <div class="coins blueCoins">🪙 <span id="blueCoinTxt">0</span></div>
+  <div class="coins pinkCoins">🪙 <span id="pinkCoinTxt">0</span></div>
+  <div id="teamBadge"></div>
+  <div id="roomBadge"></div>
+  <div id="centerBanner"></div>
+  <div id="inventory">
+    <div class="invBox" id="invP1">🍌0 🟡0</div>
+  </div>
+</div>
+
+<div id="touchControls">
+  <div class="joyWrap" id="joyWrapP1">
+    <div class="joyBase" id="joyBaseP1"><div class="joyKnob" id="joyKnobP1"></div></div>
+  </div>
+  <div class="actWrap" id="actWrapP1">
+    <button class="actBtn actThrow" id="actThrowP1">🍌<br>던지기</button>
+    <button class="actBtn" id="actQP1">🍌<br>설치</button>
+    <button class="actBtn" id="actEP1">🟡<br>설치</button>
+  </div>
+</div>
+
+<button id="chatToggleBtn">💬</button>
+<div id="chatPanel" class="hidden">
+  <button class="chatPhrase" data-msg="고고고!">고고고!</button>
+  <button class="chatPhrase" data-msg="조심해!">조심해!</button>
+  <button class="chatPhrase" data-msg="나이스!">나이스!</button>
+  <button class="chatPhrase" data-msg="살려줘!">살려줘!</button>
+  <button class="chatPhrase" data-msg="잡았다!">잡았다!</button>
+  <button class="chatPhrase" data-msg="미안!">미안!</button>
+  <button class="chatPhrase" data-msg="ㅋㅋㅋ">ㅋㅋㅋ</button>
+  <button class="chatPhrase" data-msg="이쪽!">이쪽!</button>
+</div>
+
+<div class="overlay" id="startScreen">
+  <div class="card">
+    <div class="title">겟 더 스타! ⭐</div>
+    <div class="subtitle">파란 팀 vs 핑크 팀, 미로 한가운데 별을 60초 동안 지켜라!</div>
+
+    <div class="teamPickRow">
+      <div class="teamPickBtn blue selected" id="pickBlue">🔵<br>BLUE</div>
+      <div class="teamPickBtn pink" id="pickPink">🌸<br>PINK</div>
+    </div>
+    <input id="nameInput" class="nameInput" placeholder="닉네임 (최대 6자)" maxlength="6" value="라연">
+
+    <div class="modeRow">
+      <div class="modeBtn selected" id="modeSolo">🤖 혼자 연습</div>
+      <div class="modeBtn" id="modeHost">🌐 방 만들기</div>
+      <div class="modeBtn" id="modeJoin">🔑 코드로 참가</div>
+    </div>
+
+    <div id="joinBox" class="netBox hidden">
+      <input id="joinCodeInput" class="nameInput" placeholder="방 코드 4자리" maxlength="4" style="text-transform:uppercase;">
+      <button class="bigBtn small" id="joinBtn">참가하기</button>
+      <div class="netStatus" id="joinStatus"></div>
+    </div>
+
+    <div id="hostBox" class="netBox hidden">
+      <button class="bigBtn small" id="createRoomBtn">방 만들기</button>
+      <div id="lobbyInfo" class="hidden">
+        <div class="roomCodeBig" id="roomCodeBig"></div>
+        <div class="netStatus">이 코드를 친구에게 알려주세요!</div>
+        <div class="netStatus">참가한 친구:</div>
+        <div id="lobbyList" class="lobbyList"></div>
+      </div>
+    </div>
+
+    <div class="instructions">
+      <b>조작</b>: 화면 왼쪽 조이스틱으로 이동, 오른쪽 버튼으로 던지기/함정 설치 (키보드 있으면 WASD+Space+Q/E도 가능)<br><br>
+      별을 들면 도망쳐야 해요! 상대팀은 몸으로 부딪히거나(박치기) 🍌바나나껍질을 던져서 별을 뺏을 수 있어요.
+      가진 시간이 팀별로 누적돼서 <b>먼저 60초</b>를 채우면 승리! 이긴 팀은 코인으로 샵에서 함정을 살 수 있어요.
+    </div>
+    <button class="bigBtn" id="startBtn">게임 시작 🏁</button>
+  </div>
+</div>
+
+<div class="overlay hidden" id="winScreen">
+  <div class="card">
+    <div class="title" id="winTitle">BLUE 승리! 🏆</div>
+    <div class="subtitle" id="winCoinsTxt"></div>
+    <button class="bigBtn" id="toShopBtn">샵으로 가기 🛒</button>
+  </div>
+</div>
+
+<div class="overlay hidden" id="shopScreen">
+  <div class="card" style="max-width:640px;">
+    <div class="title" style="font-size:28px;">아이템 샵 🛒</div>
+    <div class="subtitle">다음 라운드를 위해 함정을 준비하세요 (상대팀에게만 효과가 있어요)</div>
+    <div class="shopGrid">
+      <div class="shopCol blueCol">
+        <div class="shopColTitle b">🔵 BLUE 팀</div>
+        <div class="shopCoinLine">🪙 <span id="shopBlueCoin">0</span></div>
+        <div class="shopItem"><div>🍌 바나나껍질<br><span class="invCount">밟으면 느려짐 · 30코인</span></div><button id="buyBluePeel">구매</button></div>
+        <div class="shopItem"><div>🟡 미끌미끌공<br><span class="invCount">밟으면 넘어짐+별drop · 40코인</span></div><button id="buyBlueSlip">구매</button></div>
+        <div class="invCount">보유: 🍌<span id="blueInvPeel">0</span> 🟡<span id="blueInvSlip">0</span></div>
+      </div>
+      <div class="shopCol pinkCol">
+        <div class="shopColTitle p">🌸 PINK 팀</div>
+        <div class="shopCoinLine">🪙 <span id="shopPinkCoin">0</span></div>
+        <div class="shopItem"><div>🍌 바나나껍질<br><span class="invCount">밟으면 느려짐 · 30코인</span></div><button id="buyPinkPeel">구매</button></div>
+        <div class="shopItem"><div>🟡 미끌미끌공<br><span class="invCount">밟으면 넘어짐+별drop · 40코인</span></div><button id="buyPinkSlip">구매</button></div>
+        <div class="invCount">보유: 🍌<span id="pinkInvPeel">0</span> 🟡<span id="pinkInvSlip">0</span></div>
+      </div>
+    </div>
+    <div class="netStatus hidden" id="shopWaitNote">호스트가 다음 라운드를 시작하면 자동으로 시작돼요</div>
+    <button class="bigBtn" id="nextRoundBtn">다음 라운드 시작 ▶</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.52.1/dist/umd/supabase.js"></script>
+<script>
+(function(){
+"use strict";
+
+window.addEventListener('error', function(e){
+  const el = document.getElementById('errBanner');
+  if(el){ el.textContent = '⚠️ 오류 발생: ' + e.message + ' (줄 ' + e.lineno + ')'; el.style.display='block'; }
+});
+
+const SUPABASE_URL = 'https://cpxyozkhijzlaukbybrz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Ex7i1023EL3Qmy4ApZzP-A_iExrPqBR';
+const sbClient = (typeof supabase !== 'undefined') ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+function uid(){ return 'p' + Math.random().toString(36).slice(2,9); }
+function genRoomCode(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s=''; for(let i=0;i<4;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+
+let netRole = 'solo';
+let netChannel = null;
+let myId = null, myName = '플레이어', pickedTeam = 'blue';
+let roomCode = '';
+let lobbyRoster = [];
+let currentRoster = [];
+let mazeSeed = 1;
+let netTickAccum = 0;
+let currentWinner = null;
+
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+let rng = Math.random;
+function setSeed(seed){ rng = mulberry32(seed); }
+
+document.getElementById('pickBlue').onclick = ()=>{ pickedTeam='blue'; document.getElementById('pickBlue').classList.add('selected'); document.getElementById('pickPink').classList.remove('selected'); };
+document.getElementById('pickPink').onclick = ()=>{ pickedTeam='pink'; document.getElementById('pickPink').classList.add('selected'); document.getElementById('pickBlue').classList.remove('selected'); };
+
+let selectedMode = 'solo';
+let roomReady = false;
+function updateModeUI(){
+  document.getElementById('modeSolo').classList.toggle('selected', selectedMode==='solo');
+  document.getElementById('modeHost').classList.toggle('selected', selectedMode==='host');
+  document.getElementById('modeJoin').classList.toggle('selected', selectedMode==='join');
+  document.getElementById('joinBox').classList.toggle('hidden', selectedMode!=='join');
+  document.getElementById('hostBox').classList.toggle('hidden', selectedMode!=='host');
+  const startBtn = document.getElementById('startBtn');
+  if(selectedMode==='join'){ startBtn.classList.add('hidden'); }
+  else {
+    startBtn.classList.remove('hidden');
+    startBtn.disabled = (selectedMode==='host' && !roomReady);
+  }
+}
+document.getElementById('modeSolo').onclick = ()=>{ selectedMode='solo'; updateModeUI(); };
+document.getElementById('modeHost').onclick = ()=>{ selectedMode='host'; updateModeUI(); };
+document.getElementById('modeJoin').onclick = ()=>{ selectedMode='join'; updateModeUI(); };
+updateModeUI();
+
+let gameInProgress = false;   // host: has a round been started this session
+let joinRetryTimer = null;
+let joinAcked = false;
+
+function setupChannel(onReadyCb){
+  netChannel = sbClient.channel('star-room-'+roomCode, {
+    config: { broadcast: { self:false }, presence: { key: myId } }
+  });
+
+  netChannel.on('broadcast',{event:'join'}, ({payload})=>{
+    if(netRole!=='host') return;
+    if(!lobbyRoster.find(p=>p.id===payload.id)){ lobbyRoster.push(payload); renderLobbyList(); }
+    // ack so the guest stops retrying, and share the full roster
+    netChannel.send({type:'broadcast', event:'roster', payload:{ roster:lobbyRoster, to:payload.id }});
+    // if a round is already running, bring the late-joiner up to speed immediately
+    if(gameInProgress){
+      currentRoster = lobbyRoster.slice();
+      netChannel.send({type:'broadcast', event:'start_round', payload:{seed:mazeSeed, roster:currentRoster}});
+      setupRound(); // rebuild locally so the new player has a character
+    }
+  });
+
+  netChannel.on('broadcast',{event:'roster'}, ({payload})=>{
+    if(netRole!=='guest') return;
+    if(payload.to && payload.to!==myId) return;
+    joinAcked = true;
+    if(joinRetryTimer){ clearInterval(joinRetryTimer); joinRetryTimer=null; }
+    lobbyRoster = payload.roster || lobbyRoster;
+    const st = document.getElementById('joinStatus');
+    if(st && !gameStarted) st.textContent = '방 참가 완료! 호스트가 시작하길 기다리는 중... ('+lobbyRoster.length+'명)';
+  });
+
+  netChannel.on('broadcast',{event:'start_round'}, ({payload})=>{
+    if(netRole!=='guest') return;
+    joinAcked = true;
+    if(joinRetryTimer){ clearInterval(joinRetryTimer); joinRetryTimer=null; }
+    mazeSeed = payload.seed; setSeed(mazeSeed);
+    currentRoster = payload.roster;
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('joinStatus').textContent = '';
+    gameStarted = true;
+    setupRound();
+    updateRoomBadge();
+  });
+
+  netChannel.on('broadcast',{event:'transform'}, ({payload})=>{ handleRemoteTransform(payload); });
+  netChannel.on('broadcast',{event:'host_state'}, ({payload})=>{ if(netRole==='guest') handleHostState(payload); });
+  netChannel.on('broadcast',{event:'action'}, ({payload})=>{ if(netRole==='host') handleGuestAction(payload); });
+  netChannel.on('broadcast',{event:'chat'}, ({payload})=>{ handleChatMsg(payload); });
+
+  // presence: detect disconnects and drop players
+  netChannel.on('presence',{event:'leave'}, ({leftPresences})=>{
+    if(netRole!=='host') return;
+    let changed=false;
+    (leftPresences||[]).forEach(pr=>{
+      const pid = pr.pid || pr.key;
+      const idx = lobbyRoster.findIndex(p=>p.id===pid);
+      if(idx>=0){ lobbyRoster.splice(idx,1); changed=true; }
+    });
+    if(changed){ renderLobbyList(); }
+  });
+
+  netChannel.subscribe((status)=>{
+    if(status==='SUBSCRIBED'){
+      try{ netChannel.track({ pid: myId, name: myName, team: pickedTeam }); }catch(e){}
+      onReadyCb && onReadyCb();
+    } else if(status==='CHANNEL_ERROR' || status==='TIMED_OUT' || status==='CLOSED'){
+      const s1=document.getElementById('joinStatus'); if(s1) s1.textContent='연결이 불안정해요. 새로고침 후 다시 시도해주세요.';
+    }
+  });
+}
+function renderLobbyList(){
+  const el = document.getElementById('lobbyList');
+  if(!el) return;
+  el.innerHTML = lobbyRoster.map(p=>
+    '<div class="lobbyItem">'+(p.team==='blue'?'🔵 ':'🌸 ')+p.name+(p.id===myId?' (나)':'')+'</div>'
+  ).join('');
+}
+
+document.getElementById('createRoomBtn').onclick = ()=>{
+  if(!sbClient){ alert('멀티플레이 서버 연결에 실패했어요. 혼자 연습 모드로 진행해주세요.'); return; }
+  myName = (document.getElementById('nameInput').value||'플레이어').slice(0,6);
+  myId = uid();
+  roomCode = genRoomCode();
+  netRole = 'host';
+  lobbyRoster = [{id:myId, name:myName, team:pickedTeam}];
+  setupChannel(()=>{
+    document.getElementById('roomCodeBig').textContent = roomCode;
+    document.getElementById('lobbyInfo').classList.remove('hidden');
+    document.getElementById('createRoomBtn').classList.add('hidden');
+    renderLobbyList();
+    roomReady = true;
+    updateModeUI();
+  });
+};
+
+document.getElementById('joinBtn').onclick = ()=>{
+  if(!sbClient){ alert('멀티플레이 서버 연결에 실패했어요.'); return; }
+  const code = (document.getElementById('joinCodeInput').value||'').trim().toUpperCase();
+  if(code.length<4){ document.getElementById('joinStatus').textContent='코드 4자리를 입력해주세요'; return; }
+  myName = (document.getElementById('nameInput').value||'플레이어').slice(0,6);
+  myId = uid();
+  roomCode = code;
+  netRole = 'guest';
+  joinAcked = false;
+  setupChannel(()=>{
+    const sendJoin = ()=> netChannel.send({type:'broadcast', event:'join', payload:{id:myId, name:myName, team:pickedTeam}});
+    sendJoin();
+    document.getElementById('joinStatus').textContent = '호스트에 연결하는 중...';
+    let tries = 0;
+    if(joinRetryTimer) clearInterval(joinRetryTimer);
+    joinRetryTimer = setInterval(()=>{
+      tries++;
+      if(joinAcked || tries>10){
+        clearInterval(joinRetryTimer); joinRetryTimer=null;
+        if(!joinAcked){ document.getElementById('joinStatus').textContent='호스트를 찾지 못했어요. 코드를 확인하고 다시 시도해주세요.'; }
+        return;
+      }
+      sendJoin();
+    }, 900);
+  });
+};
+
+document.getElementById('startBtn').onclick = ()=>{
+  if(selectedMode==='solo'){
+    netRole='solo'; myId=uid();
+    myName=(document.getElementById('nameInput').value||'플레이어').slice(0,6);
+    currentRoster = [{id:myId, name:myName, team:pickedTeam}];
+    mazeSeed = Date.now()%2147483647; setSeed(mazeSeed);
+    beginGame();
+  } else if(selectedMode==='host'){
+    if(!roomReady) return;
+    gameInProgress = true;
+    mazeSeed = Date.now()%2147483647; setSeed(mazeSeed);
+    currentRoster = lobbyRoster.slice();
+    netChannel.send({type:'broadcast', event:'start_round', payload:{seed:mazeSeed, roster:currentRoster}});
+    beginGame();
+  }
+};
+function beginGame(){
+  document.getElementById('startScreen').classList.add('hidden');
+  gameStarted = true;
+  setupRound();
+  updateRoomBadge();
+}
+function updateRoomBadge(){
+  const el = document.getElementById('roomBadge');
+  el.textContent = netRole==='solo' ? '' : ('룸 '+roomCode+(netRole==='host'?' (호스트)':' (참가중)'));
+}
+
+function attemptBuy(team, itemType, cost){
+  if(netRole==='guest'){
+    netChannel.send({type:'broadcast', event:'action', payload:{id:myId, type:'buy', team, itemType}});
+    return;
+  }
+  if(coins[team]>=cost){ coins[team]-=cost; inventory[team][itemType]++; saveCoins(); refreshShop(); updateCoinTxt(); }
+}
+document.getElementById('buyBluePeel').onclick = ()=>attemptBuy('blue','peel',30);
+document.getElementById('buyBlueSlip').onclick = ()=>attemptBuy('blue','slip',40);
+document.getElementById('buyPinkPeel').onclick = ()=>attemptBuy('pink','peel',30);
+document.getElementById('buyPinkSlip').onclick = ()=>attemptBuy('pink','slip',40);
+document.getElementById('toShopBtn').onclick = ()=>{ openShop(); };
+document.getElementById('nextRoundBtn').onclick = ()=>{
+  if(netRole==='guest') return;
+  document.getElementById('shopScreen').classList.add('hidden');
+  mazeSeed = Date.now()%2147483647; setSeed(mazeSeed);
+  if(netRole==='host'){
+    gameInProgress = true;
+    currentRoster = lobbyRoster.slice();
+    netChannel.send({type:'broadcast', event:'start_round', payload:{seed:mazeSeed, roster:currentRoster}});
+  }
+  setupRound();
+};
+
+const GRID = 13;
+const CELL = 6;
+const WALL_H = 3.2;
+const WALL_T = 0.5;
+const CHAR_R = 0.55;
+const WIN_TIME = 60;
+const STEAL_GRACE = 0.6;
+const DROP_GRACE = 0.4;
+
+let coins = { blue: 0, pink: 0 };
+let inventory = {
+  blue: { peel: 0, slip: 0 },
+  pink: { peel: 0, slip: 0 }
+};
+
+const COIN_KEY = 'star-game-coins';
+const hasArtifactStorage = (typeof window.storage !== 'undefined' && window.storage && typeof window.storage.get === 'function');
+async function loadCoins(){
+  try{
+    let raw = null;
+    if(hasArtifactStorage){
+      const r = await window.storage.get(COIN_KEY);
+      raw = r && r.value ? r.value : null;
+    } else {
+      raw = localStorage.getItem(COIN_KEY);
+    }
+    if(raw){ const v = JSON.parse(raw); coins.blue = v.blue||0; coins.pink = v.pink||0; }
+  }catch(e){}
+  updateCoinTxt();
+}
+async function saveCoins(){
+  const data = JSON.stringify(coins);
+  try{
+    if(hasArtifactStorage){ await window.storage.set(COIN_KEY, data); }
+    else { localStorage.setItem(COIN_KEY, data); }
+  }catch(e){}
+}
+
+function generateMaze(size){
+  const cells = [];
+  for(let x=0;x<size;x++){
+    cells.push([]);
+    for(let z=0;z<size;z++) cells[x].push({x,z,walls:{N:true,S:true,E:true,W:true},visited:false});
+  }
+  const stack=[cells[0][0]]; cells[0][0].visited=true;
+  const opp={N:'S',S:'N',E:'W',W:'E'};
+  const dirs=[['N',0,-1],['S',0,1],['E',1,0],['W',-1,0]];
+  while(stack.length){
+    const cur=stack[stack.length-1];
+    const nbrs=[];
+    for(const [dir,dx,dz] of dirs){
+      const nx=cur.x+dx, nz=cur.z+dz;
+      if(nx>=0&&nx<size&&nz>=0&&nz<size&&!cells[nx][nz].visited) nbrs.push({dir,nx,nz});
+    }
+    if(nbrs.length){
+      const p=nbrs[Math.floor(rng()*nbrs.length)];
+      cur.walls[p.dir]=false;
+      cells[p.nx][p.nz].walls[opp[p.dir]]=false;
+      cells[p.nx][p.nz].visited=true;
+      stack.push(cells[p.nx][p.nz]);
+    } else stack.pop();
+  }
+  for(let x=0;x<size;x++) for(let z=0;z<size;z++){
+    if(rng()<0.15){
+      const dir = dirs[Math.floor(rng()*4)];
+      const nx=x+dir[1], nz=z+dir[2];
+      if(nx>=0&&nx<size&&nz>=0&&nz<size){
+        cells[x][z].walls[dir[0]]=false;
+        cells[nx][nz].walls[opp[dir[0]]]=false;
+      }
+    }
+  }
+  const mid = Math.floor(size/2);
+  for(let x=mid-1;x<=mid+1;x++) for(let z=mid-1;z<=mid+1;z++){
+    for(const [dir,dx,dz] of dirs){
+      const nx=x+dx, nz=z+dz;
+      if(nx>=mid-1&&nx<=mid+1&&nz>=mid-1&&nz<=mid+1){
+        cells[x][z].walls[dir]=false;
+      }
+    }
+  }
+  return cells;
+}
+
+function cellCenter(cx,cz){ return new THREE.Vector3(cx*CELL+CELL/2, 0, cz*CELL+CELL/2); }
+
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x8ecdf5);
+scene.fog = new THREE.Fog(0xbfe3ff, 45, 130);
+
+const camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, 0.1, 300);
+
+const hemi = new THREE.HemisphereLight(0xdbeeff, 0x3a7d44, 1.0);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff4dd, 1.25);
+sun.position.set(25,45,15);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024,1024);
+sun.shadow.camera.left=-40; sun.shadow.camera.right=40; sun.shadow.camera.top=40; sun.shadow.camera.bottom=-40;
+scene.add(sun);
+
+let mazeGroup, wallBoxes;
+let mazeSize = GRID*CELL;
+
+function disposeGroup(group){
+  group.traverse(obj=>{
+    if(obj.geometry) obj.geometry.dispose();
+    if(obj.material){
+      if(Array.isArray(obj.material)) obj.material.forEach(m=>m.dispose());
+      else obj.material.dispose();
+    }
+  });
+}
+function buildMaze(){
+  if(mazeGroup){ scene.remove(mazeGroup); disposeGroup(mazeGroup); }
+  mazeGroup = new THREE.Group();
+  wallBoxes = [];
+  const cells = generateMaze(GRID);
+
+  const floorGeo = new THREE.PlaneGeometry(mazeSize, mazeSize);
+  const floorMatBlue = new THREE.MeshStandardMaterial({ color:0x1b3a63, roughness:.9 });
+  const floorB = new THREE.Mesh(floorGeo, floorMatBlue);
+  floorB.rotation.x=-Math.PI/2; floorB.position.set(mazeSize/2, -0.01, mazeSize/2);
+  floorB.receiveShadow=true;
+  mazeGroup.add(floorB);
+
+  const wallMat = new THREE.MeshStandardMaterial({ color:0xfff3da, roughness:.7 });
+  const wallGeo1 = new THREE.BoxGeometry(CELL, WALL_H, WALL_T);
+  const wallGeo2 = new THREE.BoxGeometry(WALL_T, WALL_H, CELL);
+
+  for(let x=0;x<GRID;x++) for(let z=0;z<GRID;z++){
+    const c = cells[x][z];
+    const cx=x*CELL+CELL/2, cz=z*CELL+CELL/2;
+    if(c.walls.N){
+      const m=new THREE.Mesh(wallGeo1, wallMat); m.position.set(cx, WALL_H/2, z*CELL); m.castShadow=m.receiveShadow=true; mazeGroup.add(m);
+      wallBoxes.push({minX:cx-CELL/2, maxX:cx+CELL/2, minZ:z*CELL-WALL_T/2, maxZ:z*CELL+WALL_T/2});
+    }
+    if(c.walls.W){
+      const m=new THREE.Mesh(wallGeo2, wallMat); m.position.set(x*CELL, WALL_H/2, cz); m.castShadow=m.receiveShadow=true; mazeGroup.add(m);
+      wallBoxes.push({minX:x*CELL-WALL_T/2, maxX:x*CELL+WALL_T/2, minZ:cz-CELL/2, maxZ:cz+CELL/2});
+    }
+    if(x===GRID-1 && c.walls.E){
+      const m=new THREE.Mesh(wallGeo2, wallMat); m.position.set((x+1)*CELL, WALL_H/2, cz); m.castShadow=m.receiveShadow=true; mazeGroup.add(m);
+      wallBoxes.push({minX:(x+1)*CELL-WALL_T/2, maxX:(x+1)*CELL+WALL_T/2, minZ:cz-CELL/2, maxZ:cz+CELL/2});
+    }
+    if(z===GRID-1 && c.walls.S){
+      const m=new THREE.Mesh(wallGeo1, wallMat); m.position.set(cx, WALL_H/2, (z+1)*CELL); m.castShadow=m.receiveShadow=true; mazeGroup.add(m);
+      wallBoxes.push({minX:cx-CELL/2, maxX:cx+CELL/2, minZ:(z+1)*CELL-WALL_T/2, maxZ:(z+1)*CELL+WALL_T/2});
+    }
+  }
+  scene.add(mazeGroup);
+  return cells;
+}
+
+let mazeCells = buildMaze();
+
+function makeTree(){
+  const g = new THREE.Group();
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.5,2.6,7), new THREE.MeshStandardMaterial({color:0x7a5230, roughness:.9}));
+  trunk.position.y=1.3; trunk.castShadow=true;
+  g.add(trunk);
+  const greens = [0x3f8f3f,0x4aa84a,0x357a35];
+  for(let i=0;i<3;i++){
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(1.6-i*0.35, 2.0, 8), new THREE.MeshStandardMaterial({color:greens[i%greens.length], roughness:.85}));
+    cone.position.y = 2.6+i*1.3;
+    cone.castShadow=true;
+    g.add(cone);
+  }
+  return g;
+}
+function scatterTrees(){
+  const treeGroup = new THREE.Group();
+  const margin = 8;
+  for(let i=0;i<70;i++){
+    const a = Math.random()*Math.PI*2;
+    const r = mazeSize/2 + margin*0.3 + Math.random()*margin*1.6;
+    const tree = makeTree();
+    tree.position.set(mazeSize/2 + Math.cos(a)*r, 0, mazeSize/2 + Math.sin(a)*r);
+    const s = 0.7+Math.random()*0.8;
+    tree.scale.set(s,s,s);
+    tree.rotation.y = Math.random()*Math.PI*2;
+    treeGroup.add(tree);
+  }
+  const grassGeo = new THREE.PlaneGeometry(400,400);
+  const grass = new THREE.Mesh(grassGeo, new THREE.MeshStandardMaterial({color:0x4d9950, roughness:1}));
+  grass.rotation.x=-Math.PI/2; grass.position.set(mazeSize/2,-0.03,mazeSize/2);
+  grass.receiveShadow=true;
+  scene.add(grass);
+  scene.add(treeGroup);
+}
+scatterTrees();
+
+function makeStarMesh(){
+  const shape = new THREE.Shape();
+  const spikes=5, outerR=1, innerR=0.42;
+  for(let i=0;i<spikes*2;i++){
+    const r = i%2===0?outerR:innerR;
+    const a = (i/(spikes*2))*Math.PI*2 - Math.PI/2;
+    const px=Math.cos(a)*r, py=Math.sin(a)*r;
+    if(i===0) shape.moveTo(px,py); else shape.lineTo(px,py);
+  }
+  shape.closePath();
+  const geo = new THREE.ExtrudeGeometry(shape, { depth:0.35, bevelEnabled:true, bevelSize:.05, bevelThickness:.05 });
+  const mat = new THREE.MeshStandardMaterial({ color:0xffd166, emissive:0xffaa00, emissiveIntensity:0.6, metalness:.3, roughness:.3 });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.rotation.x = Math.PI/2;
+  mesh.castShadow = true;
+  const light = new THREE.PointLight(0xffd166, 1.2, 8);
+  mesh.add(light);
+  return mesh;
+}
+
+const starState = { mesh:null, held:false, holder:null, pos:new THREE.Vector3(), invuln:0 };
+function spawnStar(pos){
+  if(starState.mesh){ if(starState.mesh.parent) starState.mesh.parent.remove(starState.mesh); }
+  starState.mesh = makeStarMesh();
+  starState.pos.copy(pos); starState.pos.y = 1.1;
+  starState.mesh.position.copy(starState.pos);
+  starState.held=false; starState.holder=null; starState.invuln=DROP_GRACE;
+  scene.add(starState.mesh);
+}
+
+let peelSpawns = [];
+function spawnBananaPoints(){
+  peelSpawns.forEach(p=>{ if(p.mesh) scene.remove(p.mesh); });
+  peelSpawns = [];
+  const mid = Math.floor(GRID/2);
+  const candidates = [];
+  for(let x=1;x<GRID-1;x++) for(let z=1;z<GRID-1;z++){
+    if(Math.abs(x-mid)<=1 && Math.abs(z-mid)<=1) continue;
+    if((x<=1&&z<=1)||(x>=GRID-2&&z>=GRID-2)) continue;
+    candidates.push({x,z});
+  }
+  for(let i=candidates.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [candidates[i],candidates[j]]=[candidates[j],candidates[i]]; }
+  const chosen = candidates.slice(0, 8);
+  for(const c of chosen){
+    const mesh = makePeelMesh();
+    const pos = cellCenter(c.x,c.z); pos.y=0.15;
+    mesh.position.copy(pos);
+    scene.add(mesh);
+    peelSpawns.push({ mesh, x:c.x, z:c.z, taken:false });
+  }
+}
+
+function makePeelMesh(){
+  const g = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({ color:0xffe066, roughness:.6 });
+  for(let i=0;i<3;i++){
+    const geo = new THREE.TorusGeometry(0.28, 0.09, 6, 8, Math.PI*1.1);
+    const m = new THREE.Mesh(geo, mat);
+    m.rotation.set(Math.PI/2, 0, i*2.1);
+    m.castShadow=true;
+    g.add(m);
+  }
+  return g;
+}
+
+let projectiles = [];
+function throwPeel(owner){
+  const geo = new THREE.SphereGeometry(0.22,8,8);
+  const mat = new THREE.MeshStandardMaterial({ color:0xffe066 });
+  const mesh = new THREE.Mesh(geo, mat); mesh.castShadow=true;
+  mesh.position.copy(owner.pos); mesh.position.y=0.3;
+  scene.add(mesh);
+  const dir = owner.facing.clone();
+  projectiles.push({ mesh, vel:dir.multiplyScalar(13), team:owner.team, life:2.2 });
+}
+
+let traps = [];
+function placeTrap(owner, type){
+  if(!owner) return;
+  if(netRole==='guest' && owner.isLocal){
+    if(inventory[owner.team][type] <= 0) return;
+    netChannel.send({type:'broadcast', event:'action', payload:{id:myId, type:'place', itemType:type}});
+    return;
+  }
+  if(inventory[owner.team][type] <= 0) return;
+  inventory[owner.team][type]--;
+  updateInventoryTxt();
+  let mesh;
+  if(type==='peel'){ mesh = makePeelMesh(); }
+  else { mesh = new THREE.Mesh(new THREE.SphereGeometry(0.3,10,10), new THREE.MeshStandardMaterial({ color:0xfff275, emissive:0xaa9900, emissiveIntensity:.4, roughness:.15, metalness:.4 })); mesh.castShadow=true; }
+  mesh.position.copy(owner.pos); mesh.position.y = type==='peel'?0.15:0.3;
+  scene.add(mesh);
+  traps.push({ mesh, type, team:owner.team, pos:mesh.position.clone() });
+}
+
+function makeCharMesh(color){
+  const g = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({ color, roughness:.55 });
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.5,0.9,10), bodyMat);
+  body.position.y=0.55; body.castShadow=true;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.4,12,12), bodyMat);
+  head.position.y=1.15; head.castShadow=true;
+  const eyeMat = new THREE.MeshStandardMaterial({ color:0x1a1a2e });
+  const eL = new THREE.Mesh(new THREE.SphereGeometry(0.07,6,6), eyeMat); eL.position.set(0.15,1.2,0.34);
+  const eR = eL.clone(); eR.position.x=-0.15;
+  g.add(body,head,eL,eR);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.5,0.62,20), new THREE.MeshBasicMaterial({ color, side:THREE.DoubleSide, transparent:true, opacity:.8 }));
+  ring.rotation.x=-Math.PI/2; ring.position.y=0.03;
+  g.add(ring);
+  return g;
+}
+
+function makeChar(team){
+  const color = team==='blue' ? 0x4facfe : 0xff6fb0;
+  const mesh = makeCharMesh(color);
+  scene.add(mesh);
+  return {
+    mesh, team, isBot:false, netId:null, botId:null, isLocal:false, name:'',
+    pos: new THREE.Vector3(), facing:new THREE.Vector3(0,0,-1),
+    speed: 6.5, stunTimer:0, slowTimer:0, carrying:false,
+    stealCooldown:0, path:[], pathTimer:0, wanderTarget:null
+  };
+}
+
+let chars = [];
+
+function teamSpawnPos(team, idx){
+  const corner = team==='blue' ? {x:0,z:0} : {x:GRID-1,z:GRID-1};
+  const offsets = [[0,0],[1,0],[0,1],[1,1],[2,0],[0,2]];
+  const o = offsets[idx%offsets.length];
+  const cx = team==='blue' ? corner.x+o[0] : corner.x-o[0];
+  const cz = team==='blue' ? corner.z+o[1] : corner.z-o[1];
+  return cellCenter(Math.max(0,Math.min(GRID-1,cx)), Math.max(0,Math.min(GRID-1,cz)));
+}
+
+function setupRound(){
+  chars.forEach(c=>{ scene.remove(c.mesh); disposeGroup(c.mesh); });
+  chars = [];
+  // detach star from any previous holder before rebuilding
+  if(starState.mesh && starState.mesh.parent) starState.mesh.parent.remove(starState.mesh);
+  mazeCells = buildMaze();
+  spawnBananaPoints();
+  projectiles.forEach(p=>{ scene.remove(p.mesh); if(p.mesh.geometry) p.mesh.geometry.dispose(); if(p.mesh.material) p.mesh.material.dispose(); }); projectiles=[];
+  traps.forEach(t=>{ scene.remove(t.mesh); disposeGroup(t.mesh); }); traps=[];
+  activeBubbles.forEach(b=>b.el.remove()); activeBubbles=[];
+  currentWinner = null;
+  roundEndedShown = false;
+
+  const teamCounts = { blue:0, pink:0 };
+  currentRoster.forEach(p=>{
+    const idx = teamCounts[p.team]++;
+    const ch = makeChar(p.team);
+    ch.netId = p.id;
+    ch.isLocal = (p.id === myId);
+    ch.name = p.name;
+    ch.pos.copy(teamSpawnPos(p.team, idx));
+    chars.push(ch);
+  });
+  ['blue','pink'].forEach(team=>{
+    let n=0;
+    while(teamCounts[team] < 3 && n<3){
+      const idx = teamCounts[team]++;
+      const ch = makeChar(team);
+      ch.isBot = true;
+      ch.botId = team+'_bot_'+idx;
+      ch.pos.copy(teamSpawnPos(team, idx));
+      chars.push(ch);
+      n++;
+    }
+  });
+
+  spawnStar(cellCenter(Math.floor(GRID/2), Math.floor(GRID/2)));
+
+  holdTime = { blue:0, pink:0 };
+  roundActive = true;
+  updateTeamBadge();
+  updateInventoryTxt();
+  document.getElementById('shopWaitNote').classList.toggle('hidden', netRole!=='guest');
+  document.getElementById('nextRoundBtn').classList.toggle('hidden', netRole==='guest');
+}
+function updateTeamBadge(){
+  const el = document.getElementById('teamBadge');
+  el.textContent = '나: ' + (pickedTeam==='blue' ? '🔵 BLUE' : '🌸 PINK');
+}
+
+function resolveWalls(pos, radius){
+  for(const w of wallBoxes){
+    const cx = Math.max(w.minX, Math.min(pos.x, w.maxX));
+    const cz = Math.max(w.minZ, Math.min(pos.z, w.maxZ));
+    const dx = pos.x-cx, dz = pos.z-cz;
+    const distSq = dx*dx+dz*dz;
+    if(distSq < radius*radius && distSq > 1e-6){
+      const dist = Math.sqrt(distSq);
+      const push = (radius-dist);
+      pos.x += (dx/dist)*push;
+      pos.z += (dz/dist)*push;
+    } else if(distSq <= 1e-6){
+      pos.x += radius;
+    }
+  }
+  const half = mazeSize;
+  pos.x = Math.max(radius, Math.min(pos.x, half-radius));
+  pos.z = Math.max(radius, Math.min(pos.z, half-radius));
+}
+
+function cellOf(pos){ return { x:Math.floor(pos.x/CELL), z:Math.floor(pos.z/CELL) }; }
+function neighborsOfCell(cx,cz){
+  const c = mazeCells[cx][cz];
+  const res=[];
+  if(!c.walls.N && cz>0) res.push([cx,cz-1]);
+  if(!c.walls.S && cz<GRID-1) res.push([cx,cz+1]);
+  if(!c.walls.E && cx<GRID-1) res.push([cx+1,cz]);
+  if(!c.walls.W && cx>0) res.push([cx-1,cz]);
+  return res;
+}
+function bfsPath(start, target){
+  const key = (x,z)=>x+'_'+z;
+  const visited = new Set([key(start.x,start.z)]);
+  const queue = [[start.x,start.z]];
+  const prev = {};
+  let found=false;
+  while(queue.length){
+    const [cx,cz] = queue.shift();
+    if(cx===target.x && cz===target.z){ found=true; break; }
+    for(const [nx,nz] of neighborsOfCell(cx,cz)){
+      const k=key(nx,nz);
+      if(!visited.has(k)){ visited.add(k); prev[k]=[cx,cz]; queue.push([nx,nz]); }
+    }
+  }
+  if(!found) return [];
+  const path=[]; let cur=[target.x,target.z];
+  while(cur[0]!==start.x || cur[1]!==start.z){
+    path.unshift(cur);
+    cur = prev[key(cur[0],cur[1])];
+    if(!cur) break;
+  }
+  return path;
+}
+
+let holdTime = { blue:0, pink:0 };
+let roundActive = false;
+let gameStarted = false;
+let roundEndedShown = false;
+
+const keys = {};
+window.addEventListener('keydown', e=>{ keys[e.code]=true; handleAction(e.code); });
+window.addEventListener('keyup', e=>{ keys[e.code]=false; });
+
+const touchState = { local:{x:0,z:0} };
+function setupJoystick(baseId, knobId){
+  const base = document.getElementById(baseId);
+  const knob = document.getElementById(knobId);
+  const maxR = 40;
+  let activeId = null;
+  function setKnob(dx,dz){ knob.style.transform = 'translate('+dx+'px,'+dz+'px)'; }
+  function handleMove(clientX, clientY){
+    const rect = base.getBoundingClientRect();
+    const cx = rect.left+rect.width/2, cy = rect.top+rect.height/2;
+    let dx = clientX-cx, dz = clientY-cy;
+    const dist = Math.hypot(dx,dz);
+    if(dist>maxR){ dx = dx/dist*maxR; dz = dz/dist*maxR; }
+    setKnob(dx,dz);
+    touchState.local.x = dx/maxR;
+    touchState.local.z = dz/maxR;
+  }
+  function reset(){ setKnob(0,0); touchState.local.x=0; touchState.local.z=0; activeId=null; }
+  base.addEventListener('pointerdown', e=>{ e.preventDefault(); activeId=e.pointerId; base.setPointerCapture(e.pointerId); handleMove(e.clientX,e.clientY); });
+  base.addEventListener('pointermove', e=>{ if(activeId!==e.pointerId) return; e.preventDefault(); handleMove(e.clientX,e.clientY); });
+  base.addEventListener('pointerup', e=>{ if(activeId===e.pointerId) reset(); });
+  base.addEventListener('pointercancel', e=>{ if(activeId===e.pointerId) reset(); });
+}
+setupJoystick('joyBaseP1','joyKnobP1');
+
+function bindTouchBtn(id, fn){
+  document.getElementById(id).addEventListener('pointerdown', e=>{ e.preventDefault(); fn(); });
+}
+function localChar(){ return chars.find(c=>c.isLocal); }
+bindTouchBtn('actThrowP1', ()=>{ if(roundActive) doInteract(localChar()); });
+bindTouchBtn('actQP1', ()=>{ if(roundActive) placeTrap(localChar(),'peel'); });
+bindTouchBtn('actEP1', ()=>{ if(roundActive) placeTrap(localChar(),'slip'); });
+
+function handleAction(code){
+  if(!roundActive) return;
+  const me = localChar();
+  if(!me) return;
+  if(code==='Space'){ doInteract(me); }
+  if(code==='KeyQ'){ placeTrap(me,'peel'); }
+  if(code==='KeyE'){ placeTrap(me,'slip'); }
+}
+function doInteract(ch){
+  if(!ch) return;
+  if(netRole==='guest' && ch.isLocal){
+    if(ch.carrying){ netChannel.send({type:'broadcast', event:'action', payload:{id:myId, type:'throw'}}); }
+    return;
+  }
+  if(ch.carrying){ throwPeel(ch); ch.carrying=false; updateInventoryTxt(); }
+}
+
+const dirVec = new THREE.Vector3();
+function movePlayer(ch, dt){
+  let mx=0, mz=0;
+  if(keys['KeyW']) mz-=1; if(keys['KeyS']) mz+=1;
+  if(keys['KeyA']) mx-=1; if(keys['KeyD']) mx+=1;
+  mx += touchState.local.x;
+  mz += touchState.local.z;
+  dirVec.set(mx,0,mz);
+  if(dirVec.lengthSq()>0){
+    dirVec.normalize();
+    ch.facing.copy(dirVec);
+    const spd = ch.speed * (ch.slowTimer>0?0.45:1) * (ch.carrying?0.85:1) * (ch.stunTimer>0?0:1);
+    ch.pos.x += dirVec.x*spd*dt;
+    ch.pos.z += dirVec.z*spd*dt;
+    ch.mesh.rotation.y = Math.atan2(dirVec.x, dirVec.z);
+  }
+}
+
+function moveBot(ch, dt){
+  ch.pathTimer -= dt;
+  const myCell = cellOf(ch.pos);
+  let targetCell = null;
+
+  if(!starState.held){
+    targetCell = cellOf(starState.pos);
+  } else if(starState.holder.team === ch.team){
+    if(!ch.wanderTarget || ch.pathTimer<=0){
+      const hc = cellOf(starState.holder.pos);
+      const rx = Math.max(0,Math.min(GRID-1, hc.x + Math.floor(Math.random()*5-2)));
+      const rz = Math.max(0,Math.min(GRID-1, hc.z + Math.floor(Math.random()*5-2)));
+      ch.wanderTarget = {x:rx,z:rz};
+    }
+    targetCell = ch.wanderTarget;
+  } else {
+    targetCell = cellOf(starState.holder.pos);
+  }
+
+  if(ch.pathTimer<=0){
+    ch.path = bfsPath(myCell, targetCell);
+    ch.pathTimer = 0.5;
+  }
+
+  if(ch.path && ch.path.length){
+    const wp = cellCenter(ch.path[0][0], ch.path[0][1]);
+    const dir = new THREE.Vector3(wp.x-ch.pos.x, 0, wp.z-ch.pos.z);
+    const dist = dir.length();
+    if(dist < 0.4){ ch.path.shift(); }
+    else {
+      dir.normalize();
+      ch.facing.copy(dir);
+      const spd = ch.speed*0.85 * (ch.slowTimer>0?0.45:1) * (ch.stunTimer>0?0:1);
+      ch.pos.x += dir.x*spd*dt;
+      ch.pos.z += dir.z*spd*dt;
+      ch.mesh.rotation.y = Math.atan2(dir.x, dir.z);
+    }
+  }
+}
+
+function tryPickupStar(ch){
+  if(starState.invuln>0) return;
+  const d = ch.pos.distanceTo(starState.pos);
+  if(!starState.held && d < CHAR_R+0.7){
+    starState.held = true; starState.holder = ch;
+    ch.stealCooldown = STEAL_GRACE;
+    if(starState.mesh.parent) starState.mesh.parent.remove(starState.mesh);
+    ch.mesh.add(starState.mesh);
+    starState.mesh.position.set(0,1.7,0);
+  }
+}
+function tryStealOrPeelPickup(ch){
+  if(starState.held && starState.holder.team !== ch.team && starState.holder.stealCooldown<=0){
+    const d = ch.pos.distanceTo(starState.holder.pos);
+    if(d < CHAR_R*1.4){
+      dropStar(false);
+      starState.held=true; starState.holder=ch; ch.stealCooldown=STEAL_GRACE;
+      if(starState.mesh.parent) starState.mesh.parent.remove(starState.mesh);
+      starState.holder.mesh.add(starState.mesh);
+      starState.mesh.position.set(0,1.7,0);
+    }
+  }
+  if(!ch.carrying){
+    for(const p of peelSpawns){
+      if(p.taken) continue;
+      if(ch.pos.distanceTo(p.mesh.position) < CHAR_R+0.6){
+        p.taken = true; scene.remove(p.mesh);
+        ch.carrying = true;
+        if(ch.isLocal) updateInventoryTxt();
+        break;
+      }
+    }
+  }
+  for(let i=traps.length-1;i>=0;i--){
+    const t = traps[i];
+    if(t.team === ch.team) continue;
+    if(ch.pos.distanceTo(t.pos) < CHAR_R+0.55){
+      if(t.type==='peel'){ ch.slowTimer = 3; }
+      else { ch.stunTimer = 1.5; if(starState.held && starState.holder===ch) dropStar(true); }
+      scene.remove(t.mesh); traps.splice(i,1);
+    }
+  }
+}
+
+function dropStar(randomScatter){
+  if(!starState.held) return;
+  const holderPos = starState.holder.pos.clone();
+  if(starState.mesh.parent) starState.mesh.parent.remove(starState.mesh);
+  starState.held = false; starState.holder = null;
+  starState.pos.copy(holderPos);
+  if(randomScatter){ starState.pos.x += (Math.random()-0.5)*1.5; starState.pos.z += (Math.random()-0.5)*1.5; }
+  starState.pos.y = 1.1;
+  starState.mesh.position.copy(starState.pos);
+  starState.mesh.rotation.set(0,0,0);
+  scene.add(starState.mesh);
+  starState.invuln = DROP_GRACE;
+}
+
+function updateProjectiles(dt){
+  for(let i=projectiles.length-1;i>=0;i--){
+    const pr = projectiles[i];
+    pr.life -= dt;
+    pr.mesh.position.x += pr.vel.x*dt;
+    pr.mesh.position.z += pr.vel.z*dt;
+    let hit=false;
+    for(const w of wallBoxes){
+      if(pr.mesh.position.x>w.minX-0.2 && pr.mesh.position.x<w.maxX+0.2 && pr.mesh.position.z>w.minZ-0.2 && pr.mesh.position.z<w.maxZ+0.2){ hit=true; break; }
+    }
+    if(!hit) for(const ch of chars){
+      if(ch.team===pr.team) continue;
+      if(pr.mesh.position.distanceTo(ch.pos)< CHAR_R+0.3){
+        if(starState.held && starState.holder===ch) dropStar(true);
+        ch.stunTimer = 0.8;
+        hit=true; break;
+      }
+    }
+    if(hit || pr.life<=0){ scene.remove(pr.mesh); projectiles.splice(i,1); }
+  }
+}
+
+function handleRemoteTransform(payload){
+  const ch = chars.find(c=>c.netId===payload.id);
+  if(!ch || ch.isLocal) return;
+  ch.pos.set(payload.x,0,payload.z);
+  ch.mesh.rotation.y = payload.rotY;
+}
+function handleGuestAction(payload){
+  const ch = chars.find(c=>c.netId===payload.id);
+  if(payload.type==='throw'){ if(ch && ch.carrying){ throwPeel(ch); ch.carrying=false; } }
+  else if(payload.type==='place'){ if(ch) placeTrap(ch, payload.itemType); }
+  else if(payload.type==='buy'){
+    const cost = payload.itemType==='peel'?30:40;
+    if(coins[payload.team]>=cost){ coins[payload.team]-=cost; inventory[payload.team][payload.itemType]++; saveCoins(); }
+  }
+}
+function handleHostState(payload){
+  payload.chars.forEach(pc=>{
+    const ch = chars.find(c=>(c.netId===pc.id)||(c.botId===pc.id));
+    if(!ch || ch.isLocal) return;
+    ch.pos.set(pc.x,0,pc.z);
+    ch.mesh.rotation.y = pc.rotY;
+    ch.carrying = pc.carrying;
+    if(pc.slow) ch.slowTimer = Math.max(ch.slowTimer,0.2);
+    if(pc.stun) ch.stunTimer = Math.max(ch.stunTimer,0.2);
+  });
+  if(payload.star.held){
+    const holderCh = chars.find(c=>c.netId===payload.star.holderId || c.botId===payload.star.holderId);
+    if(holderCh){
+      if(!starState.held || starState.holder!==holderCh){
+        if(starState.mesh.parent) starState.mesh.parent.remove(starState.mesh);
+        holderCh.mesh.add(starState.mesh); starState.mesh.position.set(0,1.7,0);
+      }
+      starState.held=true; starState.holder=holderCh;
+    }
+  } else if(starState.held){
+    if(starState.mesh.parent) starState.mesh.parent.remove(starState.mesh);
+    scene.add(starState.mesh);
+    starState.held=false; starState.holder=null;
+    starState.pos.set(payload.star.x,1.1,payload.star.z);
+    starState.mesh.position.copy(starState.pos);
+  } else {
+    starState.pos.set(payload.star.x,1.1,payload.star.z);
+    starState.mesh.position.copy(starState.pos);
+  }
+  holdTime = payload.hold;
+  coins = payload.coins;
+  traps.forEach(t=>scene.remove(t.mesh));
+  traps = payload.traps.map(t=>{
+    let mesh;
+    if(t.type==='peel') mesh = makePeelMesh();
+    else mesh = new THREE.Mesh(new THREE.SphereGeometry(0.3,10,10), new THREE.MeshStandardMaterial({color:0xfff275, emissive:0xaa9900, emissiveIntensity:.4, roughness:.15, metalness:.4}));
+    mesh.position.set(t.x, t.type==='peel'?0.15:0.3, t.z);
+    scene.add(mesh);
+    return { mesh, type:t.type, team:t.team, pos:mesh.position.clone() };
+  });
+  payload.peelTaken.forEach((taken,i)=>{
+    if(taken && peelSpawns[i] && !peelSpawns[i].taken){ peelSpawns[i].taken=true; scene.remove(peelSpawns[i].mesh); }
+  });
+  updateHUD(); updateInventoryTxt(); updateCoinTxt();
+  if(payload.winner && !roundEndedShown){ roundEndedShown=true; currentWinner=payload.winner; roundActive=false; showWinScreen(payload.winner); }
+}
+function sendLocalTransform(){
+  const me = localChar();
+  if(!me || !netChannel) return;
+  netChannel.send({type:'broadcast', event:'transform', payload:{ id:myId, x:me.pos.x, z:me.pos.z, rotY:me.mesh.rotation.y }});
+}
+function sendHostState(){
+  if(!netChannel) return;
+  netChannel.send({type:'broadcast', event:'host_state', payload:{
+    chars: chars.map(c=>({ id: c.netId || c.botId, x:c.pos.x, z:c.pos.z, rotY:c.mesh.rotation.y, carrying:!!c.carrying, slow:c.slowTimer>0, stun:c.stunTimer>0 })),
+    star: { held: starState.held, holderId: starState.held ? (starState.holder.netId||starState.holder.botId) : null, x:starState.pos.x, z:starState.pos.z },
+    hold: holdTime,
+    traps: traps.map(t=>({type:t.type, team:t.team, x:t.pos.x, z:t.pos.z})),
+    peelTaken: peelSpawns.map(p=>p.taken),
+    coins: coins,
+    winner: currentWinner
+  }});
+}
+
+document.getElementById('chatToggleBtn').onclick = ()=>{ document.getElementById('chatPanel').classList.toggle('hidden'); };
+document.querySelectorAll('.chatPhrase').forEach(btn=>{
+  btn.addEventListener('pointerdown', e=>{
+    e.preventDefault();
+    sendChat(btn.getAttribute('data-msg'));
+  });
+});
+function sendChat(text){
+  const me = localChar();
+  if(me) showBubble(me, text);
+  if(netRole!=='solo' && netChannel){
+    netChannel.send({type:'broadcast', event:'chat', payload:{id:myId, name:myName, text}});
+  }
+}
+function handleChatMsg(payload){
+  const ch = chars.find(c=>c.netId===payload.id);
+  if(ch) showBubble(ch, payload.text);
+}
+const bubbleLayer = document.getElementById('bubbleLayer');
+let activeBubbles = [];
+function showBubble(ch, text){
+  const el = document.createElement('div');
+  el.className='chatBubble';
+  el.textContent = text;
+  bubbleLayer.appendChild(el);
+  activeBubbles.push({ch, el, life:2.5});
+}
+function updateBubbles(dt){
+  for(let i=activeBubbles.length-1;i>=0;i--){
+    const b = activeBubbles[i];
+    b.life -= dt;
+    if(b.life<=0 || !chars.includes(b.ch)){ b.el.remove(); activeBubbles.splice(i,1); continue; }
+    const p = b.ch.pos.clone(); p.y += 1.9;
+    p.project(camera);
+    const x = (p.x*0.5+0.5)*innerWidth;
+    const y = (1-(p.y*0.5+0.5))*innerHeight;
+    b.el.style.transform = 'translate('+x+'px,'+y+'px) translate(-50%,-100%)';
+  }
+}
+
+const camOffset = new THREE.Vector3(0, 5.2, 7.5);
+const camLook = new THREE.Vector3();
+function updateCamera(dt){
+  const me = localChar();
+  const target = me ? me.pos : new THREE.Vector3(mazeSize/2,0,mazeSize/2);
+  const desired = new THREE.Vector3(target.x, 0, target.z).add(camOffset);
+  camera.position.lerp(desired, Math.min(1, dt*4));
+  camLook.lerp(new THREE.Vector3(target.x, 1, target.z), Math.min(1, dt*5));
+  camera.lookAt(camLook);
+}
+
+const blueBar = document.getElementById('blueBar'), pinkBar = document.getElementById('pinkBar');
+const centerBanner = document.getElementById('centerBanner');
+function updateHUD(){
+  blueBar.style.width = Math.min(100, holdTime.blue/WIN_TIME*100)+'%';
+  pinkBar.style.width = Math.min(100, holdTime.pink/WIN_TIME*100)+'%';
+  if(starState.held){
+    centerBanner.textContent = (starState.holder.team==='blue' ? '🔵 BLUE' : '🌸 PINK') + ' 팀이 별을 가지고 있어요! 도망쳐요! ⭐';
+  } else {
+    centerBanner.textContent = '⭐ 별이 미로 어딘가에 있어요! 먼저 잡으세요!';
+  }
+}
+function updateInventoryTxt(){
+  const me = localChar();
+  if(!me) return;
+  document.getElementById('invP1').textContent = '🍌'+inventory[me.team].peel+' 🟡'+inventory[me.team].slip + (me.carrying?' [들고있음🍌]':'');
+}
+function updateCoinTxt(){
+  document.getElementById('blueCoinTxt').textContent = coins.blue;
+  document.getElementById('pinkCoinTxt').textContent = coins.pink;
+}
+
+const clock = new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+
+  if(gameStarted && roundActive){
+    if(starState.invuln>0) starState.invuln -= dt;
+
+    for(const ch of chars){
+      if(ch.stunTimer>0) ch.stunTimer -= dt;
+      if(ch.slowTimer>0) ch.slowTimer -= dt;
+      if(ch.stealCooldown>0) ch.stealCooldown -= dt;
+
+      if(ch.isLocal){
+        if(ch.stunTimer<=0) movePlayer(ch, dt);
+        resolveWalls(ch.pos, CHAR_R);
+      } else if(ch.isBot){
+        if(netRole!=='guest'){
+          if(ch.stunTimer<=0) moveBot(ch, dt);
+          resolveWalls(ch.pos, CHAR_R);
+        }
+      }
+      ch.mesh.position.copy(ch.pos);
+
+      if(netRole!=='guest'){
+        tryPickupStar(ch);
+        tryStealOrPeelPickup(ch);
+      }
+    }
+
+    if(netRole!=='guest'){
+      updateProjectiles(dt);
+      if(starState.held){
+        const team = starState.holder.team;
+        holdTime[team] += dt;
+        if(holdTime[team] >= WIN_TIME && !currentWinner){ endRound(team); }
+      }
+    }
+
+    if(netRole!=='solo'){
+      netTickAccum += dt;
+      if(netTickAccum >= 0.09){
+        netTickAccum = 0;
+        sendLocalTransform();
+        if(netRole==='host') sendHostState();
+      }
+    }
+
+    updateHUD();
+    updateCamera(dt);
+    updateBubbles(dt);
+  }
+
+  renderer.render(scene, camera);
+}
+animate();
+
+function endRound(winner){
+  if(currentWinner) return;
+  currentWinner = winner;
+  roundActive = false;
+  const loser = winner==='blue'?'pink':'blue';
+  coins[winner] += 50;
+  coins[loser] += 20;
+  saveCoins();
+  updateCoinTxt();
+  showWinScreen(winner);
+}
+function showWinScreen(winner){
+  const loser = winner==='blue'?'pink':'blue';
+  document.getElementById('winTitle').textContent = (winner==='blue'?'🔵 BLUE':'🌸 PINK') + ' 팀 승리! 🏆';
+  document.getElementById('winCoinsTxt').textContent = (winner==='blue'?'BLUE':'PINK')+' +50 코인 · '+(loser==='blue'?'BLUE':'PINK')+' +20 코인';
+  document.getElementById('winScreen').classList.remove('hidden');
+}
+
+function openShop(){
+  document.getElementById('winScreen').classList.add('hidden');
+  document.getElementById('shopScreen').classList.remove('hidden');
+  refreshShop();
+}
+function refreshShop(){
+  document.getElementById('shopBlueCoin').textContent = coins.blue;
+  document.getElementById('shopPinkCoin').textContent = coins.pink;
+  document.getElementById('blueInvPeel').textContent = inventory.blue.peel;
+  document.getElementById('blueInvSlip').textContent = inventory.blue.slip;
+  document.getElementById('pinkInvPeel').textContent = inventory.pink.peel;
+  document.getElementById('pinkInvSlip').textContent = inventory.pink.slip;
+  document.getElementById('buyBluePeel').disabled = coins.blue<30;
+  document.getElementById('buyBlueSlip').disabled = coins.blue<40;
+  document.getElementById('buyPinkPeel').disabled = coins.pink<30;
+  document.getElementById('buyPinkSlip').disabled = coins.pink<40;
+}
+
+loadCoins();
+
+window.addEventListener('resize', ()=>{
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+window.addEventListener('pagehide', ()=>{
+  try{ if(netChannel && sbClient){ sbClient.removeChannel(netChannel); } }catch(e){}
+});
+
+})();
+</script>
+</body>
+</html>

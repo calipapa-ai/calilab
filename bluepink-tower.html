@@ -1,0 +1,4657 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>블루핑크 타워</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
+  html,body{width:100%;height:100%;overflow:hidden;background:#12081c;font-family:'Trebuchet MS','Malgun Gothic',sans-serif;touch-action:none;}
+  canvas{display:block;}
+
+  :root{
+    --pink:#ff5fa8; --pink-lt:#ffa8d0; --pink-dk:#c02870;
+    --blue:#4aa8ff; --blue-lt:#a8d8ff; --blue-dk:#1e60b8;
+    --ink:#fff;
+  }
+
+  /* ---------- shared overlay ---------- */
+  .screen{
+    position:fixed; inset:0; z-index:50; display:none;
+    flex-direction:column; align-items:center; justify-content:center;
+    padding:20px; text-align:center; color:#fff; overflow-y:auto;
+    background:
+      radial-gradient(ellipse at 20% 15%, rgba(255,95,168,0.35) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 80%, rgba(74,168,255,0.35) 0%, transparent 55%),
+      linear-gradient(170deg,#2a1040 0%,#180a2c 50%,#0d0618 100%);
+  }
+  .screen.on{display:flex;}
+
+  .titleBig{
+    font-size:min(13vw,58px); font-weight:900; letter-spacing:2px; margin-bottom:6px;
+    background:linear-gradient(90deg,var(--blue) 0%, #fff 45%, var(--pink) 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 0 30px rgba(255,120,200,0.4);
+  }
+  .subtle{color:#c9b8e0;font-size:13px;margin-bottom:22px;}
+
+  .btn{
+    border:none; cursor:pointer; font-weight:bold; letter-spacing:0.5px;
+    border-radius:40px; transition:transform .08s;
+  }
+  .btn:active{transform:translateY(3px);}
+  .btnMain{
+    background:linear-gradient(180deg,#ff8fc4,#e0357f);
+    color:#fff; font-size:19px; padding:15px 44px;
+    box-shadow:0 6px 0 #921e52, 0 8px 20px rgba(0,0,0,0.45);
+  }
+  .btnMain:active{box-shadow:0 2px 0 #921e52;}
+  .btnBlue{
+    background:linear-gradient(180deg,#7cc4ff,#2a7fd8);
+    color:#fff; font-size:19px; padding:15px 44px;
+    box-shadow:0 6px 0 #17518f, 0 8px 20px rgba(0,0,0,0.45);
+  }
+  .btnBlue:active{box-shadow:0 2px 0 #17518f;}
+  .btnGhost{
+    background:rgba(255,255,255,0.08); border:2px solid rgba(255,255,255,0.3);
+    color:#ddd; font-size:14px; padding:11px 26px;
+  }
+
+  /* ---------- loading ---------- */
+  #loadBarWrap{width:min(300px,72vw);height:12px;background:rgba(0,0,0,0.45);border-radius:10px;overflow:hidden;border:2px solid rgba(255,255,255,0.2);margin-top:20px;}
+  #loadBar{width:0%;height:100%;background:linear-gradient(90deg,var(--blue),var(--pink));transition:width .2s;}
+  #loadTxt{margin-top:12px;font-size:13px;color:#c9b8e0;}
+  .loadSpin{width:70px;height:70px;border-radius:20px;
+    background:linear-gradient(135deg,var(--blue),var(--pink));
+    animation:spinBox 1.6s ease-in-out infinite; box-shadow:0 0 40px rgba(255,120,200,0.5);}
+  @keyframes spinBox{0%,100%{transform:rotate(0) scale(1);}50%{transform:rotate(180deg) scale(1.15);}}
+
+  /* ---------- manual ---------- */
+  .manualBox{
+    background:rgba(0,0,0,0.4); border:2px solid rgba(255,140,200,0.35); border-radius:18px;
+    padding:16px 20px; max-width:440px; text-align:left; font-size:13px; line-height:1.7; margin-bottom:20px;
+  }
+  .manualBox .mrow{display:flex;gap:10px;margin-bottom:7px;align-items:flex-start;}
+  .manualBox .mi{font-size:17px;flex-shrink:0;width:22px;}
+  .manualBox b{color:#ff9ecb;}
+  .manualBox .bl{color:#8fcaff;}
+
+  /* ---------- onboarding ---------- */
+  .obCard{
+    background:rgba(0,0,0,0.42); border:2px solid rgba(255,255,255,0.16); border-radius:22px;
+    padding:26px 24px; width:min(440px,92vw);
+  }
+  .obCard h2{font-size:21px;margin-bottom:16px;color:#fff;}
+  .inp{
+    width:100%; padding:13px; border-radius:12px; border:2px solid rgba(255,255,255,0.2);
+    background:rgba(255,255,255,0.95); color:#222; text-align:center; font-size:18px;
+    margin-bottom:16px; outline:none;
+  }
+  .charPick{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
+  .charOpt{
+    background:rgba(255,255,255,0.07); border:3px solid transparent; border-radius:16px;
+    padding:8px 4px 10px; cursor:pointer; transition:transform .1s,border-color .1s;
+  }
+  .charOpt:active{transform:scale(0.94);}
+  .charOpt.sel{border-color:#ff9ecb; background:rgba(255,158,203,0.18); box-shadow:0 0 16px rgba(255,158,203,0.5);}
+  .charOpt canvas{width:100%;aspect-ratio:1;display:block;border-radius:10px;}
+  .charOpt .cname{font-size:11px;margin-top:6px;color:#ddd;font-weight:bold;}
+
+  /* ---------- home ---------- */
+  #homeScreen{
+    justify-content:flex-start; padding:0;
+    background:
+      radial-gradient(ellipse at 25% 15%, rgba(255,255,255,0.25) 0%, transparent 45%),
+      radial-gradient(ellipse at 80% 85%, rgba(74,168,255,0.45) 0%, transparent 55%),
+      linear-gradient(170deg,#2a5aa0 0%,#1a3a70 50%,#0d1e40 100%);
+  }
+  .homeBar{
+    width:100%;display:flex;justify-content:space-between;align-items:center;
+    padding:14px 14px 0;gap:8px;z-index:2;
+  }
+  .chip{
+    background:rgba(0,0,0,0.5);border:2px solid rgba(255,255,255,0.25);border-radius:34px;
+    padding:6px 16px 6px 6px;display:flex;align-items:center;gap:9px;cursor:pointer;
+    box-shadow:0 3px 12px rgba(0,0,0,0.35);
+  }
+  .chip:active{transform:scale(0.96);}
+  .chip canvas{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.12);display:block;flex-shrink:0;}
+  .chipTxt{text-align:left;}
+  .chipName{font-size:14px;font-weight:bold;}
+  .chipSub{font-size:10px;color:#c0a8d8;}
+  .coinChip{
+    background:rgba(0,0,0,0.5);border:2px solid rgba(255,215,120,0.55);border-radius:30px;
+    padding:9px 17px;font-size:16px;font-weight:bold;color:#ffd978;white-space:nowrap;
+    box-shadow:0 3px 12px rgba(0,0,0,0.35);
+  }
+
+  .homeMid{flex:1;width:100%;display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 12px;max-width:680px;z-index:2;}
+  .shopSide{
+    background:rgba(0,0,0,0.5);border:2px solid rgba(255,255,255,0.28);border-radius:20px;
+    color:#fff;padding:15px 8px;cursor:pointer;width:82px;flex-shrink:0;
+    display:flex;flex-direction:column;align-items:center;gap:5px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.35);
+  }
+  .shopSide:active{transform:scale(0.94);}
+  .shopSide.itemS{border-color:rgba(140,200,255,0.7);}
+  .shopSide.avaS{border-color:rgba(255,150,205,0.7);}
+  .ssIco{font-size:27px;}
+  .ssTxt{font-size:10.5px;font-weight:bold;line-height:1.3;color:#e6dcf0;}
+
+  .stage{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .stageGlow{
+    position:absolute;width:200px;height:200px;border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,0.28) 0%, transparent 66%);
+    animation:gPulse 2.8s ease-in-out infinite;
+  }
+  @keyframes gPulse{0%,100%{transform:scale(1);opacity:0.55;}50%{transform:scale(1.13);opacity:0.9;}}
+  #avatarCanvas{position:relative;z-index:1;width:min(240px,58vw);height:min(280px,66vw);display:block;
+    filter:drop-shadow(0 14px 22px rgba(0,0,0,0.5));}
+  .stageName{
+    margin-top:4px;font-size:13px;font-weight:bold;color:#ffd978;position:relative;z-index:1;
+    background:rgba(0,0,0,0.5);padding:6px 18px;border-radius:20px;border:1px solid rgba(255,215,120,0.5);
+  }
+
+  #playMenu{display:none;flex-direction:column;gap:9px;width:min(300px,80vw);margin-bottom:12px;z-index:2;}
+  #playMenu.on{display:flex;}
+  .playOpt{
+    background:rgba(0,0,0,0.55);border:2px solid rgba(255,255,255,0.3);color:#fff;
+    font-size:16px;font-weight:bold;padding:14px;border-radius:16px;cursor:pointer;
+  }
+  .playOpt:active{transform:scale(0.96);}
+
+  /* ---------- shops ---------- */
+  .panel{
+    background:rgba(20,10,32,0.96);border:2px solid rgba(255,255,255,0.18);border-radius:20px;
+    padding:20px;width:min(520px,94vw);max-height:88vh;display:flex;flex-direction:column;
+  }
+  .panel h2{color:#fff;font-size:19px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;}
+  .panel h2 .pc{color:#ffd978;font-size:15px;}
+  .tabs{display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;}
+  .tab{
+    flex:1;min-width:62px;padding:8px 4px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);
+    background:rgba(255,255,255,0.06);color:#ccc;font-size:11.5px;cursor:pointer;font-weight:bold;
+  }
+  .tab.on{background:linear-gradient(180deg,#ff8fc4,#e0357f);color:#fff;border-color:transparent;}
+  .itemList{display:flex;flex-direction:column;gap:9px;overflow-y:auto;flex:1;min-height:0;padding-right:4px;}
+  .item{
+    display:flex;align-items:center;gap:11px;background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.12);border-radius:13px;padding:9px 12px;
+  }
+  .item canvas{width:46px;height:46px;flex-shrink:0;border-radius:9px;background:rgba(0,0,0,0.25);display:block;}
+  .item .txt{flex:1;min-width:0;}
+  .item .nm{font-size:13.5px;font-weight:bold;color:#fff;}
+  .item .ds{font-size:10.5px;color:#a898c0;line-height:1.4;}
+  .item button{
+    padding:8px 13px;border-radius:9px;border:none;font-size:11.5px;font-weight:bold;cursor:pointer;white-space:nowrap;
+  }
+  .bBuy{background:linear-gradient(180deg,#ffd978,#e0a020);color:#4a2c00;}
+  .bBuy:disabled{background:#444;color:#888;cursor:not-allowed;}
+  .bEquip{background:linear-gradient(180deg,#7cc4ff,#2a7fd8);color:#fff;}
+  .bOn{background:linear-gradient(180deg,#8ce89c,#2a9c45);color:#fff;cursor:default;}
+
+  /* ---------- HUD ---------- */
+  #hud{position:fixed;inset:0;z-index:20;pointer-events:none;display:none;font-weight:bold;}
+  #hudTop{
+    position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;
+    padding:12px 14px;background:linear-gradient(180deg,rgba(0,0,0,0.5),transparent);
+  }
+  .hudBox{
+    background:rgba(0,0,0,0.5);border:2px solid rgba(255,255,255,0.22);border-radius:14px;
+    padding:6px 14px;color:#fff;font-size:13px;
+  }
+  #stageInfo{color:#ffb8dc;}
+  #timerBox{font-size:20px;color:#fff;}
+  #coinHud{color:#ffd978;}
+
+  #checkTip{
+    position:absolute;top:24%;left:50%;transform:translate(-50%,-50%);
+    color:#8ce89c;font-size:min(7vw,26px);text-shadow:0 3px 8px #000;display:none;text-align:center;
+  }
+  #deathFlash{position:fixed;inset:0;background:rgba(200,20,60,0.55);opacity:0;pointer-events:none;z-index:24;transition:opacity .12s;}
+
+  #winScreen .wTitle{font-size:min(12vw,50px);color:#ffd978;margin-bottom:8px;text-shadow:0 0 24px rgba(255,215,120,0.5);}
+
+  /* ---------- controls ---------- */
+  #touchC{position:fixed;inset:0;z-index:15;display:none;}
+  #joy{position:absolute;left:24px;bottom:32px;width:122px;height:122px;border-radius:50%;
+    background:rgba(255,255,255,0.12);border:2px solid rgba(255,255,255,0.32);pointer-events:auto;}
+  #joyN{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;
+    background:rgba(255,255,255,0.55);border:2px solid rgba(255,255,255,0.75);}
+  #lookZ{position:absolute;right:0;top:0;width:58%;height:100%;pointer-events:auto;}
+  #jumpB{
+    position:absolute;right:30px;bottom:40px;width:92px;height:92px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#ffb0d8,#e0357f);
+    border:3px solid rgba(255,255,255,0.6);color:#fff;font-size:15px;font-weight:bold;
+    pointer-events:auto;box-shadow:0 5px 0 #921e52;
+  }
+  #jumpB:active{transform:translateY(4px);box-shadow:0 1px 0 #921e52;}
+  #descendB{
+    position:absolute;right:44px;bottom:150px;width:68px;height:68px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#a8d8ff,#2a7fd8);
+    border:3px solid rgba(255,255,255,0.6);color:#fff;font-size:12px;font-weight:bold;
+    pointer-events:auto;box-shadow:0 4px 0 #17518f;display:none;
+  }
+  #descendB:active{transform:translateY(3px);box-shadow:0 1px 0 #17518f;}
+  #slapB{
+    position:absolute;right:140px;bottom:46px;width:66px;height:66px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#ffe08a,#e08a1a);
+    border:3px solid rgba(255,255,255,0.6);color:#fff;font-size:11px;font-weight:bold;
+    pointer-events:auto;box-shadow:0 4px 0 #8a5510;display:none;
+  }
+  #slapB:active{transform:translateY(3px);box-shadow:0 1px 0 #8a5510;}
+  #pcHint{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);color:#fff9;font-size:12px;z-index:20;display:none;}
+
+  #shiftLockBtn{
+    position:fixed; right:26px; bottom:150px; z-index:23; display:none;
+    background:rgba(0,0,0,0.55); border:2px solid rgba(255,255,255,0.35); color:#fff;
+    font-size:11.5px; font-weight:bold; padding:10px 8px; border-radius:16px; cursor:pointer;
+    width:64px; text-align:center; line-height:1.3; pointer-events:auto;
+  }
+  #shiftLockBtn.on{ background:rgba(255,95,168,0.75); border-color:#fff; }
+  #crossDot{
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:6px; height:6px; border-radius:50%; background:#fff; box-shadow:0 0 3px rgba(0,0,0,0.8);
+    z-index:21; display:none; pointer-events:none;
+  }
+
+  #exitB{
+    position:fixed;top:10px;right:58px;z-index:23;display:none;
+    background:rgba(120,20,60,0.65);border:2px solid rgba(255,150,190,0.45);color:#fff;
+    font-size:12px;font-weight:bold;padding:8px 14px;border-radius:18px;cursor:pointer;
+  }
+  #muteB{
+    position:fixed;top:10px;right:12px;z-index:60;width:38px;height:38px;border-radius:50%;
+    background:rgba(0,0,0,0.45);border:2px solid rgba(255,255,255,0.28);color:#fff;font-size:17px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+  }
+
+  /* ---------- chat / multiplayer ---------- */
+  #chatLayer{position:fixed;inset:0;pointer-events:none;z-index:19;}
+  .bub{
+    position:absolute;transform:translate(-50%,-100%);
+    background:rgba(255,255,255,0.95);color:#2a1830;font-weight:bold;font-size:13px;
+    padding:5px 11px;border-radius:13px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,0.4);
+  }
+  .bub::after{content:'';position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);
+    border-left:7px solid transparent;border-right:7px solid transparent;border-top:8px solid rgba(255,255,255,0.95);}
+  .nameTag{
+    position:absolute;transform:translate(-50%,-100%);
+    background:rgba(0,0,0,0.55);color:#fff;font-size:11px;font-weight:bold;
+    padding:2px 8px;border-radius:10px;white-space:nowrap;
+  }
+  #qc{position:fixed;left:14px;top:64px;z-index:22;display:none;}
+  #qcT{width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,0.35);
+    background:rgba(0,0,0,0.5);color:#fff;font-size:20px;cursor:pointer;pointer-events:auto;}
+  #qcM{position:absolute;left:0;top:52px;display:none;flex-direction:column;gap:6px;pointer-events:auto;}
+  #qcM.on{display:flex;}
+  .qcO{background:rgba(0,0,0,0.6);border:2px solid rgba(255,255,255,0.25);color:#fff;
+    font-size:13px;font-weight:bold;padding:8px 15px;border-radius:22px;cursor:pointer;white-space:nowrap;text-align:left;}
+  .qcO:active{background:rgba(255,143,196,0.8);}
+
+  #bagWrap{position:fixed;left:14px;top:120px;z-index:22;display:none;}
+  #bagBtn{width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,0.35);
+    background:rgba(0,0,0,0.5);color:#fff;font-size:19px;cursor:pointer;pointer-events:auto;position:relative;}
+  #bagCount{position:absolute;top:-6px;right:-6px;background:#ffd978;color:#4a2c00;font-size:10px;font-weight:bold;
+    border-radius:10px;min-width:16px;padding:1px 4px;line-height:1.3;}
+  #bagPanel{position:absolute;left:0;top:52px;display:none;flex-direction:column;gap:8px;pointer-events:auto;
+    background:rgba(20,10,32,0.92);border:2px solid rgba(255,255,255,0.2);border-radius:14px;padding:12px;
+    width:min(240px,72vw);}
+  #bagPanel.on{display:flex;}
+  .bagRow{display:flex;align-items:center;gap:8px;}
+  .bagIcon{font-size:20px;}
+  .bagLabel{flex:1;font-size:12.5px;font-weight:bold;color:#fff;}
+  .bagQty{font-size:11.5px;color:#ffd978;white-space:nowrap;}
+  #bagMagnetUse{background:linear-gradient(180deg,#7cc4ff,#2a7fd8);color:#fff;border:none;border-radius:9px;
+    padding:7px 12px;font-size:11.5px;font-weight:bold;cursor:pointer;}
+  #bagMagnetUse:disabled{background:#444;color:#888;cursor:not-allowed;}
+  .bagEmpty{font-size:11px;color:#a898c0;text-align:center;line-height:1.5;display:none;}
+  .bagSectionTitle{font-size:10.5px;font-weight:bold;color:#ffd978;margin:8px 0 2px;text-transform:uppercase;letter-spacing:0.5px;}
+  #bagPanel{max-height:60vh;overflow-y:auto;}
+  #bagGearList{display:flex;flex-direction:column;gap:6px;}
+  .bagGearRow{display:flex;align-items:center;gap:8px;}
+  .bagGearRow canvas{width:32px;height:32px;border-radius:7px;background:rgba(0,0,0,0.3);flex-shrink:0;display:block;}
+  .bagGearLabel{flex:1;font-size:11.5px;font-weight:bold;color:#fff;min-width:0;}
+  .bagGearBtn{padding:6px 11px;border-radius:9px;border:none;font-size:10.5px;font-weight:bold;cursor:pointer;white-space:nowrap;}
+  .bagGearBtn.eq{background:linear-gradient(180deg,#8ce89c,#2a9c45);color:#fff;}
+  .bagGearBtn.uneq{background:rgba(255,255,255,0.15);color:#ddd;border:1px solid rgba(255,255,255,0.3);}
+
+  #mpScreen .code{font-size:40px;letter-spacing:6px;color:#8ce89c;margin:10px 0;font-weight:bold;}
+  #mpStatus{font-size:13px;color:#ffd978;min-height:18px;margin-bottom:8px;}
+  #mpList{font-size:13px;color:#ddd;margin:10px 0;min-height:20px;}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="screen on" id="loadScreen">
+  <div class="loadSpin"></div>
+  <div class="titleBig" style="margin-top:18px;">블루핑크 타워</div>
+  <div id="loadBarWrap"><div id="loadBar"></div></div>
+  <div id="loadTxt">타워를 세우는 중...</div>
+</div>
+
+<!-- MANUAL -->
+<div class="screen" id="manualScreen">
+  <div class="titleBig">블루핑크 타워</div>
+  <div class="subtle">핑크와 블루의 장애물 타워를 올라가자!</div>
+  <div class="manualBox">
+    <div class="mrow"><span class="mi">🏁</span><div><b>목표</b> — 발판을 밟고 위로 올라가서 <b>꼭대기 깃발</b>에 도착하세요!</div></div>
+    <div class="mrow"><span class="mi">💗</span><div>떨어져도 <b>죽지 않아요!</b> 아래 바닥에 착지하면, <b class="bl">걸어서 시작 지점</b>으로 돌아가 다시 도전하세요.</div></div>
+    <div class="mrow"><span class="mi">🐻</span><div><b>핑크 곰</b>과 <b class="bl">파란 고양이</b>는 적이 아니에요 — 등 위를 <b>발판처럼 밟고</b> 지나가세요!</div></div>
+    <div class="mrow"><span class="mi">🌀</span><div><b>회오리 점프대</b>를 밟으면 하늘 높이 날아올라요.</div></div>
+    <div class="mrow"><span class="mi">🔄</span><div><b class="bl">회전 발판</b>, <b>움직이는 발판</b>, <b class="bl">사라지는 발판</b>, <b>얼음 발판</b> 등 다양한 함정이 있어요.</div></div>
+    <div class="mrow"><span class="mi">🪙</span><div>길에서 <b>코인</b>을 줍고, 완주하면 더 받아요! 중간에 나가도 주운 코인은 그대로 가져가요.</div></div>
+    <div class="mrow"><span class="mi">🎒</span><div><b>가방</b>에서 <b class="bl">코인 자석</b> 같은 소모품을 바로 사용할 수 있어요.</div></div>
+    <div class="mrow"><span class="mi">🧪</span><div><b>아이템 상점</b>에서 <b class="bl">속력 코일</b>, <b>중력 코일</b>, <b class="bl">무지개 카펫</b>(진짜로 날 수 있어요!) 등을 살 수 있어요.</div></div>
+    <div class="mrow"><span class="mi">👕</span><div><b>아바타 상점</b>에서 헤어, 옷, 바지, 머리띠, 얼굴, 가방, 신발을 꾸며보세요!</div></div>
+    <div class="mrow"><span class="mi">🔒</span><div><b>시점 고정</b> 버튼을 켜면 캐릭터가 항상 카메라 방향을 바라봐요 (로블록스 시프트락처럼).</div></div>
+    <div class="mrow"><span class="mi">👋</span><div><b>아이템 상점</b>에서 <b class="bl">슬랩</b>을 사서 장착하면, 온라인 멀티에서 근처 친구를 때려 멀리 날려버릴 수 있어요!</div></div>
+    <div class="mrow"><span class="mi">🎮</span><div>PC: <b>WASD</b> 이동 · <b>스페이스</b> 점프 · 마우스 시점 · <b>Shift</b> 시점 고정 · 채팅 1~8<br>모바일: 조이스틱 · 점프 버튼 · 화면 드래그 · 시점 고정 버튼</div></div>
+  </div>
+  <button class="btn btnMain" id="manualOk">확인</button>
+</div>
+
+<!-- ONBOARDING -->
+<div class="screen" id="obScreen">
+  <div class="obCard">
+    <div class="obStep" id="obS1">
+      <h2>이름을 정해줘!</h2>
+      <input class="inp" id="obName" placeholder="내 이름" maxlength="10">
+      <button class="btn btnMain" id="obN1" style="width:100%;">다음 →</button>
+    </div>
+    <div class="obStep" id="obS2" style="display:none;">
+      <h2>캐릭터를 골라줘!</h2>
+      <div class="charPick" id="obChars"></div>
+      <button class="btn btnMain" id="obN2" style="width:100%;">시작하기!</button>
+    </div>
+  </div>
+</div>
+
+<!-- HOME -->
+<div class="screen" id="homeScreen">
+  <div class="homeBar">
+    <div class="chip" id="profChip">
+      <canvas id="profPic" width="84" height="84"></canvas>
+      <div class="chipTxt">
+        <div class="chipName" id="profName">플레이어</div>
+        <div class="chipSub">블루핑크 타워</div>
+      </div>
+    </div>
+    <div class="coinChip">🪙 <span id="coinTxt">0</span></div>
+  </div>
+
+  <div class="homeMid">
+    <button class="shopSide itemS" id="itemShopB">
+      <div class="ssIco">🧪</div>
+      <div class="ssTxt">아이템<br>상점</div>
+    </button>
+
+    <div class="stage">
+      <div class="stageGlow"></div>
+      <canvas id="avatarCanvas"></canvas>
+      <div class="stageName" id="stageName">내 캐릭터</div>
+    </div>
+
+    <button class="shopSide avaS" id="avaShopB">
+      <div class="ssIco">👗</div>
+      <div class="ssTxt">아바타<br>상점</div>
+    </button>
+  </div>
+
+  <button class="btn btnMain" id="playB" style="margin-bottom:8px;">▶ 게임 시작</button>
+  <div id="playMenu">
+    <button class="playOpt" id="playSoloB">🎯 혼자 하기</button>
+    <button class="playOpt" id="playOnB">👥 온라인 멀티</button>
+    <button class="playOpt btnGhost" id="playCancelB" style="border-radius:16px;">← 뒤로</button>
+  </div>
+  <div style="height:14px;"></div>
+</div>
+
+<!-- PROFILE EDIT -->
+<div class="screen" id="profScreen">
+  <div class="panel">
+    <h2>프로필</h2>
+    <input class="inp" id="pfName" placeholder="내 이름" maxlength="10">
+    <div style="font-size:12px;color:#a898c0;text-align:left;margin-bottom:8px;">캐릭터 변경</div>
+    <div class="charPick" id="pfChars"></div>
+    <button class="btn btnMain" id="pfSave" style="width:100%;margin-bottom:8px;">저장</button>
+    <button class="btn btnGhost" id="pfClose" style="width:100%;">← 닫기</button>
+  </div>
+</div>
+
+<!-- ITEM SHOP -->
+<div class="screen" id="itemShop">
+  <div class="panel">
+    <h2>🧪 아이템 상점 <span class="pc" id="itemCoins">🪙 0</span></h2>
+    <div class="itemList" id="itemList"></div>
+    <p style="font-size:10.5px;color:#8878a0;margin:10px 0;">※ 아이템은 한 번 사면 계속 쓸 수 있어요. 코일은 장착해야 효과가 나요!</p>
+    <button class="btn btnGhost" id="itemClose" style="width:100%;">← 닫기</button>
+  </div>
+</div>
+
+<!-- AVATAR SHOP -->
+<div class="screen" id="avaShop">
+  <div class="panel">
+    <h2>👗 아바타 상점 <span class="pc" id="avaCoins">🪙 0</span></h2>
+    <div class="tabs" id="avaTabs">
+      <button class="tab on" data-c="hair">💇 헤어</button>
+      <button class="tab" data-c="shirt">👕 옷</button>
+      <button class="tab" data-c="pants">👖 바지</button>
+      <button class="tab" data-c="band">🎀 머리띠</button>
+      <button class="tab" data-c="face">😊 얼굴</button>
+      <button class="tab" data-c="bag">🎒 가방</button>
+      <button class="tab" data-c="shoes">👟 신발</button>
+    </div>
+    <div class="itemList" id="avaList"></div>
+    <button class="btn btnGhost" id="avaClose" style="width:100%;margin-top:10px;">← 닫기</button>
+  </div>
+</div>
+
+<!-- MULTIPLAYER -->
+<div class="screen" id="mpScreen">
+  <div class="panel" id="mpChoice">
+    <h2>👥 온라인 멀티</h2>
+    <p style="font-size:12px;color:#a898c0;margin-bottom:14px;">친구들과 같은 타워를 함께 올라가요!</p>
+    <button class="btn btnBlue" id="mpHostB" style="width:100%;margin-bottom:9px;">🏠 방 만들기</button>
+    <button class="btn btnMain" id="mpJoinShowB" style="width:100%;margin-bottom:9px;">🔑 코드로 참가</button>
+    <button class="btn btnGhost" id="mpBack1" style="width:100%;">← 뒤로</button>
+  </div>
+  <div class="panel" id="mpHostP" style="display:none;">
+    <h2>방 코드</h2>
+    <div class="code" id="mpCode">----</div>
+    <p style="font-size:12px;color:#a898c0;">친구에게 이 코드를 알려주세요</p>
+    <div id="mpList">친구를 기다리는 중...</div>
+    <button class="btn btnMain" id="mpStartB" style="width:100%;margin-bottom:9px;">게임 시작</button>
+    <button class="btn btnGhost" id="mpBack2" style="width:100%;">← 뒤로</button>
+  </div>
+  <div class="panel" id="mpJoinP" style="display:none;">
+    <h2>코드로 참가</h2>
+    <input class="inp" id="mpCodeIn" placeholder="4자리 코드" maxlength="4" inputmode="numeric">
+    <div id="mpStatus"></div>
+    <button class="btn btnBlue" id="mpJoinB" style="width:100%;margin-bottom:9px;">참가하기</button>
+    <button class="btn btnGhost" id="mpBack3" style="width:100%;">← 뒤로</button>
+  </div>
+</div>
+
+<!-- WIN -->
+<div class="screen" id="winScreen">
+  <div class="wTitle">🏆 클리어!</div>
+  <div id="winDetail" style="font-size:15px;color:#d8c8f0;margin-bottom:8px;"></div>
+  <div id="winReward" style="font-size:18px;color:#ffd978;font-weight:bold;margin-bottom:22px;"></div>
+  <button class="btn btnMain" id="winClaimB" style="margin-bottom:10px;">🪙 코인 받고 나가기</button>
+  <button class="btn btnGhost" id="winRetryB">다시 도전</button>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="hudTop">
+    <div class="hudBox" id="stageInfo">🧗 높이 0m</div>
+    <div class="hudBox" id="timerBox">00:00</div>
+    <div class="hudBox" id="coinHud">🪙 0</div>
+  </div>
+  <div id="checkTip"></div>
+</div>
+
+<div id="deathFlash"></div>
+<div id="crossDot"></div>
+<div id="chatLayer"></div>
+<button id="muteB">🔊</button>
+<button id="exitB">🚪 나가기</button>
+
+<div id="qc">
+  <button id="qcT">💬</button>
+  <div id="qcM">
+    <button class="qcO" data-m="안녕!">👋 안녕!</button>
+    <button class="qcO" data-m="같이 가자">🤝 같이 가자</button>
+    <button class="qcO" data-m="여기야!">📍 여기야!</button>
+    <button class="qcO" data-m="조심해!">⚠️ 조심해!</button>
+    <button class="qcO" data-m="와 대박!">🎉 와 대박!</button>
+    <button class="qcO" data-m="아 떨어졌다">😭 아 떨어졌다</button>
+    <button class="qcO" data-m="잘한다!">👏 잘한다!</button>
+    <button class="qcO" data-m="잘가">✌️ 잘가</button>
+  </div>
+</div>
+
+<div id="bagWrap">
+  <button id="bagBtn">🎒<span id="bagCount"></span></button>
+  <div id="bagPanel">
+    <div class="bagSectionTitle">소모품</div>
+    <div class="bagRow" id="bagMagnetRow">
+      <span class="bagIcon">🧲</span>
+      <span class="bagLabel">코인 자석</span>
+      <span class="bagQty" id="bagMagnetQty">0개</span>
+      <button id="bagMagnetUse">사용</button>
+    </div>
+    <div class="bagEmpty" id="bagEmptyMsg">가진 소모품이 없어요.<br>아이템 상점에서 코인 자석을 사보세요!</div>
+
+    <div class="bagSectionTitle">내 장비</div>
+    <div id="bagGearList"></div>
+    <div class="bagEmpty" id="bagGearEmptyMsg">가진 장비가 없어요.<br>아이템 상점에서 코일이나 카펫을 사보세요!</div>
+  </div>
+</div>
+
+<div id="pcHint">WASD 이동 · 스페이스 점프(카펫: 상승) · Ctrl 하강(카펫) · E 슬랩 · 마우스 시점 · Shift 시점 고정 · 1~8 채팅</div>
+<button id="shiftLockBtn" title="Shift Lock">🔓 시점 고정</button>
+
+<div id="touchC">
+  <div id="lookZ"></div>
+  <div id="joy"><div id="joyN"></div></div>
+  <button id="jumpB">⬆<br>점프</button>
+  <button id="descendB">⬇<br>하강</button>
+  <button id="slapB">👋<br>슬랩</button>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.52.1/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+
+// =================================================================
+// CONFIG
+// =================================================================
+const PINK = 0xff5fa8, PINK_D = 0xc02870, PINK_L = 0xffa8d0;
+const BLUE = 0x4aa8ff, BLUE_D = 0x1e60b8, BLUE_L = 0xa8d8ff;
+
+const GRAVITY = -26;
+const JUMP_V  = 11.4;
+const MOVE_SPD = 7.6;
+const AIR_CTRL = 0.72;
+const PLAYER_R = 0.38;
+const PLAYER_H = 1.7;
+const EYE_H = 1.45;
+const FALL_Y = -40;          // safety net only: below this you're returned to the start
+const MAX_FALL = -42;
+
+const SNAPSHOT_HZ = 12;
+const INPUT_HZ = 12;
+
+const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+
+// =================================================================
+// THREE SETUP
+// =================================================================
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x2a1040, 40, 150);
+
+const camera = new THREE.PerspectiveCamera(72, innerWidth/innerHeight, 0.1, 400);
+camera.rotation.order = 'YXZ';
+
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+document.body.appendChild(renderer.domElement);
+const canvas = renderer.domElement;
+
+// ---- WebGL context loss (common on memory-pressured phones / tab switching) ----
+// preventDefault on 'lost' tells the browser we want the context back; on 'restored'
+// three.js re-uploads GPU resources automatically and we just keep rendering.
+canvas.addEventListener('webglcontextlost', (e) => {
+  e.preventDefault();
+  const t = document.getElementById('checkTip');
+  if (t){ t.textContent = '⚠️ 그래픽이 잠시 멈췄어요... 복구 중'; t.style.display = 'block'; }
+}, false);
+canvas.addEventListener('webglcontextrestored', () => {
+  const t = document.getElementById('checkTip');
+  if (t) t.style.display = 'none';
+}, false);
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// sky dome: pink->purple->blue gradient
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide,
+  uniforms:{
+    top:{value:new THREE.Color(0x4aa8ff)},
+    mid:{value:new THREE.Color(0x9a5fd8)},
+    bot:{value:new THREE.Color(0xff5fa8)}
+  },
+  vertexShader:`varying vec3 vP; void main(){ vec4 w=modelMatrix*vec4(position,1.0); vP=w.xyz;
+    gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader:`uniform vec3 top; uniform vec3 mid; uniform vec3 bot; varying vec3 vP;
+    void main(){ float h=normalize(vP).y; vec3 c;
+      if(h>0.0) c=mix(mid,top,pow(clamp(h,0.0,1.0),0.55));
+      else c=mix(mid,bot,clamp(-h*1.6,0.0,1.0));
+      gl_FragColor=vec4(c,1.0); }`
+});
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(300,24,16), skyMat));
+
+// lights
+scene.add(new THREE.HemisphereLight(0xffd8f0, 0x6a4a8a, 0.85));
+const sun = new THREE.DirectionalLight(0xfff0f8, 1.15);
+sun.position.set(50, 90, 40);
+sun.castShadow = true;
+// Mobile GPUs: a 2048px shadow map is a big chunk of memory/fill-rate on phones.
+// 1024 is visually near-identical at this camera distance and much safer.
+sun.shadow.mapSize.set(isTouch ? 1024 : 2048, isTouch ? 1024 : 2048);
+sun.shadow.camera.left=-60; sun.shadow.camera.right=60;
+sun.shadow.camera.top=140; sun.shadow.camera.bottom=-20;
+sun.shadow.camera.near=1; sun.shadow.camera.far=280;
+sun.shadow.bias=-0.0004; sun.shadow.normalBias=0.02;
+scene.add(sun); scene.add(sun.target);
+const fillL = new THREE.DirectionalLight(0x8fcaff, 0.35);
+fillL.position.set(-40, 30, -30);
+scene.add(fillL);
+
+scene.add(camera); // for viewmodel/attachments
+
+// drifting clouds for atmosphere
+const clouds = [];
+(function makeClouds(){
+  const cm = new THREE.MeshStandardMaterial({color:0xffffff, roughness:1, transparent:true, opacity:0.55});
+  for (let i=0;i<26;i++){
+    const g = new THREE.Group();
+    const n = 2 + Math.floor(Math.random()*3);
+    for (let j=0;j<n;j++){
+      const b = new THREE.Mesh(new THREE.SphereGeometry(2+Math.random()*2.4, 8, 6), cm);
+      b.position.set((Math.random()-0.5)*6, (Math.random()-0.5)*1.4, (Math.random()-0.5)*4);
+      b.scale.y = 0.55;
+      g.add(b);
+    }
+    g.position.set((Math.random()-0.5)*180, 8 + Math.random()*150, (Math.random()-0.5)*180);
+    g.userData.spd = 0.6 + Math.random()*1.2;
+    scene.add(g);
+    clouds.push(g);
+  }
+})();
+
+// =================================================================
+// AUDIO
+// =================================================================
+let actx = null, musicOn = true;
+function initAudio(){
+  if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  // Mobile Chrome suspends the context when the tab is backgrounded (or before the
+  // first user gesture) — resume it whenever we get the chance, or sound stays dead.
+  if (actx && actx.state === 'suspended'){ try{ actx.resume(); }catch(e){} }
+}
+function tone(f, d, type, v){
+  if(!actx || !musicOn) return;
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type||'sine'; o.frequency.value = f;
+  g.gain.value = v||0.1;
+  o.connect(g); g.connect(actx.destination);
+  const t = actx.currentTime;
+  g.gain.setValueAtTime(g.gain.value, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t+d);
+  o.start(t); o.stop(t+d);
+}
+const sfx = {
+  jump:  ()=>tone(520,0.1,'sine',0.09),
+  land:  ()=>tone(180,0.07,'triangle',0.07),
+  boost: ()=>{tone(400,0.1,'sine',0.11); setTimeout(()=>tone(700,0.12,'sine',0.11),70); setTimeout(()=>tone(1000,0.16,'sine',0.1),150);},
+  check: ()=>{tone(660,0.1,'sine',0.12); setTimeout(()=>tone(880,0.16,'sine',0.12),90);},
+  hurt:  ()=>tone(140,0.22,'sawtooth',0.12),
+  die:   ()=>{tone(300,0.14,'square',0.1); setTimeout(()=>tone(180,0.24,'square',0.1),120);},
+  coin:  ()=>{tone(900,0.07,'sine',0.11); setTimeout(()=>tone(1300,0.1,'sine',0.1),60);},
+  win:   ()=>{[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,0.22,'sine',0.13), i*130));},
+  buy:   ()=>{tone(700,0.08,'sine',0.1); setTimeout(()=>tone(1000,0.12,'sine',0.1),70);},
+  chat:  ()=>{tone(660,0.05,'sine',0.07); setTimeout(()=>tone(880,0.06,'sine',0.06),50);},
+  slap:  ()=>{tone(220,0.05,'square',0.14); setTimeout(()=>tone(90,0.14,'sawtooth',0.16),40);}
+};
+function vibrate(p){ try{ navigator.vibrate && navigator.vibrate(p); }catch(e){} }
+
+// background music loop (simple bouncy arpeggio)
+let bgmTimer = null, bgmStep = 0;
+const BGM = [523,659,784,659, 587,740,880,740, 494,622,784,622, 440,554,659,554];
+function startBGM(){
+  if (bgmTimer) return;
+  bgmTimer = setInterval(() => {
+    if (!musicOn || !actx) return;
+    const n = BGM[bgmStep % BGM.length];
+    tone(n, 0.16, 'triangle', 0.035);
+    if (bgmStep % 4 === 0) tone(n/2, 0.3, 'sine', 0.03);
+    bgmStep++;
+  }, 220);
+}
+
+// =================================================================
+// AVATAR SYSTEM — full 3D character builder
+// =================================================================
+const CHAR_TYPES = [
+  { id:'cat',  name:'고양이' },
+  { id:'girl', name:'여자아이' },
+  { id:'boy',  name:'남자아이' }
+];
+
+// ---- COSMETIC CATALOG (all cosmetics are real 3D geometry) ----
+const AVA_SHOP = {
+  hair: [
+    {id:'hair_none',   name:'기본',        cost:0,   desc:'기본 머리'},
+    {id:'hair_long',   name:'긴 생머리',   cost:40,  desc:'찰랑이는 긴 머리'},
+    {id:'hair_twin',   name:'양갈래',      cost:65,  desc:'귀여운 트윈테일'},
+    {id:'hair_bun',    name:'만두머리',    cost:55,  desc:'동글동글 번 헤어'},
+    {id:'hair_spiky',  name:'스파이크',    cost:70,  desc:'뾰족뾰족 락스타 머리'},
+    {id:'hair_bob',    name:'단발머리',    cost:50,  desc:'깔끔한 보브컷'},
+    {id:'hair_pony',   name:'포니테일',    cost:65,  desc:'하나로 묶은 머리'},
+    {id:'hair_afro',   name:'아프로',      cost:85,  desc:'풍성한 곱슬 아프로'}
+  ],
+  shirt: [
+    {id:'shirt_basic',  name:'기본 티',     cost:0,   desc:'심플한 티셔츠'},
+    {id:'shirt_pink',   name:'핑크 후디',   cost:55,  desc:'포근한 핑크 후드티'},
+    {id:'shirt_blue',   name:'블루 후디',   cost:55,  desc:'시원한 블루 후드티'},
+    {id:'shirt_stripe', name:'줄무늬 티',   cost:50,  desc:'핑크&블루 줄무늬'},
+    {id:'shirt_heart',  name:'하트 티',     cost:75,  desc:'가슴에 큰 하트'},
+    {id:'shirt_star',   name:'스타 티',     cost:75,  desc:'반짝이는 별무늬'},
+    {id:'shirt_jacket', name:'가죽 자켓',   cost:110,  desc:'멋진 가죽 자켓'},
+    {id:'shirt_dress',  name:'드레스',      cost:125,  desc:'하늘하늘 원피스'}
+  ],
+  pants: [
+    {id:'pants_basic',  name:'기본 바지',   cost:0,   desc:'평범한 바지'},
+    {id:'pants_jean',   name:'청바지',      cost:40,  desc:'튼튼한 데님'},
+    {id:'pants_short',  name:'반바지',      cost:40,  desc:'시원한 반바지'},
+    {id:'pants_skirt',  name:'치마',        cost:65,  desc:'팔랑이는 치마'},
+    {id:'pants_pink',   name:'핑크 레깅스', cost:55,  desc:'쫀쫀한 핑크 레깅스'},
+    {id:'pants_blue',   name:'블루 조거',   cost:55,  desc:'편안한 블루 조거팬츠'},
+    {id:'pants_star',   name:'별무늬 바지', cost:85,  desc:'별이 박힌 바지'}
+  ],
+  band: [
+    {id:'band_none',   name:'없음',       cost:0,   desc:'머리띠 없음'},
+    {id:'band_ribbon', name:'리본 머리띠', cost:50,  desc:'큼직한 리본'},
+    {id:'band_cat',    name:'고양이 귀',   cost:70,  desc:'쫑긋 고양이 귀'},
+    {id:'band_bear',   name:'곰 귀',       cost:70,  desc:'동글 곰 귀'},
+    {id:'band_crown',  name:'왕관',        cost:140, desc:'반짝이는 왕관'},
+    {id:'band_horn',   name:'뿔',          cost:100,  desc:'작은 악마 뿔'},
+    {id:'band_halo',   name:'천사 링',     cost:155, desc:'둥둥 뜨는 천사 링'},
+    {id:'band_flower', name:'꽃 화관',     cost:75,  desc:'꽃으로 만든 화관'}
+  ],
+  face: [
+    {id:'face_smile',  name:'방긋',       cost:0,   desc:'기본 웃는 얼굴'},
+    {id:'face_wink',   name:'윙크',       cost:35,  desc:'한쪽 눈 찡긋'},
+    {id:'face_cool',   name:'선글라스',   cost:85,  desc:'시크한 선글라스'},
+    {id:'face_blush',  name:'홍조',       cost:35,  desc:'발그레한 볼'},
+    {id:'face_star',   name:'별눈',       cost:100,  desc:'눈이 반짝반짝 별'},
+    {id:'face_angry',  name:'뾰로통',     cost:40,  desc:'삐진 표정'},
+    {id:'face_mask',   name:'마스크',     cost:55,  desc:'귀여운 마스크'}
+  ],
+  bag: [
+    {id:'bag_none',    name:'없음',        cost:0,   desc:'가방 없음'},
+    {id:'bag_school',  name:'책가방',      cost:65,  desc:'네모난 책가방'},
+    {id:'bag_wing',    name:'요정 날개',   cost:170, desc:'반짝이는 날개'},
+    {id:'bag_jet',     name:'제트팩',      cost:125,  desc:'멋진 제트팩'},
+    {id:'bag_shell',   name:'거북 등껍질', cost:100,  desc:'동글 등껍질'},
+    {id:'bag_cape',    name:'망토',        cost:110,  desc:'펄럭이는 망토'},
+    {id:'bag_balloon', name:'풍선',        cost:85,  desc:'둥실 뜨는 풍선'}
+  ],
+  shoes: [
+    {id:'shoes_basic', name:'기본 신발',   cost:0,   desc:'평범한 운동화'},
+    {id:'shoes_sneak', name:'스니커즈',    cost:50,  desc:'힙한 스니커즈'},
+    {id:'shoes_boot',  name:'부츠',        cost:70,  desc:'튼튼한 부츠'},
+    {id:'shoes_glow',  name:'빛나는 신발', cost:110,  desc:'발밑이 반짝'},
+    {id:'shoes_pink',  name:'핑크 힐',     cost:85,  desc:'또각또각 핑크 힐'},
+    {id:'shoes_skate', name:'롤러스케이트',cost:125,  desc:'바퀴 달린 신발'}
+  ]
+};
+
+// ---- ITEM SHOP (gameplay gear) ----
+const ITEM_SHOP = [
+  {id:'coil_speed',  name:'속력 코일',    cost:90,  slot:'coil',  desc:'이동 속도가 크게 빨라져요 (+45%)'},
+  {id:'coil_grav',   name:'중력 코일',    cost:120, slot:'coil',  desc:'점프가 훨씬 높아지고 천천히 떨어져요'},
+  {id:'coil_mega',   name:'메가 코일',    cost:220, slot:'coil',  desc:'속력 + 중력 효과를 동시에!'},
+  {id:'carpet_rain', name:'무지개 카펫',  cost:5000, slot:'trail', desc:'진짜 마법 카펫! 타고 자유롭게 하늘을 날아다닐 수 있어요'},
+  {id:'trail_star',  name:'별 자국',      cost:100, slot:'trail', desc:'움직이면 반짝이는 별이 흩날려요'},
+  {id:'trail_heart', name:'하트 자국',    cost:100, slot:'trail', desc:'움직이면 하트가 뿅뿅 나와요'},
+  {id:'glide_wing',  name:'글라이더',     cost:190, slot:'util',  desc:'공중에서 점프 버튼을 누르면 천천히 내려와요'},
+  {id:'double_jump', name:'더블 점프',    cost:240, slot:'util',  desc:'공중에서 한 번 더 점프할 수 있어요'},
+  {id:'slap_unlock', name:'슬랩',        cost:80,  slot:'util',  desc:'장착하면 온라인 멀티에서 근처 친구를 때려 날려버릴 수 있어요! (E 키 / 슬랩 버튼)'},
+  {id:'magnet_1', name:'코인 자석 1회',  cost:60,  slot:'consumable', charges:1, desc:'가방에서 사용하면 주변 코인을 전부 모아요 (1회용)'},
+  {id:'magnet_5', name:'코인 자석 5회',  cost:220, slot:'consumable', charges:5, desc:'가방에서 사용하면 주변 코인을 전부 모아요 (5회 사용 가능)'}
+];
+
+// =================================================================
+// CHARACTER MESH BUILDER (fully 3D, no emoji)
+// =================================================================
+const SKIN = 0xffd9b8, SKIN_D = 0xe8b894;
+
+function mat(c, r, m){ return new THREE.MeshStandardMaterial({color:c, roughness:r===undefined?0.75:r, metalness:m||0}); }
+
+function buildAvatar(cfg){
+  // cfg: { type, hair, shirt, pants, band, face, bag, shoes }
+  const g = new THREE.Group();
+  const type = cfg.type || 'cat';
+  const parts = {};
+
+  // ---------- BODY (torso) ----------
+  const shirtCol = shirtColorOf(cfg.shirt);
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.72, 0.36), mat(shirtCol, 0.8));
+  torso.position.y = 1.06;
+  torso.castShadow = true; torso.receiveShadow = true;
+  g.add(torso);
+  parts.torso = torso;
+
+  // shirt details
+  addShirtDetail(g, cfg.shirt, shirtCol);
+
+  // ---------- LEGS ----------
+  const pantsCol = pantsColorOf(cfg.pants);
+  const legs = [];
+  const isSkirt = (cfg.pants === 'pants_skirt' || cfg.shirt === 'shirt_dress');
+  const legLen = (cfg.pants === 'pants_short') ? 0.30 : 0.52;
+  for (const sx of [-0.16, 0.16]){
+    const legG = new THREE.Group();
+    // upper (pants)
+    const up = new THREE.Mesh(new THREE.BoxGeometry(0.22, legLen, 0.24), mat(pantsCol, 0.85));
+    up.position.y = -legLen/2;
+    up.castShadow = true;
+    legG.add(up);
+    // lower (skin) if shorts
+    if (cfg.pants === 'pants_short'){
+      const lo = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.24, 0.22), mat(SKIN, 0.8));
+      lo.position.y = -legLen - 0.12;
+      lo.castShadow = true;
+      legG.add(lo);
+    }
+    // shoes
+    const shoe = buildShoe(cfg.shoes);
+    shoe.position.y = -(cfg.pants==='pants_short' ? 0.66 : legLen) - 0.08;
+    legG.add(shoe);
+    legG.position.set(sx, 0.70, 0);
+    g.add(legG);
+    legs.push(legG);
+  }
+  parts.legs = legs;
+
+  // skirt overlay
+  if (isSkirt){
+    const skirtCol = (cfg.shirt === 'shirt_dress') ? shirtCol : pantsCol;
+    const sk = new THREE.Mesh(new THREE.ConeGeometry(0.46, 0.42, 12, 1, true), 
+      new THREE.MeshStandardMaterial({color:skirtCol, roughness:0.85, side:THREE.DoubleSide}));
+    sk.position.y = 0.62;
+    sk.castShadow = true;
+    g.add(sk);
+  }
+
+  // ---------- ARMS ----------
+  const arms = [];
+  const sleeveLong = (cfg.shirt==='shirt_pink'||cfg.shirt==='shirt_blue'||cfg.shirt==='shirt_jacket');
+  for (const sx of [-0.40, 0.40]){
+    const armG = new THREE.Group();
+    const up = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.34, 0.18),
+      mat(sleeveLong ? shirtCol : SKIN, 0.8));
+    up.position.y = -0.17; up.castShadow = true;
+    armG.add(up);
+    const lo = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.32, 0.17), mat(SKIN, 0.8));
+    lo.position.y = -0.50; lo.castShadow = true;
+    armG.add(lo);
+    // hand
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.095, 8, 8), mat(SKIN, 0.75));
+    hand.position.y = -0.70;
+    armG.add(hand);
+    armG.position.set(sx, 1.36, 0);
+    g.add(armG);
+    arms.push(armG);
+  }
+  parts.arms = arms;
+
+  // ---------- HEAD ----------
+  const headG = new THREE.Group();
+  headG.position.y = 1.62;
+  g.add(headG);
+  parts.head = headG;
+
+  let headMesh;
+  if (type === 'cat'){
+    headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.34, 16, 14), mat(0xf8f0e8, 0.85));
+    headMesh.scale.set(1, 0.94, 0.92);
+    // cat ears (always, part of the character)
+    for (const sx of [-0.20, 0.20]){
+      const ear = new THREE.Mesh(new THREE.ConeGeometry(0.115, 0.22, 4), mat(0xf8f0e8, 0.85));
+      ear.position.set(sx, 0.30, 0);
+      ear.rotation.z = sx > 0 ? -0.22 : 0.22;
+      ear.castShadow = true;
+      headG.add(ear);
+      const inner = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.12, 4), mat(PINK_L, 0.8));
+      inner.position.set(sx, 0.29, 0.045);
+      inner.rotation.z = ear.rotation.z;
+      headG.add(inner);
+    }
+    // muzzle + nose
+    const muz = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), mat(0xffffff, 0.8));
+    muz.position.set(0, -0.07, 0.29); muz.scale.set(1.3, 0.8, 0.7);
+    headG.add(muz);
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.05, 4), mat(PINK, 0.6));
+    nose.position.set(0, -0.02, 0.36); nose.rotation.x = Math.PI;
+    headG.add(nose);
+    // whiskers
+    const wm = new THREE.LineBasicMaterial({color:0x998877});
+    for (const sx of [-1, 1]){
+      for (let i=0;i<3;i++){
+        const gm = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(sx*0.12, -0.05 + i*0.035, 0.30),
+          new THREE.Vector3(sx*0.34, -0.02 + i*0.05, 0.24)
+        ]);
+        headG.add(new THREE.Line(gm, wm));
+      }
+    }
+    // tail
+    const tailG = new THREE.Group();
+    for (let i=0;i<5;i++){
+      const seg = new THREE.Mesh(new THREE.SphereGeometry(0.075 - i*0.008, 8, 6), mat(0xf8f0e8, 0.85));
+      seg.position.set(0, i*0.13, -i*0.06);
+      tailG.add(seg);
+    }
+    tailG.position.set(0, 0.82, -0.20);
+    tailG.rotation.x = -0.5;
+    g.add(tailG);
+    parts.tail = tailG;
+  } else {
+    headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.33, 16, 14), mat(SKIN, 0.8));
+    headMesh.scale.set(1, 1.05, 0.95);
+  }
+  headMesh.castShadow = true;
+  headG.add(headMesh);
+  parts.headMesh = headMesh;
+
+  // ---------- HAIR ----------
+  addHair(headG, cfg.hair, type);
+
+  // ---------- FACE ----------
+  addFace(headG, cfg.face, type);
+
+  // ---------- HEADBAND ----------
+  addBand(headG, cfg.band);
+
+  // ---------- BAG ----------
+  addBag(g, cfg.bag);
+
+  g.userData.parts = parts;
+  g.userData.cfg = cfg;
+  return g;
+}
+
+// ---- colors ----
+function shirtColorOf(id){
+  switch(id){
+    case 'shirt_pink':   return PINK;
+    case 'shirt_blue':   return BLUE;
+    case 'shirt_stripe': return 0xffffff;
+    case 'shirt_heart':  return 0xffe0ee;
+    case 'shirt_star':   return 0x2a2050;
+    case 'shirt_jacket': return 0x3a3040;
+    case 'shirt_dress':  return 0xff8fc4;
+    default:             return 0xe8e8f0;
+  }
+}
+function pantsColorOf(id){
+  switch(id){
+    case 'pants_jean':  return 0x4a6a9a;
+    case 'pants_short': return 0x6a8ac0;
+    case 'pants_skirt': return PINK;
+    case 'pants_pink':  return PINK_D;
+    case 'pants_blue':  return BLUE_D;
+    case 'pants_star':  return 0x2a2050;
+    default:            return 0x585868;
+  }
+}
+
+function addShirtDetail(g, id, base){
+  if (id === 'shirt_stripe'){
+    for (let i=0;i<3;i++){
+      const st = new THREE.Mesh(new THREE.BoxGeometry(0.63, 0.10, 0.37),
+        mat(i%2===0 ? PINK : BLUE, 0.8));
+      st.position.set(0, 0.90 + i*0.17, 0);
+      g.add(st);
+    }
+  } else if (id === 'shirt_heart'){
+    const h = new THREE.Group();
+    const hm = mat(PINK, 0.6);
+    const l = new THREE.Mesh(new THREE.SphereGeometry(0.07,10,8), hm);
+    l.position.set(-0.05, 0.04, 0); h.add(l);
+    const r = new THREE.Mesh(new THREE.SphereGeometry(0.07,10,8), hm);
+    r.position.set(0.05, 0.04, 0); h.add(r);
+    const b = new THREE.Mesh(new THREE.ConeGeometry(0.10, 0.14, 8), hm);
+    b.position.set(0, -0.07, 0); b.rotation.x = Math.PI;
+    h.add(b);
+    h.position.set(0, 1.10, 0.19);
+    h.scale.setScalar(1.05);
+    g.add(h);
+  } else if (id === 'shirt_star'){
+    const st = makeStarMesh(0.13, 0xffd978);
+    st.position.set(0, 1.10, 0.19);
+    g.add(st);
+  } else if (id === 'shirt_jacket'){
+    // open jacket: two lapels + inner shirt
+    const inner = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.70, 0.02), mat(0xffffff, 0.8));
+    inner.position.set(0, 1.06, 0.185);
+    g.add(inner);
+    const zip = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.68, 0.02), mat(0xd8d8e0, 0.4, 0.7));
+    zip.position.set(0, 1.06, 0.20);
+    g.add(zip);
+  } else if (id === 'shirt_pink' || id === 'shirt_blue'){
+    // hood behind neck
+    const hood = new THREE.Mesh(new THREE.SphereGeometry(0.24, 12, 8, 0, Math.PI*2, 0, Math.PI/2),
+      mat(base, 0.85));
+    hood.position.set(0, 1.36, -0.16);
+    hood.rotation.x = 2.5;
+    g.add(hood);
+    // drawstrings
+    for (const sx of [-0.08, 0.08]){
+      const s = new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.012,0.18,5), mat(0xffffff, 0.8));
+      s.position.set(sx, 1.30, 0.19);
+      g.add(s);
+    }
+  }
+}
+
+function buildShoe(id){
+  const g = new THREE.Group();
+  let col = 0x3a3a48, accent = 0xffffff;
+  if (id === 'shoes_sneak'){ col = 0xffffff; accent = PINK; }
+  else if (id === 'shoes_boot'){ col = 0x5a3a28; accent = 0x3a2418; }
+  else if (id === 'shoes_glow'){ col = 0x2a2050; accent = 0x8cffe8; }
+  else if (id === 'shoes_pink'){ col = PINK; accent = PINK_D; }
+  else if (id === 'shoes_skate'){ col = 0xffffff; accent = BLUE; }
+
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.13, 0.32), mat(col, 0.7));
+  body.position.z = 0.04;
+  body.castShadow = true;
+  g.add(body);
+  const sole = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.05, 0.34), mat(accent, 0.6));
+  sole.position.set(0, -0.08, 0.04);
+  g.add(sole);
+
+  if (id === 'shoes_boot'){
+    const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.22, 0.24), mat(col, 0.7));
+    shaft.position.set(0, 0.15, -0.02);
+    g.add(shaft);
+  } else if (id === 'shoes_glow'){
+    const glow = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.03, 0.36),
+      new THREE.MeshBasicMaterial({color:accent}));
+    glow.position.set(0, -0.11, 0.04);
+    g.add(glow);
+  } else if (id === 'shoes_pink'){
+    const heel = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.16, 0.06), mat(accent, 0.5));
+    heel.position.set(0, -0.14, -0.10);
+    g.add(heel);
+  } else if (id === 'shoes_skate'){
+    for (const wz of [-0.08, 0.14]){
+      for (const wx of [-0.10, 0.10]){
+        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.04,10), mat(0x2a2a34, 0.5));
+        w.rotation.z = Math.PI/2;
+        w.position.set(wx, -0.12, wz);
+        g.add(w);
+      }
+    }
+  }
+  return g;
+}
+
+function addHair(headG, id, type){
+  if (!id || id === 'hair_none'){
+    if (type !== 'cat'){
+      // default simple hair cap
+      const h = new THREE.Mesh(new THREE.SphereGeometry(0.345, 14, 10, 0, Math.PI*2, 0, Math.PI/1.85),
+        mat(0x4a3020, 0.9));
+      h.position.y = 0.03;
+      h.scale.set(1, 1.06, 0.98);
+      h.castShadow = true;
+      headG.add(h);
+    }
+    return;
+  }
+  const HC = 0x4a3020, HC2 = 0x6a4530;
+  const cap = () => {
+    const h = new THREE.Mesh(new THREE.SphereGeometry(0.35, 14, 10, 0, Math.PI*2, 0, Math.PI/1.8), mat(HC, 0.9));
+    h.position.y = 0.03; h.scale.set(1,1.06,0.98); h.castShadow = true;
+    headG.add(h);
+    return h;
+  };
+
+  if (id === 'hair_long'){
+    cap();
+    const back = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.72, 0.22), mat(HC, 0.9));
+    back.position.set(0, -0.24, -0.19);
+    back.castShadow = true;
+    headG.add(back);
+    for (const sx of [-0.30, 0.30]){
+      const side = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.48, 0.2), mat(HC, 0.9));
+      side.position.set(sx, -0.13, 0.02);
+      headG.add(side);
+    }
+  } else if (id === 'hair_twin'){
+    cap();
+    for (const sx of [-0.36, 0.36]){
+      const tie = new THREE.Mesh(new THREE.TorusGeometry(0.07,0.028,6,10), mat(PINK, 0.7));
+      tie.position.set(sx, 0.04, 0); tie.rotation.y = Math.PI/2;
+      headG.add(tie);
+      const tail = new THREE.Group();
+      for (let i=0;i<4;i++){
+        const s = new THREE.Mesh(new THREE.SphereGeometry(0.10 - i*0.012, 8, 6), mat(HC, 0.9));
+        s.position.set(0, -i*0.15, 0);
+        s.castShadow = true;
+        tail.add(s);
+      }
+      tail.position.set(sx * 1.16, -0.02, 0);
+      tail.rotation.z = sx > 0 ? -0.25 : 0.25;
+      headG.add(tail);
+    }
+  } else if (id === 'hair_bun'){
+    cap();
+    for (const sx of [-0.26, 0.26]){
+      const bun = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 10), mat(HC, 0.9));
+      bun.position.set(sx, 0.24, -0.04);
+      bun.castShadow = true;
+      headG.add(bun);
+      const wrap = new THREE.Mesh(new THREE.TorusGeometry(0.13,0.028,6,12), mat(PINK, 0.7));
+      wrap.position.set(sx, 0.24, -0.04);
+      wrap.rotation.x = Math.PI/2;
+      headG.add(wrap);
+    }
+  } else if (id === 'hair_spiky'){
+    const c = cap();
+    c.material = mat(0x2a2a3a, 0.9);
+    for (let i=0;i<9;i++){
+      const a = (i/9)*Math.PI*2;
+      const rr = 0.20 + Math.random()*0.08;
+      const sp = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.24, 5), mat(i%2 ? PINK : BLUE, 0.7));
+      sp.position.set(Math.sin(a)*rr, 0.26 + Math.random()*0.06, Math.cos(a)*rr * 0.9);
+      sp.rotation.set((Math.random()-0.5)*0.5, 0, (Math.random()-0.5)*0.5);
+      sp.castShadow = true;
+      headG.add(sp);
+    }
+  } else if (id === 'hair_bob'){
+    cap();
+    const bob = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.34, 0.42), mat(HC2, 0.9));
+    bob.position.set(0, -0.10, -0.03);
+    bob.castShadow = true;
+    headG.add(bob);
+    const bang = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.1), mat(HC2, 0.9));
+    bang.position.set(0, 0.18, 0.28);
+    headG.add(bang);
+  } else if (id === 'hair_pony'){
+    cap();
+    const tie = new THREE.Mesh(new THREE.TorusGeometry(0.08,0.03,6,10), mat(BLUE, 0.7));
+    tie.position.set(0, 0.08, -0.30); tie.rotation.x = Math.PI/2;
+    headG.add(tie);
+    const tail = new THREE.Group();
+    for (let i=0;i<5;i++){
+      const s = new THREE.Mesh(new THREE.SphereGeometry(0.11 - i*0.013, 8, 6), mat(HC, 0.9));
+      s.position.set(0, -i*0.13, -i*0.05);
+      s.castShadow = true;
+      tail.add(s);
+    }
+    tail.position.set(0, 0.04, -0.32);
+    headG.add(tail);
+  } else if (id === 'hair_afro'){
+    for (let i=0;i<16;i++){
+      const a = (i/16)*Math.PI*2;
+      const rr = 0.30;
+      const p = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 6), mat(0x2a1a12, 0.95));
+      p.position.set(Math.sin(a)*rr, 0.10 + Math.cos(i*1.7)*0.13, Math.cos(a)*rr*0.85);
+      p.castShadow = true;
+      headG.add(p);
+    }
+    const top = new THREE.Mesh(new THREE.SphereGeometry(0.30, 12, 10), mat(0x2a1a12, 0.95));
+    top.position.y = 0.16;
+    headG.add(top);
+  }
+}
+
+function addFace(headG, id, type){
+  const zf = (type === 'cat') ? 0.30 : 0.30;
+  const eyeY = (type === 'cat') ? 0.03 : 0.02;
+  const black = new THREE.MeshBasicMaterial({color:0x201820});
+  const white = new THREE.MeshBasicMaterial({color:0xffffff});
+
+  if (id === 'face_cool'){
+    // sunglasses
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.10, 0.04), mat(0x18181f, 0.3, 0.5));
+    frame.position.set(0, eyeY, zf);
+    headG.add(frame);
+    for (const sx of [-0.12, 0.12]){
+      const lens = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.12, 0.02), 
+        new THREE.MeshStandardMaterial({color:0x1a1a2a, roughness:0.1, metalness:0.8}));
+      lens.position.set(sx, eyeY, zf + 0.015);
+      headG.add(lens);
+    }
+    smile(headG, zf, -0.14);
+    return;
+  }
+  if (id === 'face_mask'){
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.22, 0.10), mat(0xe8f4ff, 0.9));
+    m.position.set(0, -0.11, zf - 0.03);
+    headG.add(m);
+    for (const sx of [-0.20, 0.20]){
+      const strap = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.03, 0.03), mat(0xe8f4ff, 0.9));
+      strap.position.set(sx*1.3, -0.05, zf - 0.20);
+      strap.rotation.y = sx>0 ? -0.5 : 0.5;
+      headG.add(strap);
+    }
+    eyes(headG, zf, eyeY, 'normal');
+    return;
+  }
+
+  // eyes variants
+  if (id === 'face_wink') eyes(headG, zf, eyeY, 'wink');
+  else if (id === 'face_star') eyes(headG, zf, eyeY, 'star');
+  else if (id === 'face_angry') eyes(headG, zf, eyeY, 'angry');
+  else eyes(headG, zf, eyeY, 'normal');
+
+  // mouth
+  if (id === 'face_angry'){
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.025, 0.02), black);
+    m.position.set(0, -0.14, zf + 0.02);
+    m.rotation.z = 0.12;
+    headG.add(m);
+  } else {
+    smile(headG, zf, -0.13);
+  }
+
+  // blush
+  if (id === 'face_blush' || id === 'face_star'){
+    for (const sx of [-0.21, 0.21]){
+      const b = new THREE.Mesh(new THREE.CircleGeometry(0.065, 12),
+        new THREE.MeshBasicMaterial({color:0xff8ab0, transparent:true, opacity:0.6}));
+      b.position.set(sx, -0.06, zf + 0.01);
+      headG.add(b);
+    }
+  }
+
+  function eyes(hg, z, y, kind){
+    for (const sx of [-0.115, 0.115]){
+      if (kind === 'wink' && sx > 0){
+        const line = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.022, 0.02), black);
+        line.position.set(sx, y, z + 0.02);
+        hg.add(line);
+        continue;
+      }
+      if (kind === 'star'){
+        const s = makeStarMesh(0.062, 0xffe066);
+        s.position.set(sx, y, z + 0.02);
+        hg.add(s);
+        continue;
+      }
+      if (kind === 'angry'){
+        const brow = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.022, 0.02), black);
+        brow.position.set(sx, y + 0.09, z + 0.02);
+        brow.rotation.z = sx > 0 ? 0.35 : -0.35;
+        hg.add(brow);
+      }
+      const e = new THREE.Mesh(new THREE.SphereGeometry(0.048, 10, 10), black);
+      e.position.set(sx, y, z);
+      e.scale.z = 0.5;
+      hg.add(e);
+      const sh = new THREE.Mesh(new THREE.SphereGeometry(0.017, 6, 6), white);
+      sh.position.set(sx + 0.016, y + 0.017, z + 0.028);
+      hg.add(sh);
+    }
+  }
+  function smile(hg, z, y){
+    const curve = new THREE.TorusGeometry(0.065, 0.014, 6, 12, Math.PI);
+    const m = new THREE.Mesh(curve, black);
+    m.position.set(0, y, z + 0.01);
+    m.rotation.x = Math.PI;
+    m.rotation.z = Math.PI;
+    hg.add(m);
+  }
+}
+
+function addBand(headG, id){
+  if (!id || id === 'band_none') return;
+  if (id === 'band_ribbon'){
+    const base = new THREE.Mesh(new THREE.TorusGeometry(0.33,0.03,6,18,Math.PI), mat(PINK, 0.6));
+    base.position.set(0, 0.14, 0);
+    base.rotation.z = Math.PI;
+    headG.add(base);
+    const knot = new THREE.Mesh(new THREE.SphereGeometry(0.05,8,8), mat(PINK_D, 0.6));
+    knot.position.set(0.24, 0.26, 0);
+    headG.add(knot);
+    for (const s of [-1, 1]){
+      const loop = new THREE.Mesh(new THREE.SphereGeometry(0.10, 10, 8), mat(PINK, 0.6));
+      loop.scale.set(1, 0.7, 0.45);
+      loop.position.set(0.24 + s*0.10, 0.30 + s*0.05, 0);
+      loop.rotation.z = s * 0.5;
+      headG.add(loop);
+    }
+  } else if (id === 'band_cat'){
+    const base = new THREE.Mesh(new THREE.TorusGeometry(0.33,0.026,6,18,Math.PI), mat(0x2a2a3a, 0.7));
+    base.position.set(0, 0.14, 0); base.rotation.z = Math.PI;
+    headG.add(base);
+    for (const sx of [-0.19, 0.19]){
+      const ear = new THREE.Mesh(new THREE.ConeGeometry(0.10, 0.20, 4), mat(0x2a2a3a, 0.8));
+      ear.position.set(sx, 0.33, 0);
+      ear.rotation.z = sx>0 ? -0.2 : 0.2;
+      headG.add(ear);
+      const inn = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.11, 4), mat(PINK_L, 0.7));
+      inn.position.set(sx, 0.32, 0.04);
+      inn.rotation.z = ear.rotation.z;
+      headG.add(inn);
+    }
+  } else if (id === 'band_bear'){
+    const base = new THREE.Mesh(new THREE.TorusGeometry(0.33,0.026,6,18,Math.PI), mat(0x8a5a3a, 0.8));
+    base.position.set(0, 0.14, 0); base.rotation.z = Math.PI;
+    headG.add(base);
+    for (const sx of [-0.21, 0.21]){
+      const ear = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 8), mat(0x8a5a3a, 0.85));
+      ear.position.set(sx, 0.32, 0);
+      headG.add(ear);
+      const inn = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), mat(PINK_L, 0.8));
+      inn.position.set(sx, 0.33, 0.06);
+      headG.add(inn);
+    }
+  } else if (id === 'band_crown'){
+    const cm = mat(0xffd24a, 0.25, 0.85);
+    const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.26, 0.13, 12), cm);
+    ring.position.y = 0.30;
+    ring.castShadow = true;
+    headG.add(ring);
+    for (let i=0;i<6;i++){
+      const a = (i/6)*Math.PI*2;
+      const sp = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.16, 5), cm);
+      sp.position.set(Math.sin(a)*0.26, 0.44, Math.cos(a)*0.26);
+      headG.add(sp);
+      const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.032), 
+        new THREE.MeshStandardMaterial({color: i%2 ? PINK : BLUE, roughness:0.1, metalness:0.3}));
+      gem.position.set(Math.sin(a)*0.26, 0.52, Math.cos(a)*0.26);
+      headG.add(gem);
+    }
+  } else if (id === 'band_horn'){
+    for (const sx of [-0.17, 0.17]){
+      const h = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.22, 6), mat(0xc03858, 0.6));
+      h.position.set(sx, 0.34, -0.02);
+      h.rotation.z = sx>0 ? -0.3 : 0.3;
+      h.castShadow = true;
+      headG.add(h);
+    }
+  } else if (id === 'band_halo'){
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(0.20, 0.032, 8, 20),
+      new THREE.MeshStandardMaterial({color:0xffe98a, emissive:0xffd050, emissiveIntensity:0.9, roughness:0.3}));
+    halo.position.y = 0.52;
+    halo.rotation.x = Math.PI/2;
+    halo.name = 'halo';
+    headG.add(halo);
+  } else if (id === 'band_flower'){
+    const base = new THREE.Mesh(new THREE.TorusGeometry(0.33,0.024,6,18), mat(0x4a9c4a, 0.9));
+    base.position.set(0, 0.16, 0);
+    base.rotation.x = Math.PI/2;
+    headG.add(base);
+    for (let i=0;i<5;i++){
+      const a = -0.9 + (i/4)*1.8;
+      const fx = Math.sin(a)*0.32, fz = Math.cos(a)*0.30;
+      const col = [PINK, 0xffe066, BLUE, 0xff8ab0, 0xffffff][i];
+      const cen = new THREE.Mesh(new THREE.SphereGeometry(0.035,8,6), mat(0xffe066, 0.6));
+      cen.position.set(fx, 0.22, fz);
+      headG.add(cen);
+      for (let p=0;p<5;p++){
+        const pa = (p/5)*Math.PI*2;
+        const pet = new THREE.Mesh(new THREE.SphereGeometry(0.038, 6, 5), mat(col, 0.7));
+        pet.scale.set(1, 0.45, 1);
+        pet.position.set(fx + Math.sin(pa)*0.055, 0.22, fz + Math.cos(pa)*0.055);
+        headG.add(pet);
+      }
+    }
+  }
+}
+
+function addBag(g, id){
+  if (!id || id === 'bag_none') return;
+  if (id === 'bag_school'){
+    const b = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.44, 0.18), mat(0xc03858, 0.85));
+    b.position.set(0, 1.10, -0.27);
+    b.castShadow = true;
+    g.add(b);
+    const flap = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.16, 0.20), mat(0x9a2848, 0.85));
+    flap.position.set(0, 1.28, -0.27);
+    g.add(flap);
+    for (const sx of [-0.20, 0.20]){
+      const st = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.5, 0.04), mat(0x9a2848, 0.85));
+      st.position.set(sx, 1.14, -0.16);
+      g.add(st);
+    }
+  } else if (id === 'bag_wing'){
+    for (const sx of [-1, 1]){
+      const w = new THREE.Group();
+      const wm = new THREE.MeshStandardMaterial({color:0xffd8f4, roughness:0.3, transparent:true, opacity:0.82,
+        emissive:0xff9ad8, emissiveIntensity:0.35, side:THREE.DoubleSide});
+      const up = new THREE.Mesh(new THREE.CircleGeometry(0.30, 12, 0, Math.PI), wm);
+      up.position.set(0, 0.12, 0);
+      w.add(up);
+      const lo = new THREE.Mesh(new THREE.CircleGeometry(0.20, 12, 0, Math.PI), wm);
+      lo.position.set(0.03, -0.14, 0);
+      lo.rotation.z = Math.PI;
+      w.add(lo);
+      w.position.set(sx*0.20, 1.20, -0.22);
+      w.rotation.y = sx>0 ? -0.5 : 0.5;
+      w.name = 'wing' + (sx>0?'R':'L');
+      g.add(w);
+    }
+  } else if (id === 'bag_jet'){
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.40, 0.16), mat(0x8a8a9a, 0.4, 0.6));
+    body.position.set(0, 1.12, -0.26);
+    body.castShadow = true;
+    g.add(body);
+    for (const sx of [-0.13, 0.13]){
+      const noz = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.075, 0.14, 8), mat(0x4a4a58, 0.4, 0.7));
+      noz.position.set(sx, 0.86, -0.26);
+      g.add(noz);
+      const fl = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.16, 8),
+        new THREE.MeshBasicMaterial({color:0x8cd8ff, transparent:true, opacity:0.7}));
+      fl.position.set(sx, 0.72, -0.26);
+      fl.rotation.x = Math.PI;
+      fl.name = 'jetflame';
+      g.add(fl);
+    }
+  } else if (id === 'bag_shell'){
+    const s = new THREE.Mesh(new THREE.SphereGeometry(0.32, 14, 10, 0, Math.PI*2, 0, Math.PI/2),
+      mat(0x4a9c5a, 0.85));
+    s.position.set(0, 1.12, -0.24);
+    s.rotation.x = -Math.PI/2;
+    s.scale.set(1, 1, 0.7);
+    s.castShadow = true;
+    g.add(s);
+    for (let i=0;i<6;i++){
+      const a = (i/6)*Math.PI*2;
+      const hex = new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.075,0.03,6), mat(0x2a6a3a, 0.9));
+      hex.position.set(Math.sin(a)*0.16, 1.12 + Math.cos(a)*0.15, -0.42);
+      hex.rotation.x = Math.PI/2;
+      g.add(hex);
+    }
+  } else if (id === 'bag_cape'){
+    const cm = new THREE.MeshStandardMaterial({color:0x8a2be2, roughness:0.8, side:THREE.DoubleSide});
+    const cape = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 1.0, 4, 4), cm);
+    cape.position.set(0, 0.95, -0.24);
+    cape.name = 'cape';
+    cape.castShadow = true;
+    g.add(cape);
+    const clasp = new THREE.Mesh(new THREE.SphereGeometry(0.05,8,8), mat(0xffd24a, 0.3, 0.7));
+    clasp.position.set(0, 1.44, -0.02);
+    g.add(clasp);
+  } else if (id === 'bag_balloon'){
+    const cols = [PINK, BLUE, 0xffe066];
+    for (let i=0;i<3;i++){
+      const b = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 10), mat(cols[i], 0.35));
+      b.scale.y = 1.2;
+      b.position.set((i-1)*0.22, 2.45 + Math.random()*0.15, -0.30);
+      b.name = 'balloon' + i;
+      b.castShadow = true;
+      g.add(b);
+      const str = new THREE.Mesh(new THREE.CylinderGeometry(0.006,0.006,0.9,4), mat(0xffffff, 0.9));
+      str.position.set((i-1)*0.11, 1.85, -0.28);
+      g.add(str);
+    }
+  }
+}
+
+function makeStarMesh(size, color){
+  const sh = new THREE.Shape();
+  for (let i=0;i<10;i++){
+    const a = (i/10)*Math.PI*2 - Math.PI/2;
+    const r = i%2===0 ? size : size*0.42;
+    const x = Math.cos(a)*r, y = Math.sin(a)*r;
+    if (i===0) sh.moveTo(x,y); else sh.lineTo(x,y);
+  }
+  sh.closePath();
+  const geo = new THREE.ExtrudeGeometry(sh, {depth: size*0.25, bevelEnabled:false});
+  geo.center();
+  return new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color, roughness:0.4, emissive:color, emissiveIntensity:0.3}));
+}
+
+// ---- FLYING RAINBOW CARPET (real Roblox-style flying carpet you ride) ----
+function makeFlyingCarpet(){
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.09, 1.3),
+    new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.5, emissive:0xffffff, emissiveIntensity:0.25}));
+  body.castShadow = true; body.receiveShadow = true;
+  g.add(body);
+  g.userData.body = body;
+  // fringe tassels around the edge
+  const fringe = [];
+  const N = 16;
+  for (let i=0;i<N;i++){
+    const a = (i/N)*Math.PI*2;
+    const isSide = Math.abs(Math.cos(a)) > Math.abs(Math.sin(a));
+    const ex = isSide ? Math.sign(Math.cos(a))*0.65 : Math.sin(a)*0.62;
+    const ez = isSide ? Math.cos(a)*0.62 : Math.sign(Math.sin(a))*0.65;
+    const t = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.14, 5),
+      new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.6}));
+    t.position.set(ex, -0.09, ez);
+    t.rotation.x = Math.PI;
+    g.add(t);
+    fringe.push(t);
+  }
+  g.userData.fringe = fringe;
+  return g;
+}
+const _carpetCol = new THREE.Color();
+function updateCarpetColors(mesh, t){
+  const hue = (t*0.25) % 1;
+  _carpetCol.setHSL(hue, 0.85, 0.62);
+  mesh.userData.body.material.color.copy(_carpetCol);
+  mesh.userData.body.material.emissive.copy(_carpetCol);
+  mesh.userData.fringe.forEach((f, i) => {
+    f.material.color.setHSL((hue + i/mesh.userData.fringe.length) % 1, 0.8, 0.65);
+  });
+}
+
+// =================================================================
+// TOWER: platforms, obstacles, checkpoints
+// =================================================================
+const platforms = [];   // { mesh, box, type, data }
+const hazards = [];     // { mesh, r, type, data }  (bears/cats/spinners)
+const coins = [];       // { mesh, taken }
+// (checkpoints removed — falling now drops you on the ground floor and you walk back to the start)
+const towerObjects = []; // everything to remove on rebuild
+let goalFlag = null;
+let towerTopY = 0;
+
+function trackObj(o){ towerObjects.push(o); scene.add(o); return o; }
+
+let boundary = null; // { cx, cz, R } — circular tower boundary (radial clamp, not AABB)
+
+function clearTower(){
+  for (const o of towerObjects){ scene.remove(o); disposeObject3D(o); }
+  towerObjects.length = 0;
+  platforms.length = 0;
+  hazards.length = 0;
+  coins.length = 0;
+  goalFlag = null;
+  boundary = null;
+  startPad = null;
+}
+
+// --- platform materials ---
+const M = {
+  pink:   mat(PINK, 0.7),
+  pinkD:  mat(PINK_D, 0.7),
+  blue:   mat(BLUE, 0.7),
+  blueD:  mat(BLUE_D, 0.7),
+  white:  mat(0xf0f0f8, 0.7),
+  glass:  new THREE.MeshStandardMaterial({color:0xa8e8ff, roughness:0.1, metalness:0.1, transparent:true, opacity:0.55}),
+  ice:    new THREE.MeshStandardMaterial({color:0xcaf0ff, roughness:0.05, metalness:0.2}),
+  danger: new THREE.MeshStandardMaterial({color:0xff2a5a, roughness:0.5, emissive:0xff2a5a, emissiveIntensity:0.35}),
+  spring: new THREE.MeshStandardMaterial({color:0x8cff9c, roughness:0.4, emissive:0x2a9c45, emissiveIntensity:0.4}),
+  check:  new THREE.MeshStandardMaterial({color:0x8cff9c, roughness:0.3, emissive:0x40d060, emissiveIntensity:0.55}),
+  checkOff: new THREE.MeshStandardMaterial({color:0xd0d0d8, roughness:0.6}),
+  conv:   mat(0xffb84a, 0.6),
+  gold:   new THREE.MeshStandardMaterial({color:0xffd24a, roughness:0.25, metalness:0.75, emissive:0xffb020, emissiveIntensity:0.3})
+};
+// Conveyor glow color is constant — set it ONCE here. (It used to be re-allocated
+// with `new THREE.Color()` every single frame in animateWorld.)
+M.conv.emissive = new THREE.Color(0xff8800);
+M.conv.emissiveIntensity = 0.12;
+
+// These materials are shared across many meshes and live for the whole session —
+// mark them so disposeObject3D() below never destroys them out from under other meshes.
+for (const k of Object.keys(M)) M[k].userData.shared = true;
+
+// Frees the GPU memory (geometry buffers + materials) of everything under `root`.
+// Without this, every tower rebuild / shop thumbnail / avatar rebuild kept its old
+// buffers alive on the GPU — on phones that slowly climbs until the WebGL context
+// is evicted and the screen goes blank. Shared resources (userData.shared) are skipped.
+function disposeObject3D(root){
+  if (!root) return;
+  root.traverse(o => {
+    if (o.geometry && !(o.geometry.userData && o.geometry.userData.shared)) o.geometry.dispose();
+    if (o.material){
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      for (const mm of mats){
+        if (mm && !(mm.userData && mm.userData.shared)){
+          if (mm.map) mm.map.dispose();
+          mm.dispose();
+        }
+      }
+    }
+  });
+}
+
+// helper: add a static platform with a collision box.
+// rotY (optional): visual rotation to face the direction of travel on the spiral.
+// When rotated, the collision AABB conservatively uses the diagonal as a square footprint.
+function addPlatform(x, y, z, w, h, d, material, type, data, rotY){
+  // Disappearing platforms animate their material's opacity individually — they must
+  // NOT share one material, or every glass platform in the tower blinks in unison
+  // the moment any one of them starts fading. Give each fade platform its own clone.
+  if (type === 'fade'){
+    material = material.clone();
+    material.userData = Object.assign({}, material.userData, { shared:false });
+  }
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+  mesh.position.set(x, y, z);
+  if (rotY) mesh.rotation.y = rotY;
+  mesh.castShadow = true; mesh.receiveShadow = true;
+  trackObj(mesh);
+  const p = {
+    mesh, type: type || 'solid', data: data || {},
+    w, h, d, rotY: rotY || 0,
+    box: new THREE.Box3()
+  };
+  updatePlatBox(p);
+  platforms.push(p);
+  return p;
+}
+
+function updatePlatBox(p){
+  if (p.shaped){ updateShapedBox(p); return; }
+  const m = p.mesh;
+  const hh = p.h/2;
+  // Store the TRUE half-extents. Rotation is handled properly by the OBB
+  // collision routines below (transforming the player into platform-local space),
+  // so we must NOT inflate the box to a diagonal square — that used to create a
+  // huge invisible collider that flung the player off rotated platforms.
+  const hw = p.w/2, hd = p.d/2;
+  p.box.min.set(m.position.x - hw, m.position.y - hh, m.position.z - hd);
+  p.box.max.set(m.position.x + hw, m.position.y + hh, m.position.z + hd);
+}
+
+// --- Oriented-box helpers: work in the platform's local (unrotated) frame ---
+// Returns the player's position expressed in platform-local coords.
+function toLocal(p, x, z){
+  const a = (p.mesh.rotation.y || 0);
+  const dx = x - p.mesh.position.x;
+  const dz = z - p.mesh.position.z;
+  const c = Math.cos(-a), s = Math.sin(-a);
+  return { x: dx*c - dz*s, z: dx*s + dz*c };
+}
+// Converts a platform-local offset back into world coords.
+function toWorld(p, lx, lz){
+  const a = (p.mesh.rotation.y || 0);
+  const c = Math.cos(a), s = Math.sin(a);
+  return {
+    x: p.mesh.position.x + (lx*c - lz*s),
+    z: p.mesh.position.z + (lx*s + lz*c)
+  };
+}
+// Does the player's circle (radius PLAYER_R) overlap this platform's footprint?
+function overlapsFootprint(p, x, z){
+  const hw = (p.shaped ? p.w : p.w) / 2;
+  const hd = (p.shaped ? p.d : p.d) / 2;
+  const L = toLocal(p, x, z);
+  // closest point on the (local, axis-aligned) rectangle to the player's center
+  const cx = Math.max(-hw, Math.min(hw, L.x));
+  const cz = Math.max(-hd, Math.min(hd, L.z));
+  const ddx = L.x - cx, ddz = L.z - cz;
+  return (ddx*ddx + ddz*ddz) < (PLAYER_R * PLAYER_R);
+}
+// Vertical span of the platform's collision volume.
+function platTop(p){
+  const cy = p.mesh.position.y + (p.boxOffsetY || 0);
+  return cy + p.h/2;
+}
+function platBottom(p){
+  const cy = p.mesh.position.y + (p.boxOffsetY || 0);
+  return cy - p.h/2;
+}
+// Push the player out of a platform horizontally, along the platform's local axes.
+function pushOutOfPlatform(p, pos){
+  const hw = p.w/2, hd = p.d/2;
+  const L = toLocal(p, pos.x, pos.z);
+  const cx = Math.max(-hw, Math.min(hw, L.x));
+  const cz = Math.max(-hd, Math.min(hd, L.z));
+  let ddx = L.x - cx, ddz = L.z - cz;
+  let dist = Math.hypot(ddx, ddz);
+  if (dist > 0.0001){
+    // player center is outside the rect: push straight out along the contact normal
+    const need = PLAYER_R - dist;
+    if (need <= 0) return false;
+    const nx = ddx/dist, nz = ddz/dist;
+    const w = toWorld(p, cx + nx*PLAYER_R, cz + nz*PLAYER_R);
+    pos.x = w.x; pos.z = w.z;
+    return true;
+  }
+  // player center is INSIDE the rect: eject via the nearest face
+  const pxs = hw - Math.abs(L.x);   // distance to the x faces
+  const pzs = hd - Math.abs(L.z);   // distance to the z faces
+  let lx = L.x, lz = L.z;
+  if (pxs < pzs) lx = (L.x >= 0 ? hw + PLAYER_R : -hw - PLAYER_R);
+  else           lz = (L.z >= 0 ? hd + PLAYER_R : -hd - PLAYER_R);
+  const w = toWorld(p, lx, lz);
+  pos.x = w.x; pos.z = w.z;
+  return true;
+}
+
+// ---------- OBSTACLE BUILDERS ----------
+
+// PINK BEAR PLATFORM — a bear-shaped platform you stand on top of
+function makeBearPlatform(x, y, z, opts){
+  opts = opts || {};
+  const g = new THREE.Group();
+  const fur = mat(PINK, 0.9), furD = mat(PINK_D, 0.9);
+
+  // body = the standable surface (flat-topped rounded slab)
+  const body = new THREE.Mesh(new THREE.SphereGeometry(1.25, 18, 14), fur);
+  body.scale.set(1, 0.52, 0.85);
+  body.position.y = 0.30;
+  body.castShadow = true; body.receiveShadow = true;
+  g.add(body);
+  // flat top so it reads as standable
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.15, 0.18, 20), mat(PINK_L, 0.8));
+  top.position.y = 0.62;
+  top.receiveShadow = true;
+  g.add(top);
+
+  // head sticking out the front (decorative)
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.55, 16, 14), fur);
+  head.position.set(0, 0.55, 1.15);
+  head.castShadow = true;
+  g.add(head);
+  for (const sx of [-0.34, 0.34]){
+    const ear = new THREE.Mesh(new THREE.SphereGeometry(0.19, 12, 10), fur);
+    ear.position.set(sx, 0.95, 1.05);
+    g.add(ear);
+    const inn = new THREE.Mesh(new THREE.SphereGeometry(0.10, 10, 8), mat(PINK_L, 0.85));
+    inn.position.set(sx, 0.97, 1.14);
+    g.add(inn);
+  }
+  const muz = new THREE.Mesh(new THREE.SphereGeometry(0.24, 12, 10), mat(0xffe8f4, 0.85));
+  muz.position.set(0, 0.44, 1.58); muz.scale.set(1.2, 0.85, 0.8);
+  g.add(muz);
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 8), mat(0x40202a, 0.6));
+  nose.position.set(0, 0.50, 1.74);
+  g.add(nose);
+  for (const sx of [-0.19, 0.19]){
+    const e = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 10), new THREE.MeshBasicMaterial({color:0x201820}));
+    e.position.set(sx, 0.66, 1.58);
+    g.add(e);
+    const sh = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6), new THREE.MeshBasicMaterial({color:0xffffff}));
+    sh.position.set(sx+0.025, 0.70, 1.63);
+    g.add(sh);
+  }
+  // happy smile
+  const sm = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.02, 6, 12, Math.PI), new THREE.MeshBasicMaterial({color:0x40202a}));
+  sm.position.set(0, 0.38, 1.72);
+  sm.rotation.x = Math.PI; sm.rotation.z = Math.PI;
+  g.add(sm);
+
+  // paws at the corners
+  for (const sx of [-0.85, 0.85]){
+    for (const sz of [-0.75, 0.75]){
+      const paw = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 10), furD);
+      paw.position.set(sx, 0.05, sz);
+      paw.scale.y = 0.7;
+      paw.castShadow = true;
+      g.add(paw);
+      const pad = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6), mat(PINK_L, 0.85));
+      pad.position.set(sx, 0.05, sz + 0.24);
+      pad.scale.y = 0.5;
+      g.add(pad);
+    }
+  }
+  g.position.set(x, y, z);
+  if (opts.rotY) g.rotation.y = opts.rotY;
+  trackObj(g);
+
+  // standable collision box (top surface of the bear)
+  const p = {
+    mesh: g, type: opts.move ? 'move' : 'solid',
+    w: 2.1, h: 0.7, d: 1.9,
+    box: new THREE.Box3(),
+    shaped: true,
+    data: opts.move ? { axis: opts.axis||'x', dir: opts.dir, range: opts.range||3, spd: opts.spd||0.6, t: Math.random()*6,
+                        home: new THREE.Vector3(x, y, z) } : {}
+  };
+  // the collision box sits so its TOP is the bear's flat back (y+0.71)
+  p.boxOffsetY = 0.36;
+  updateShapedBox(p);
+  platforms.push(p);
+  return p;
+}
+
+// BLUE CAT PLATFORM — a long cat-shaped platform you walk across
+function makeCatPlatform(x, y, z, opts){
+  opts = opts || {};
+  const g = new THREE.Group();
+  const fur = mat(BLUE, 0.85), furD = mat(BLUE_D, 0.85);
+
+  // long body = the walkway
+  const body = new THREE.Mesh(new THREE.SphereGeometry(1.0, 18, 14), fur);
+  body.scale.set(1.0, 0.5, 2.1);
+  body.position.y = 0.28;
+  body.castShadow = true; body.receiveShadow = true;
+  g.add(body);
+  // flat back to stand on
+  const back = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.16, 3.6), mat(BLUE_L, 0.8));
+  back.position.y = 0.58;
+  back.receiveShadow = true;
+  g.add(back);
+  // rounded edges of the back
+  for (const sx of [-0.75, 0.75]){
+    const edge = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 3.6, 8), fur);
+    edge.rotation.x = Math.PI/2;
+    edge.position.set(sx, 0.60, 0);
+    g.add(edge);
+  }
+
+  // head at the front
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.52, 16, 14), fur);
+  head.position.set(0, 0.62, 2.05);
+  head.castShadow = true;
+  g.add(head);
+  for (const sx of [-0.28, 0.28]){
+    const ear = new THREE.Mesh(new THREE.ConeGeometry(0.20, 0.36, 4), fur);
+    ear.position.set(sx, 1.02, 1.95);
+    ear.rotation.z = sx>0 ? -0.18 : 0.18;
+    ear.castShadow = true;
+    g.add(ear);
+    const inn = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.20, 4), mat(PINK_L, 0.8));
+    inn.position.set(sx, 1.00, 2.02);
+    inn.rotation.z = ear.rotation.z;
+    g.add(inn);
+  }
+  for (const sx of [-0.19, 0.19]){
+    const e = new THREE.Mesh(new THREE.SphereGeometry(0.10, 10, 10), new THREE.MeshBasicMaterial({color:0x30ff90}));
+    e.position.set(sx, 0.70, 2.44);
+    e.scale.set(1, 1.25, 0.6);
+    g.add(e);
+    const pup = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.12, 0.03), new THREE.MeshBasicMaterial({color:0x101820}));
+    pup.position.set(sx, 0.70, 2.50);
+    g.add(pup);
+  }
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.08, 4), mat(PINK, 0.6));
+  nose.position.set(0, 0.56, 2.52); nose.rotation.x = Math.PI;
+  g.add(nose);
+  // whiskers
+  const wm = new THREE.LineBasicMaterial({color:0xdff0ff});
+  for (const sx of [-1, 1]){
+    for (let i=0;i<3;i++){
+      const gm = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(sx*0.16, 0.52 + i*0.05, 2.44),
+        new THREE.Vector3(sx*0.62, 0.56 + i*0.07, 2.28)
+      ]);
+      g.add(new THREE.Line(gm, wm));
+    }
+  }
+
+  // paws
+  for (const sx of [-0.62, 0.62]){
+    for (const sz of [-1.35, 1.35]){
+      const paw = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.24, 0.5, 10), furD);
+      paw.position.set(sx, 0.0, sz);
+      paw.castShadow = true;
+      g.add(paw);
+    }
+  }
+  // curly tail at the back
+  const tailG = new THREE.Group();
+  for (let i=0;i<7;i++){
+    const t = i/6;
+    const s2 = new THREE.Mesh(new THREE.SphereGeometry(0.15 - i*0.014, 10, 8), fur);
+    s2.position.set(Math.sin(t*3)*0.35, t*1.1, -t*0.35);
+    tailG.add(s2);
+  }
+  tailG.position.set(0, 0.45, -2.1);
+  g.add(tailG);
+  g.userData.tail = tailG;
+
+  g.position.set(x, y, z);
+  if (opts.rotY) g.rotation.y = opts.rotY;
+  trackObj(g);
+
+  const p = {
+    mesh: g, type: opts.move ? 'move' : 'solid',
+    w: 1.7, h: 0.7, d: 3.8,
+    box: new THREE.Box3(),
+    shaped: true,
+    data: opts.move ? { axis: opts.axis||'x', dir: opts.dir, range: opts.range||3, spd: opts.spd||0.6, t: Math.random()*6,
+                        home: new THREE.Vector3(x, y, z) } : {}
+  };
+  p.boxOffsetY = 0.31;
+  updateShapedBox(p);
+  platforms.push(p);
+  return p;
+}
+
+// shaped platforms need a box whose TOP lines up with the visible standing surface
+function updateShapedBox(p){
+  const m = p.mesh;
+  // true half-extents; rotation is handled by the OBB routines, not by inflating the box
+  const hw = p.w/2, hd = p.d/2;
+  const cy = m.position.y + (p.boxOffsetY || 0);
+  p.box.min.set(m.position.x - hw, cy - p.h/2, m.position.z - hd);
+  p.box.max.set(m.position.x + hw, cy + p.h/2, m.position.z + hd);
+}
+
+// tornado jump pad — launches you way up
+function makeTornado(x, y, z, power){
+  const g = new THREE.Group();
+  const rings = [];
+  for (let i=0;i<7;i++){
+    const rr = 0.35 + i*0.19;
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(rr, 0.055, 6, 18),
+      new THREE.MeshStandardMaterial({
+        color: i%2 ? BLUE_L : PINK_L,
+        transparent:true, opacity:0.55,
+        emissive: i%2 ? BLUE : PINK, emissiveIntensity:0.5, roughness:0.3
+      })
+    );
+    ring.position.y = 0.25 + i*0.42;
+    ring.rotation.x = Math.PI/2;
+    g.add(ring);
+    rings.push(ring);
+  }
+  // base pad
+  const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.85, 0.18, 18), M.spring);
+  pad.position.y = 0.09;
+  pad.receiveShadow = true;
+  g.add(pad);
+  // swirl particles
+  const swirl = [];
+  for (let i=0;i<14;i++){
+    const p = new THREE.Mesh(new THREE.SphereGeometry(0.055, 6, 5),
+      new THREE.MeshBasicMaterial({color: i%2 ? 0xffffff : PINK_L, transparent:true, opacity:0.8}));
+    g.add(p);
+    swirl.push(p);
+  }
+  g.position.set(x, y, z);
+  trackObj(g);
+  const h = { mesh:g, r:0.85, type:'tornado', rings, swirl,
+    data:{ power: power || 22, t: Math.random()*6 } };
+  hazards.push(h);
+  return h;
+}
+
+// spinning blade/bar that sweeps across a platform
+function makeSpinner(x, y, z, len, spd){
+  const g = new THREE.Group();
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.5, 12), mat(0x8a8a9a, 0.4, 0.6));
+  hub.position.y = 0.25;
+  g.add(hub);
+  const L = len || 3.4;
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(L, 0.22, 0.22), M.danger);
+  bar.position.y = 0.35;
+  bar.castShadow = true;
+  g.add(bar);
+  for (const sx of [-L/2, L/2]){
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.19, 10, 8), M.danger);
+    tip.position.set(sx, 0.35, 0);
+    g.add(tip);
+  }
+  g.position.set(x, y, z);
+  trackObj(g);
+  const h = { mesh:g, r:0.3, type:'spinner', bar,
+    data:{ len:L, spd: spd || 2.0, a: Math.random()*6 } };
+  hazards.push(h);
+  return h;
+}
+
+// swinging pendulum ball
+function makePendulum(x, y, z, len, spd){
+  const g = new THREE.Group();
+  const anchor = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), mat(0x8a8a9a, 0.4, 0.6));
+  g.add(anchor);
+  const L = len || 3.2;
+  const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, L, 6), mat(0xd8d8e0, 0.6));
+  rope.position.y = -L/2;
+  g.add(rope);
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.42, 14, 12), M.danger);
+  ball.position.y = -L;
+  ball.castShadow = true;
+  g.add(ball);
+  for (let i=0;i<6;i++){
+    const a=(i/6)*Math.PI*2;
+    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.08,0.16,5), mat(0x8a8a9a,0.4,0.7));
+    spike.position.set(Math.sin(a)*0.42, -L + Math.cos(a)*0.18, Math.cos(a)*0.35);
+    spike.lookAt(new THREE.Vector3(Math.sin(a)*2, -L, Math.cos(a)*2));
+    spike.rotateX(Math.PI/2);
+    g.add(spike);
+  }
+  g.position.set(x, y, z);
+  trackObj(g);
+  const h = { mesh:g, r:0.55, type:'pendulum', ball,
+    data:{ len:L, spd: spd || 1.5, a: Math.random()*6, axis: Math.random()<0.5?'x':'z' } };
+  hazards.push(h);
+  return h;
+}
+
+// coin pickup — every coin is identical, so geometry + ring material are built ONCE
+// and shared (one GPU buffer instead of dozens per tower, rebuilt every run).
+const COIN_GEO = new THREE.CylinderGeometry(0.24, 0.24, 0.06, 16);
+const COIN_RING_GEO = new THREE.TorusGeometry(0.14, 0.03, 6, 14);
+const COIN_RING_MAT = new THREE.MeshStandardMaterial({color:0xfff0a8, roughness:0.2, metalness:0.6, emissive:0xffd24a, emissiveIntensity:0.4});
+COIN_GEO.userData.shared = true; COIN_RING_GEO.userData.shared = true; COIN_RING_MAT.userData.shared = true;
+function makeCoin(x, y, z){
+  const g = new THREE.Group();
+  const c = new THREE.Mesh(COIN_GEO, M.gold);
+  c.rotation.x = Math.PI/2;
+  c.castShadow = true;
+  g.add(c);
+  const inner = new THREE.Mesh(COIN_RING_GEO, COIN_RING_MAT);
+  inner.position.z = 0.04;
+  g.add(inner);
+  g.position.set(x, y, z);
+  trackObj(g);
+  const cc = { mesh:g, taken:false, pos:new THREE.Vector3(x,y,z) };
+  coins.push(cc);
+  return cc;
+}
+
+// checkpoint ring
+// START PAD — a glowing pad on the ground floor marking where you begin (and return to)
+let startPad = null;
+function makeStartPad(x, y, z){
+  const g = new THREE.Group();
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.6, 0.25, 28),
+    new THREE.MeshStandardMaterial({color:0xf0f0f8, roughness:0.6}));
+  base.position.y = 0.12;
+  base.receiveShadow = true;
+  g.add(base);
+  // pink/blue ring
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(2.2, 0.14, 8, 32),
+    new THREE.MeshStandardMaterial({color:0x8ce89c, roughness:0.35,
+      emissive:0x40d060, emissiveIntensity:0.7}));
+  ring.position.y = 0.28;
+  ring.rotation.x = Math.PI/2;
+  g.add(ring);
+  // upward arrows telling you this is the way up
+  for (let i=0;i<4;i++){
+    const a = (i/4)*Math.PI*2;
+    const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.5, 5),
+      new THREE.MeshStandardMaterial({color: i%2 ? PINK : BLUE, roughness:0.4,
+        emissive: i%2 ? PINK : BLUE, emissiveIntensity:0.45}));
+    arrow.position.set(Math.sin(a)*1.5, 0.75, Math.cos(a)*1.5);
+    arrow.name = 'startArrow' + i;
+    g.add(arrow);
+  }
+  g.position.set(x, y, z);
+  trackObj(g);
+  startPad = { mesh:g, pos:new THREE.Vector3(x, y, z) };
+  return startPad;
+}
+
+// goal flag at the top
+function makeGoal(x, y, z){
+  const g = new THREE.Group();
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 4.0, 10), mat(0xe8e8f0, 0.4, 0.5));
+  pole.position.y = 2.0;
+  pole.castShadow = true;
+  g.add(pole);
+  // flag cloth
+  const cm = new THREE.MeshStandardMaterial({color:PINK, roughness:0.7, side:THREE.DoubleSide});
+  const flag = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.9, 8, 4), cm);
+  flag.position.set(0.78, 3.4, 0);
+  flag.name = 'flagcloth';
+  g.add(flag);
+  // star on top
+  const st = makeStarMesh(0.24, 0xffd24a);
+  st.position.y = 4.2;
+  st.name = 'goalstar';
+  g.add(st);
+  // glowing base ring
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.12, 8, 24),
+    new THREE.MeshStandardMaterial({color:0xffd24a, emissive:0xffb020, emissiveIntensity:0.8, roughness:0.3}));
+  ring.position.y = 0.12;
+  ring.rotation.x = Math.PI/2;
+  g.add(ring);
+  g.position.set(x, y, z);
+  trackObj(g);
+  goalFlag = { mesh:g, pos:new THREE.Vector3(x, y, z), flag, star:st, ring };
+  return goalFlag;
+}
+
+// decorative pillar
+function addPillar(x, y, z, h, col){
+  const p = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.42, h, 10), mat(col, 0.8));
+  p.position.set(x, y + h/2, z);
+  p.castShadow = true; p.receiveShadow = true;
+  trackObj(p);
+}
+
+// ---- WALLS: pink/blue side walls that enclose the tower (Roblox obby style) ----
+// ---- CIRCULAR BOUNDARY: a round pink/blue tower shell that never blocks the winding path inside it ----
+function addCircularBoundary(cx, cz, R, y0, y1){
+  const H = y1 - y0;
+  // two-tone cylindrical shell (pink half + blue half), seen from inside
+  const pinkWall = new THREE.Mesh(
+    new THREE.CylinderGeometry(R, R, H, 32, 1, true, 0, Math.PI),
+    new THREE.MeshStandardMaterial({color:PINK, roughness:0.85, side:THREE.BackSide})
+  );
+  const blueWall = new THREE.Mesh(
+    new THREE.CylinderGeometry(R, R, H, 32, 1, true, Math.PI, Math.PI),
+    new THREE.MeshStandardMaterial({color:BLUE, roughness:0.85, side:THREE.BackSide})
+  );
+  pinkWall.position.set(cx, y0 + H/2, cz);
+  blueWall.position.set(cx, y0 + H/2, cz);
+  trackObj(pinkWall);
+  trackObj(blueWall);
+
+  // decorative glowing rings every ~8 units of height
+  for (let i = 0; i < Math.floor(H/8); i++){
+    const yy = y0 + 4 + i*8;
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(R - 0.15, 0.12, 8, 32),
+      new THREE.MeshStandardMaterial({color: i%2 ? BLUE_L : PINK_L, roughness:0.5,
+        emissive: i%2 ? BLUE : PINK, emissiveIntensity:0.35}));
+    ring.position.set(cx, yy, cz);
+    ring.rotation.x = Math.PI/2;
+    trackObj(ring);
+  }
+
+  boundary = { cx, cz, R };
+}
+
+// ---- SAFE FLOOR: you land here instead of dying (a big round pad under the whole spiral) ----
+function addCircularFloor(cx, cz, R, y){
+  const floor = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 1.2, 32),
+    new THREE.MeshStandardMaterial({color:0x7a4a9a, roughness:0.9}));
+  floor.position.set(cx, y - 0.6, cz);
+  floor.receiveShadow = true;
+  trackObj(floor);
+  // AABB sized to the circle's bounding square (simple + always fully covers the round pad)
+  const pl = { mesh: floor, type:'floor', w: R*2, h:1.2, d: R*2, box:new THREE.Box3(), data:{} };
+  updatePlatBox(pl);
+  platforms.push(pl);
+
+  // pinwheel of pink/blue wedges for a fun floor pattern
+  const wedges = 10;
+  for (let i = 0; i < wedges; i++){
+    const t0 = (i/wedges) * Math.PI * 2;
+    const t1 = ((i+1)/wedges) * Math.PI * 2;
+    const shape = new THREE.Shape();
+    shape.moveTo(0,0);
+    shape.absarc(0,0,R*0.985,t0,t1,false);
+    shape.lineTo(0,0);
+    const geo = new THREE.ShapeGeometry(shape, 12);
+    const wedge = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color: i%2 ? PINK : BLUE, roughness:0.8}));
+    wedge.rotation.x = -Math.PI/2;
+    wedge.position.set(cx, y + 0.05, cz);
+    wedge.receiveShadow = true;
+    trackObj(wedge);
+  }
+}
+
+// =================================================================
+// TOWER GENERATION — a full obby course
+// =================================================================
+let towerSeed = 1;
+function rng(){ towerSeed = (towerSeed * 1103515245 + 12345) & 0x7fffffff; return towerSeed / 0x7fffffff; }
+
+function buildTower(seed){
+  clearTower();
+  towerSeed = seed || 12345;
+
+  // ---- heading-based path: the tower winds around as it climbs, like a real spiral ----
+  const path = { x: 0, z: 0, heading: 0 };  // heading 0 = facing -z
+  function advance(dz){
+    // move forward along the current heading by dz
+    path.x += Math.sin(path.heading) * dz;
+    path.z -= Math.cos(path.heading) * dz;
+  }
+  function lateral(dx){
+    // a point offset sideways (perpendicular to heading) from the current path position
+    return {
+      x: path.x + Math.cos(path.heading) * dx,
+      z: path.z + Math.sin(path.heading) * dx
+    };
+  }
+  function turn(rad){ path.heading += rad; }
+  function here(){ return { x: path.x, z: path.z }; }
+
+  let y = 0;
+
+  // ---- START: right on the ground floor, so a fall just means walking back here ----
+  makeStartPad(0, 0, 4);
+  addPillar(-4.6, 0, 4, 3, PINK);
+  addPillar( 4.6, 0, 4, 3, BLUE);
+
+  y = 0; advance(2);
+
+  // ---- SECTION 1: basic stepping platforms (zig-zag along the path) ----
+  for (let i=0;i<6;i++){
+    advance(3.2); y += 1.3;
+    const side = (i%2===0) ? -1.3 : 1.3;
+    const pt = lateral(side);
+    addPlatform(pt.x, y, pt.z, 2.8, 0.4, 2.8, i%2 ? M.pink : M.blue, 'solid', {}, path.heading);
+    if (i===2 || i===5) makeCoin(pt.x, y+1.0, pt.z);
+  }
+  advance(4); y += 1.6;
+  { const pt = here(); addPlatform(pt.x, y, pt.z, 5, 0.5, 5, M.white, 'solid', {}, path.heading);
+  }
+
+  turn(0.55); // start curving the tower
+
+  // ---- SECTION 2: BEAR PLATFORMS (stand on the bears!) ----
+  for (let i=0;i<3;i++){
+    advance(3.8); y += 1.3;
+    const side = (i%2===0) ? -1.6 : 1.6;
+    const pt = lateral(side);
+    makeBearPlatform(pt.x, y - 0.36, pt.z, { rotY: path.heading });
+    if (i===1) makeCoin(pt.x, y+1.4, pt.z);
+  }
+  advance(4.2); y += 1.5;
+  { const pt = here(); addPlatform(pt.x, y, pt.z, 5, 0.5, 5, M.white, 'solid', {}, path.heading);
+  }
+
+  turn(0.6);
+
+  // ---- SECTION 3: moving platforms ----
+  for (let i=0;i<4;i++){
+    advance(4.0); y += 1.5;
+    const pt = here();
+    const home = new THREE.Vector3(pt.x, y, pt.z);
+    // move perpendicular to the current heading so it still reads as "sideways" motion
+    const moveAxis = { x: Math.cos(path.heading), z: Math.sin(path.heading) };
+    addPlatform(pt.x, y, pt.z, 3.0, 0.35, 3.0, i%2 ? M.blue : M.pink, 'move', {
+      axis:'custom', dir: moveAxis, range: 3.0, spd: 0.6 + i*0.10, t: i*1.3, home
+    }, path.heading);
+    if (i===1) makeCoin(pt.x, y+1.1, pt.z);
+  }
+  advance(4.5); y += 1.6;
+  { const pt = here(); addPlatform(pt.x, y, pt.z, 5.5, 0.5, 5, M.white, 'solid', {}, path.heading);
+  }
+
+  turn(0.5);
+
+  // ---- SECTION 4: CAT BRIDGES (walk along the cats' backs) ----
+  advance(5.0); y += 1.3;
+  { const pt = here(); makeCatPlatform(pt.x, y - 0.31, pt.z, { rotY: path.heading });
+    makeCoin(pt.x, y + 1.3, pt.z); }
+  advance(6.5); y += 1.2;
+  { const pt = here();
+    const moveAxis = { x: Math.cos(path.heading), z: Math.sin(path.heading) };
+    makeCatPlatform(pt.x, y - 0.31, pt.z, { rotY: path.heading, move:true, axis:'custom', dir:moveAxis, range:3.2, spd:0.55 }); }
+  advance(6.5); y += 1.3;
+  { const pt = here(); makeCatPlatform(pt.x, y - 0.31, pt.z, { rotY: path.heading });
+    makeCoin(pt.x, y + 1.3, pt.z); }
+  advance(5.5); y += 1.5;
+  { const pt = here(); addPlatform(pt.x, y, pt.z, 5, 0.5, 5, M.white, 'solid', {}, path.heading);
+  }
+
+  turn(0.65);
+
+  // ---- SECTION 5: rotating platforms ----
+  for (let i=0;i<3;i++){
+    advance(4.4); y += 1.6;
+    const pt = here();
+    addPlatform(pt.x, y, pt.z, 5.0, 0.35, 1.7, i%2 ? M.pink : M.blue, 'rot', {
+      spd: (i%2 ? 1 : -1) * (0.6 + i*0.15)
+    });
+    makeCoin(pt.x, y+1.2, pt.z);
+  }
+  advance(5); y += 1.8;
+  { const pt = here(); addPlatform(pt.x, y, pt.z, 5, 0.5, 5, M.white, 'solid', {}, path.heading);
+  }
+
+  turn(0.55);
+
+  // ---- SECTION 6: tornado boost + floating islands ----
+  { const pt = lateral(-1.4); makeTornado(pt.x, y+0.25, pt.z, 24); }
+  const highY = y + 13;
+  advance(6);
+  { const pt = here(); addPlatform(pt.x, highY, pt.z, 4.5, 0.5, 4.5, M.pink, 'solid');
+    makeCoin(pt.x, highY+1.2, pt.z); }
+  y = highY;
+
+  for (let i=0;i<4;i++){
+    advance(3.4);
+    const side = (i%2===0) ? -1.5 : 1.5;
+    y += 0.7;
+    const pt = lateral(side);
+    addPlatform(pt.x, y, pt.z, 2.8, 0.4, 2.8, i%2 ? M.blue : M.pink, 'solid', {}, path.heading);
+    if (i===1) makeCoin(pt.x, y+1.1, pt.z);
+  }
+  advance(4.4); y += 1.2;
+  { const pt = here(); addPlatform(pt.x, y, pt.z, 5, 0.5, 5, M.white, 'solid');
+  }
+
+  turn(0.6);
+
+  // ---- SECTION 7: spinning bars overhead (decor) + narrow bridge ----
+  advance(4);
+  for (let i=0;i<3;i++){
+    y += 1.4; advance(4.6);
+    const pt = here();
+    addPlatform(pt.x, y, pt.z, 5.5, 0.4, 3.0, M.blue, 'solid', {}, path.heading);
+    makeSpinner(pt.x, y + 1.6, pt.z, 4.2, (i%2?1:-1) * (1.4 + i*0.3));
+  }
+  advance(4.5); y += 1.5;
+  { const pt = here();
+    // narrow bridge extends further forward
+    const far = { x: pt.x + Math.sin(path.heading)*4, z: pt.z - Math.cos(path.heading)*4 };
+    const midX = (pt.x+far.x)/2, midZ = (pt.z+far.z)/2;
+    addPlatform(midX, y, midZ, 2.2, 0.35, 10, M.pink, 'solid', {}, path.heading);
+    const along = (t) => ({ x: midX + Math.sin(path.heading)*t, z: midZ - Math.cos(path.heading)*t });
+    const pend1 = along(-2.5), pend2 = along(2.5);
+    makePendulum(pend1.x, y + 5.0, pend1.z, 3.2, 1.4);
+    makePendulum(pend2.x, y + 5.0, pend2.z, 3.2, 1.8);
+    makeCoin(midX, y + 1.1, midZ);
+    advance(10.5);
+  }
+  y += 1.4;
+  { const pt = here(); addPlatform(pt.x, y, pt.z, 5, 0.5, 5, M.white, 'solid', {}, path.heading);
+  }
+
+  turn(0.5);
+
+  // ---- SECTION 8: disappearing platforms ----
+  for (let i=0;i<6;i++){
+    advance(3.1); y += 1.1;
+    const side = (i%3===0) ? -1.6 : (i%3===1 ? 0 : 1.6);
+    const pt = lateral(side);
+    addPlatform(pt.x, y, pt.z, 2.6, 0.35, 2.6, M.glass, 'fade', { timer:0, fading:false, orig:0.55 }, path.heading);
+  }
+  advance(4); y += 1.6;
+  { const pt = here(); addPlatform(pt.x, y, pt.z, 5, 0.5, 5, M.white, 'solid', {}, path.heading);
+  }
+
+  turn(0.6);
+
+  // ---- SECTION 9: ice + conveyor + a bear to rest on ----
+  advance(4.5); y += 1.5;
+  { const pt = here(); addPlatform(pt.x, y, pt.z, 4.0, 0.4, 9, M.ice, 'ice', {}, path.heading);
+    makeCoin(pt.x, y+1.1, pt.z); advance(3); }
+  advance(6.5); y += 1.5;
+  { const pt = here();
+    const dir = { x: Math.sin(path.heading), z: -Math.cos(path.heading) };
+    addPlatform(pt.x, y, pt.z, 3.4, 0.4, 7, M.conv, 'conv', { dir, spd: 3.2 }, path.heading);
+    advance(2); }
+  advance(6); y += 1.5;
+  { const pt = here(); makeBearPlatform(pt.x, y - 0.36, pt.z, { rotY: path.heading });
+    makeCoin(pt.x, y + 1.4, pt.z); }
+  advance(4.2); y += 1.4;
+  { const pt = here(); addPlatform(pt.x, y, pt.z, 5, 0.5, 5, M.white, 'solid', {}, path.heading);
+  }
+
+  // ---- SECTION 10: tornado to the summit + spiral staircase (winds a full turn) ----
+  { const pt = lateral(-1.5); makeTornado(pt.x, y+0.25, pt.z, 26); }
+  const topY = y + 15;
+  advance(5);
+  const spiralBaseHeading = path.heading;
+  const spiralCenter = lateral(4.6); // the pole this staircase spirals around
+
+  for (let i=0;i<8;i++){
+    const a = spiralBaseHeading + (i/8) * Math.PI * 1.5;
+    const rr = 4.6;
+    const px = spiralCenter.x - Math.sin(a) * rr;
+    const pz = spiralCenter.z + Math.cos(a) * rr;
+    addPlatform(px, topY + i*1.15, pz, 3.0, 0.4, 3.0, i%2 ? M.pink : M.blue, 'solid', {}, a);
+    if (i%3===0) makeCoin(px, topY + i*1.15 + 1.1, pz);
+    if (i === 7){ path.x = px; path.z = pz; path.heading = a; }
+  }
+
+  // ---- SUMMIT ----
+  // Previously the 8x8 gold slab sat 2.75m above the last spiral step — higher than the
+  // 2.50m max jump — so you'd smack into its underside and fall. Now it's pushed further
+  // back (8m) and lowered to a gentle ~0.6m step up. Its underside is level with the last
+  // step's surface, so it can never clip your head on the way over.
+  advance(8.0);
+  const finalY = topY + 7*1.15 + 0.55;   // gold top ≈ 0.6m above the last spiral step
+  const finalZ2 = here();
+  addPlatform(finalZ2.x, finalY, finalZ2.z, 8, 0.6, 8, M.gold, 'solid');
+  addPillar(finalZ2.x-3.2, finalY, finalZ2.z-3.2, 2.5, PINK);
+  addPillar(finalZ2.x+3.2, finalY, finalZ2.z-3.2, 2.5, BLUE);
+  addPillar(finalZ2.x-3.2, finalY, finalZ2.z+3.2, 2.5, BLUE);
+  addPillar(finalZ2.x+3.2, finalY, finalZ2.z+3.2, 2.5, PINK);
+  makeGoal(finalZ2.x, finalY + 0.3, finalZ2.z - 1.5);
+  for (let i=0;i<4;i++){
+    const a = (i/4)*Math.PI*2;
+    makeCoin(finalZ2.x + Math.sin(a)*2.4, finalY + 1.2, finalZ2.z + Math.cos(a)*2.4);
+  }
+
+  towerTopY = finalY;
+
+  // ---- CIRCULAR BOUNDARY + FLOOR (computed from actual bounds, since the path spirals) ----
+  let minDist = 0, maxDist = 0, cxSum = 0, czSum = 0, n = 0;
+  for (const p of platforms){
+    cxSum += p.mesh.position.x; czSum += p.mesh.position.z; n++;
+  }
+  const courseCX = n ? cxSum/n : 0;
+  const courseCZ = n ? czSum/n : 0;
+  let maxR = 10;
+  for (const p of platforms){
+    const d = Math.hypot(p.mesh.position.x - courseCX, p.mesh.position.z - courseCZ) + Math.hypot(p.w, p.d)/2;
+    if (d > maxR) maxR = d;
+  }
+  for (const h of hazards){
+    const d = Math.hypot(h.mesh.position.x - courseCX, h.mesh.position.z - courseCZ) + 3;
+    if (d > maxR) maxR = d;
+  }
+  maxR += 5; // comfortable margin so the spiral path never grazes the wall
+
+  // The ground floor is at y = 0 — the same level you start on. Falling off the tower
+  // simply drops you here, and you walk back to the start pad on foot.
+  addCircularFloor(courseCX, courseCZ, maxR, 0);
+  addCircularBoundary(courseCX, courseCZ, maxR, 0, finalY + 8);
+}
+
+// =================================================================
+// PROGRESS / SAVE
+// =================================================================
+const SAVE_KEY = 'bluepinkTower_v1';
+const hasArtifactStore = (typeof window !== 'undefined' && window.storage && typeof window.storage.get === 'function');
+
+const DEFAULT_PROG = {
+  coins: 0,
+  onboarded: false,
+  name: '플레이어',
+  charType: 'cat',
+  owned: {
+    hair_none:true, shirt_basic:true, pants_basic:true,
+    band_none:true, face_smile:true, bag_none:true, shoes_basic:true
+  },
+  equipped: {
+    hair:'hair_none', shirt:'shirt_basic', pants:'pants_basic',
+    band:'band_none', face:'face_smile', bag:'bag_none', shoes:'shoes_basic',
+    coil:null, trail:null, util:null
+  },
+  bestTime: null,
+  clears: 0,
+  magnetCharges: 0
+};
+let prog = JSON.parse(JSON.stringify(DEFAULT_PROG));
+
+async function loadProg(){
+  let raw = null;
+  try{
+    if (hasArtifactStore){
+      const r = await window.storage.get(SAVE_KEY, false);
+      raw = r && r.value ? r.value : null;
+    } else {
+      raw = localStorage.getItem(SAVE_KEY);
+    }
+  } catch(e){ raw = null; }
+  if (raw){
+    try{
+      const p = JSON.parse(raw);
+      prog = Object.assign(JSON.parse(JSON.stringify(DEFAULT_PROG)), p);
+      prog.owned = Object.assign({}, DEFAULT_PROG.owned, p.owned||{});
+      prog.equipped = Object.assign({}, DEFAULT_PROG.equipped, p.equipped||{});
+    } catch(e){ console.error('save corrupted', e); }
+  }
+  updateCoinUI();
+  return prog;
+}
+async function saveProg(){
+  const raw = JSON.stringify(prog);
+  try{
+    if (hasArtifactStore) await window.storage.set(SAVE_KEY, raw, false);
+    else localStorage.setItem(SAVE_KEY, raw);
+  } catch(e){ console.error('save failed', e); }
+}
+function updateCoinUI(){
+  const s = String(prog.coins);
+  const a = document.getElementById('coinTxt');       if (a) a.textContent = s;
+  const b = document.getElementById('itemCoins');     if (b) b.textContent = '🪙 ' + s;
+  const c = document.getElementById('avaCoins');      if (c) c.textContent = '🪙 ' + s;
+  const d = document.getElementById('coinHud');       if (d) d.textContent = '🪙 ' + (game ? game.coins : 0);
+}
+function avaCfg(){
+  return {
+    type: prog.charType,
+    hair: prog.equipped.hair, shirt: prog.equipped.shirt, pants: prog.equipped.pants,
+    band: prog.equipped.band, face: prog.equipped.face, bag: prog.equipped.bag, shoes: prog.equipped.shoes
+  };
+}
+// gear effects
+function hasCoil(id){ return prog.equipped.coil === id; }
+function speedMult(){
+  const c = prog.equipped.coil;
+  if (c === 'coil_speed' || c === 'coil_mega') return 1.45;
+  return 1;
+}
+function jumpMult(){
+  const c = prog.equipped.coil;
+  if (c === 'coil_grav' || c === 'coil_mega') return 1.35;
+  return 1;
+}
+function gravMult(){
+  const c = prog.equipped.coil;
+  if (c === 'coil_grav' || c === 'coil_mega') return 0.62;
+  return 1;
+}
+function hasUtil(id){ return prog.equipped.util === id; }
+function hasRainbowCarpet(){ return prog.equipped.trail === 'carpet_rain'; }
+
+// ---- coin magnet consumable: activated from the bag, gathers nearby coins then is used up ----
+function useMagnetCharge(){
+  if (!game || game.over) return;
+  if (prog.magnetCharges <= 0) return;
+  prog.magnetCharges -= 1;
+  saveProg();
+  updateBagUI();
+
+  const R = 20;
+  const p0 = new THREE.Vector3(game.pos.x, game.pos.y + 0.8, game.pos.z);
+  let count = 0;
+  for (const c of coins){
+    if (c.taken) continue;
+    const d = c.mesh.position.distanceTo(p0);
+    if (d < R){
+      c.taken = true;
+      c.mesh.visible = false;
+      game.coins += 1;
+      count++;
+    }
+  }
+  updateCoinUI();
+  sfx.coin();
+  vibrate(40);
+  spawnPuff(p0);
+  showTip('🧲 코인 자석 사용! 코인 ' + count + '개 획득');
+}
+
+function updateBagUI(){
+  const qty = document.getElementById('bagMagnetQty');
+  if (qty) qty.textContent = prog.magnetCharges + '개';
+  const useBtn = document.getElementById('bagMagnetUse');
+  if (useBtn) useBtn.disabled = prog.magnetCharges <= 0;
+  const cnt = document.getElementById('bagCount');
+  if (cnt) cnt.textContent = prog.magnetCharges > 0 ? String(prog.magnetCharges) : '';
+  const row = document.getElementById('bagMagnetRow');
+  const empty = document.getElementById('bagEmptyMsg');
+  if (row && empty){
+    const has = prog.magnetCharges > 0;
+    row.style.display = has ? 'flex' : 'none';
+    empty.style.display = has ? 'none' : 'block';
+  }
+  renderBagGear();
+}
+
+// Every owned coil/trail/util item (including the rainbow carpet) shows up here so you
+// can equip or unequip it mid-game, without leaving to the shop.
+function renderBagGear(){
+  const list = document.getElementById('bagGearList');
+  const emptyMsg = document.getElementById('bagGearEmptyMsg');
+  if (!list) return;
+  list.innerHTML = '';
+  const owned = ITEM_SHOP.filter(it => it.slot !== 'consumable' && prog.owned[it.id]);
+  if (owned.length === 0){
+    list.style.display = 'none';
+    if (emptyMsg) emptyMsg.style.display = 'block';
+    return;
+  }
+  list.style.display = 'flex';
+  if (emptyMsg) emptyMsg.style.display = 'none';
+
+  for (const it of owned){
+    const eq = prog.equipped[it.slot] === it.id;
+    const row = document.createElement('div');
+    row.className = 'bagGearRow';
+
+    const cv = document.createElement('canvas');
+    cv.width = 64; cv.height = 64;
+    row.appendChild(cv);
+
+    const label = document.createElement('span');
+    label.className = 'bagGearLabel';
+    label.textContent = it.name;
+    row.appendChild(label);
+
+    const btn = document.createElement('button');
+    btn.className = 'bagGearBtn ' + (eq ? 'eq' : 'uneq');
+    btn.textContent = eq ? '장착중 (끄기)' : '장착';
+    btn.onclick = async () => {
+      // clicking an equipped item unequips it; clicking an unequipped one equips it
+      // (and swaps out whatever else was in that same slot)
+      prog.equipped[it.slot] = eq ? null : it.id;
+      await saveProg();
+      renderBagGear();
+    };
+    row.appendChild(btn);
+    list.appendChild(row);
+    renderItemThumb(cv, it.id, 64);
+  }
+}
+
+// =================================================================
+// PLAYER
+// =================================================================
+let game = null;      // runtime state
+let myAvatar = null;  // 3D mesh of the local player (3rd person view)
+let camMode = 3;      // 3 = third person, 1 = first person
+
+function newGameState(){
+  const sp = new THREE.Vector3(0, 0.35, 4);   // on the ground floor, right in front of the tower
+  return {
+    pos: sp.clone(),
+    vel: new THREE.Vector3(0, 0, 0),
+    yaw: Math.PI, pitch: -0.05,
+    grounded: false,
+    coyote: 0,
+    jumpBuf: 0,
+    canDouble: false,
+    usedDouble: false,
+    onPlat: null,
+    coins: 0,
+    startPos: sp,        // where you begin (and where the safety net puts you back)
+    startTime: performance.now(),
+    over: false,
+    walkPhase: 0,
+    falls: 0,            // how many times you fell to the ground floor
+    fellFromHeight: false,
+    lastShownHeight: -1,
+    slapCD: 0
+  };
+}
+
+let carpetMesh = null;
+function syncCarpetMesh(){
+  const should = hasRainbowCarpet();
+  if (should && !carpetMesh){
+    carpetMesh = makeFlyingCarpet();
+    scene.add(carpetMesh);
+  } else if (!should && carpetMesh){
+    scene.remove(carpetMesh);
+    disposeObject3D(carpetMesh);
+    carpetMesh = null;
+  }
+  if (isTouch){
+    const db = document.getElementById('descendB');
+    if (db) db.style.display = should ? 'block' : 'none';
+    const slb = document.getElementById('slapB');
+    if (slb) slb.style.display = (net.mode !== 'solo' && hasUtil('slap_unlock')) ? 'block' : 'none';
+  }
+}
+function spawnAvatar(){
+  if (myAvatar){ scene.remove(myAvatar); disposeObject3D(myAvatar); }
+  myAvatar = buildAvatar(avaCfg());
+  scene.add(myAvatar);
+  if (carpetMesh){ scene.remove(carpetMesh); disposeObject3D(carpetMesh); carpetMesh = null; }
+  syncCarpetMesh();
+}
+
+// Safety net ONLY: if you somehow end up below the world, put you back at the start.
+// Normal falls just land you on the ground floor — you walk back to the start yourself.
+function respawn(){
+  if (!game) return;
+  game.pos.copy(game.startPos);
+  game.vel.set(0,0,0);
+  game.usedDouble = false;
+  sfx.land();
+  vibrate(40);
+  showTip('🔄 시작 지점으로 돌아왔어요');
+}
+
+// Called the moment you touch the ground floor after a fall.
+function onHitGroundFloor(){
+  if (!game) return;
+  game.falls++;
+  vibrate(40);
+}
+
+// =================================================================
+// INPUT
+// =================================================================
+const keys = {};
+addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (!game || game.over) return;
+  if (e.code === 'KeyR') respawn();
+  if (e.code === 'KeyC') camMode = (camMode === 3) ? 1 : 3;
+  if (e.code === 'KeyE') performSlap();
+  if (e.code === 'Space'){ game.jumpBuf = 0.14; e.preventDefault(); }
+  const QC = ['안녕!','같이 가자','여기야!','조심해!','와 대박!','아 떨어졌다','잘한다!','잘가'];
+  const n = ['Digit1','Digit2','Digit3','Digit4','Digit5','Digit6','Digit7','Digit8'].indexOf(e.code);
+  if (n >= 0) sendChat(QC[n]);
+});
+addEventListener('keyup', e => { keys[e.code] = false; });
+
+canvas.addEventListener('click', () => {
+  initAudio(); startBGM();
+});
+
+// ---- SHIFT LOCK (Roblox-style camera lock — works on both PC and mobile) ----
+// On PC: also captures the mouse (pointer lock) so looking around doesn't need clicking first.
+// On mobile: just toggles "always face forward" mode (no pointer lock available on touch).
+let shiftLockOn = false;
+function updateShiftLockUI(){
+  const btn = document.getElementById('shiftLockBtn');
+  if (btn){ btn.textContent = shiftLockOn ? '🔒 고정됨' : '🔓 시점\n고정'; btn.classList.toggle('on', shiftLockOn); }
+  const dot = document.getElementById('crossDot');
+  if (dot) dot.style.display = shiftLockOn ? 'block' : 'none';
+}
+function toggleShiftLock(){
+  if (!isTouch){
+    if (document.pointerLockElement === canvas) document.exitPointerLock();
+    else canvas.requestPointerLock();
+    // shiftLockOn is set from the pointerlockchange event below
+  } else {
+    shiftLockOn = !shiftLockOn;
+    updateShiftLockUI();
+  }
+}
+document.addEventListener('pointerlockchange', () => {
+  shiftLockOn = document.pointerLockElement === canvas;
+  updateShiftLockUI();
+});
+document.getElementById('shiftLockBtn').addEventListener('click', () => { initAudio(); startBGM(); toggleShiftLock(); });
+if (!isTouch){
+  addEventListener('keydown', e => { if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') toggleShiftLock(); });
+}
+document.addEventListener('mousemove', e => {
+  if (document.pointerLockElement !== canvas || !game || game.over) return;
+  game.yaw -= e.movementX * 0.0022;
+  game.pitch -= e.movementY * 0.0022;
+  game.pitch = Math.max(-1.2, Math.min(0.9, game.pitch));
+});
+
+// touch
+let joyId = null, joyC = {x:0,y:0}, joyV = {x:0,y:0};
+let lookId = null, lookL = {x:0,y:0};
+const joyEl = document.getElementById('joy');
+const joyN = document.getElementById('joyN');
+
+if (isTouch){
+  document.getElementById('pcHint').style.display = 'none';
+
+  joyEl.addEventListener('touchstart', e => {
+    initAudio(); startBGM();
+    const t = e.changedTouches[0];
+    joyId = t.identifier;
+    const r = joyEl.getBoundingClientRect();
+    joyC = {x: r.left + r.width/2, y: r.top + r.height/2};
+    e.preventDefault();
+  }, {passive:false});
+
+  addEventListener('touchmove', e => {
+    for (const t of e.changedTouches){
+      if (t.identifier === joyId){
+        let dx = t.clientX - joyC.x, dy = t.clientY - joyC.y;
+        const R = 46, L = Math.hypot(dx,dy);
+        if (L > R){ dx = dx/L*R; dy = dy/L*R; }
+        joyN.style.left = (61+dx)+'px'; joyN.style.top = (61+dy)+'px';
+        joyN.style.margin = '-27px 0 0 -27px';
+        joyV = { x: dx/R, y: dy/R };
+      }
+      if (t.identifier === lookId){
+        const dx = t.clientX - lookL.x, dy = t.clientY - lookL.y;
+        lookL = {x:t.clientX, y:t.clientY};
+        if (game && !game.over){
+          game.yaw -= dx * 0.0033;
+          game.pitch -= dy * 0.0033;
+          game.pitch = Math.max(-1.2, Math.min(0.9, game.pitch));
+        }
+      }
+    }
+  }, {passive:true});
+
+  addEventListener('touchend', e => {
+    for (const t of e.changedTouches){
+      if (t.identifier === joyId){
+        joyId = null; joyV = {x:0,y:0};
+        joyN.style.left='50%'; joyN.style.top='50%'; joyN.style.margin='-27px 0 0 -27px';
+      }
+      if (t.identifier === lookId) lookId = null;
+    }
+  });
+
+  document.getElementById('lookZ').addEventListener('touchstart', e => {
+    const t = e.changedTouches[0];
+    lookId = t.identifier;
+    lookL = {x:t.clientX, y:t.clientY};
+    e.preventDefault();
+  }, {passive:false});
+
+  document.getElementById('jumpB').addEventListener('touchstart', e => {
+    e.preventDefault();
+    initAudio(); startBGM();
+    if (game && !game.over) game.jumpBuf = 0.14;
+  }, {passive:false});
+} else {
+  document.getElementById('pcHint').style.display = 'block';
+}
+
+// =================================================================
+// PHYSICS / COLLISION
+// =================================================================
+const tmpBox = new THREE.Box3();
+const tmpV = new THREE.Vector3();
+
+function playerBox(pos){
+  tmpBox.min.set(pos.x - PLAYER_R, pos.y, pos.z - PLAYER_R);
+  tmpBox.max.set(pos.x + PLAYER_R, pos.y + PLAYER_H, pos.z + PLAYER_R);
+  return tmpBox;
+}
+
+function updatePlayer(dt){
+  if (!game || game.over) return;
+
+  if (game.slapCD > 0) game.slapCD -= dt;
+
+  const G = GRAVITY * gravMult();
+
+  // --- input direction ---
+  let f = 0, r = 0;
+  if (keys['KeyW']) f += 1;
+  if (keys['KeyS']) f -= 1;
+  if (keys['KeyD']) r += 1;
+  if (keys['KeyA']) r -= 1;
+  f += -joyV.y; r += joyV.x;
+  const mag = Math.hypot(f, r);
+  if (mag > 1){ f /= mag; r /= mag; }
+
+  const fwd = new THREE.Vector3(0,0,-1).applyEuler(new THREE.Euler(0, game.yaw, 0, 'YXZ'));
+  const rgt = new THREE.Vector3(1,0,0).applyEuler(new THREE.Euler(0, game.yaw, 0, 'YXZ'));
+  const wish = new THREE.Vector3();
+  wish.addScaledVector(fwd, f).addScaledVector(rgt, r);
+  if (wish.lengthSq() > 1) wish.normalize();
+
+  const spd = MOVE_SPD * speedMult();
+  const flying = hasRainbowCarpet();
+  const ctrl = (game.grounded || flying) ? 1 : AIR_CTRL;
+
+  // ice = slippery (low friction)
+  const onIce = game.onPlat && game.onPlat.type === 'ice';
+  const accel = onIce ? 6 : 40;
+  const fric  = onIce ? 0.6 : 14;
+
+  const targetX = wish.x * spd, targetZ = wish.z * spd;
+  if (wish.lengthSq() > 0.01){
+    game.vel.x += (targetX - game.vel.x) * Math.min(1, accel * ctrl * dt);
+    game.vel.z += (targetZ - game.vel.z) * Math.min(1, accel * ctrl * dt);
+  } else {
+    game.vel.x -= game.vel.x * Math.min(1, fric * (game.grounded ? 1 : 0.3) * dt);
+    game.vel.z -= game.vel.z * Math.min(1, fric * (game.grounded ? 1 : 0.3) * dt);
+  }
+
+  // --- conveyor push ---
+  if (game.onPlat && game.onPlat.type === 'conv'){
+    const d = game.onPlat.data;
+    game.pos.x += d.dir.x * d.spd * dt;
+    game.pos.z += d.dir.z * d.spd * dt;
+  }
+
+  // --- moving platform carry ---
+  if (game.onPlat && game.onPlat.type === 'move' && game.onPlat.delta){
+    game.pos.x += game.onPlat.delta.x;
+    game.pos.z += game.onPlat.delta.z;
+  }
+  // --- rotating platform carry (rotate the player around the platform center) ---
+  if (game.onPlat && game.onPlat.type === 'rot'){
+    const c = game.onPlat.mesh.position;
+    const da = game.onPlat.data.spd * dt;
+    const dx = game.pos.x - c.x, dz = game.pos.z - c.z;
+    const cs = Math.cos(da), sn = Math.sin(da);
+    game.pos.x = c.x + dx*cs - dz*sn;
+    game.pos.z = c.z + dx*sn + dz*cs;
+    game.yaw += da;
+  }
+
+  // --- jump / flight ---
+  if (game.jumpBuf > 0) game.jumpBuf -= dt;
+  if (game.coyote > 0) game.coyote -= dt;
+
+  if (flying){
+    // magic carpet, Roblox-style free flight:
+    //   hold jump (Space / touch jump button)      -> rise
+    //   hold descend (Ctrl / touch descend button) -> sink
+    //   hold neither                                -> hover in place, holds altitude
+    const holdingUp = keys['Space'] || (isTouch && jumpHeld);
+    const holdingDown = keys['ControlLeft'] || keys['ControlRight'] || (isTouch && descendHeld);
+    let targetVy = 0;
+    if (holdingUp && !holdingDown) targetVy = 8.5;
+    else if (holdingDown && !holdingUp) targetVy = -8.5;
+    game.vel.y += (targetVy - game.vel.y) * Math.min(1, 6*dt);
+    // extra-strong damping near zero so it settles to a dead stop instead of drifting
+    if (targetVy === 0 && Math.abs(game.vel.y) < 0.15) game.vel.y = 0;
+    game.jumpBuf = 0;
+    game.usedDouble = false;
+  } else {
+    const canJump = game.grounded || game.coyote > 0;
+    if (game.jumpBuf > 0 && canJump){
+      game.vel.y = JUMP_V * jumpMult();
+      game.grounded = false;
+      game.coyote = 0;
+      game.jumpBuf = 0;
+      game.usedDouble = false;
+      sfx.jump();
+      vibrate(20);
+    } else if (game.jumpBuf > 0 && !canJump && hasUtil('double_jump') && !game.usedDouble){
+      game.vel.y = JUMP_V * jumpMult() * 0.92;
+      game.usedDouble = true;
+      game.jumpBuf = 0;
+      sfx.jump();
+      spawnPuff(game.pos.clone().add(new THREE.Vector3(0,0.1,0)));
+      vibrate(20);
+    }
+
+    // --- gravity / glide ---
+    const gliding = hasUtil('glide_wing') && !game.grounded && game.vel.y < 0 &&
+                    ((keys['Space']) || (isTouch && jumpHeld));
+    game.vel.y += G * dt * (gliding ? 0.25 : 1);
+    if (gliding) game.vel.y = Math.max(game.vel.y, -2.4);
+    if (game.vel.y < MAX_FALL) game.vel.y = MAX_FALL;
+  }
+
+  // --- integrate + collide ---
+  game.onPlat = null;
+  const wasGrounded = game.grounded;
+  game.grounded = false;
+
+  // remember that we're falling from a real height (used to detect "you fell to the ground")
+  if (!game.grounded && game.vel.y < -6) game.fellFromHeight = true;
+
+  // ---------- Y (vertical) ----------
+  // Swept detection: remember where the feet were BEFORE moving. If the feet
+  // crossed a platform's top surface during this step, we land on it. This is
+  // reliable at any fall speed — the old "is my foot inside a small band below
+  // the surface" test would skip straight through thin platforms when falling fast.
+  const prevFeet = game.pos.y;
+  game.pos.y += game.vel.y * dt;
+
+  let bestLanding = null;   // land on the HIGHEST surface we crossed
+  for (const p of platforms){
+    if (p.type === 'fade' && p.data.gone) continue;
+    if (!overlapsFootprint(p, game.pos.x, game.pos.z)) continue;
+
+    const top = platTop(p);
+    const bot = platBottom(p);
+    const feet = game.pos.y;
+    const headY = game.pos.y + PLAYER_H;
+
+    if (game.vel.y <= 0){
+      // crossed the top surface this frame? (small epsilon so resting contact still counts)
+      if (prevFeet >= top - 0.02 && feet <= top){
+        if (!bestLanding || top > bestLanding.top) bestLanding = { p, top };
+      }
+    } else if (game.vel.y > 0 && headY > bot && feet < bot){
+      // bonking your head on the underside
+      game.pos.y = bot - PLAYER_H;
+      game.vel.y = 0;
+    }
+  }
+
+  if (bestLanding){
+    const p = bestLanding.p;
+    game.pos.y = bestLanding.top;
+    game.vel.y = 0;
+    game.grounded = true;
+    game.onPlat = p;
+    game.usedDouble = false;
+    if (!wasGrounded) sfx.land();
+    if (p.type === 'fade' && !p.data.fading){
+      p.data.fading = true;
+      p.data.timer = 0.9;
+    }
+    if (p.type === 'floor' && !wasGrounded && game.fellFromHeight){
+      game.fellFromHeight = false;
+      onHitGroundFloor();
+    }
+  }
+  if (game.grounded) game.coyote = 0.11;
+  else if (wasGrounded) game.coyote = 0.11;
+
+  // ---------- Horizontal (X/Z together, in each platform's local frame) ----------
+  game.pos.x += game.vel.x * dt;
+  game.pos.z += game.vel.z * dt;
+
+  for (const p of platforms){
+    if (p.type === 'fade' && p.data.gone) continue;
+    if (p.type === 'rot') continue;   // rotating discs: no side collision (sliding off is the challenge)
+    if (p === game.onPlat) continue;  // don't shove the player off the platform they're standing on
+    if (p.type === 'floor') continue; // the floor is a landing pad, never a wall
+
+    const top = platTop(p);
+    const bot = platBottom(p);
+    // Only block horizontally if the player actually overlaps the platform's height band.
+    // A small tolerance lets you step up onto low ledges instead of being stopped dead.
+    const feet = game.pos.y;
+    const headY = game.pos.y + PLAYER_H;
+    if (feet >= top - 0.08) continue;   // standing at/above the surface: walk freely
+    if (headY <= bot) continue;         // fully underneath it
+    if (!overlapsFootprint(p, game.pos.x, game.pos.z)) continue;
+
+    const before = { x: game.pos.x, z: game.pos.z };
+    if (pushOutOfPlatform(p, game.pos)){
+      // cancel only the velocity component heading into the wall (slide along it)
+      const nx = game.pos.x - before.x;
+      const nz = game.pos.z - before.z;
+      const nl = Math.hypot(nx, nz);
+      if (nl > 0.0001){
+        const ux = nx/nl, uz = nz/nl;
+        const into = game.vel.x*ux + game.vel.z*uz;
+        if (into < 0){ game.vel.x -= ux*into; game.vel.z -= uz*into; }
+      }
+    }
+  }
+
+  // --- circular tower boundary: gently clamp instead of a blocky wall collision ---
+  if (boundary){
+    const bx = game.pos.x - boundary.cx, bz = game.pos.z - boundary.cz;
+    const dist = Math.hypot(bx, bz);
+    const maxR = boundary.R - PLAYER_R - 0.1;
+    if (dist > maxR && dist > 0.0001){
+      const s = maxR / dist;
+      game.pos.x = boundary.cx + bx * s;
+      game.pos.z = boundary.cz + bz * s;
+      // kill only the outward component of velocity, keep the rest of the motion smooth
+      const nx = bx/dist, nz = bz/dist;
+      const outward = game.vel.x*nx + game.vel.z*nz;
+      if (outward > 0){ game.vel.x -= nx*outward; game.vel.z -= nz*outward; }
+    }
+  }
+
+  // --- fall out of the world ---
+  if (game.pos.y < FALL_Y){ respawn(); return; }
+
+  // --- tornado launchers (the only interactive hazard: they boost you up) ---
+  for (const h of hazards){
+    if (h.type !== 'tornado') continue;
+    const d = Math.hypot(game.pos.x - h.mesh.position.x, game.pos.z - h.mesh.position.z);
+    const dy = game.pos.y - h.mesh.position.y;
+    if (d < h.r && dy > -0.6 && dy < 3.5){
+      game.vel.y = h.data.power * jumpMult();
+      game.grounded = false;
+      game.usedDouble = false;
+      sfx.boost();
+      vibrate(50);
+      spawnPuff(game.pos.clone());
+    }
+  }
+
+  // --- coins ---
+  for (const c of coins){
+    if (c.taken) continue;
+    const d = c.mesh.position.distanceTo(new THREE.Vector3(game.pos.x, game.pos.y + 0.8, game.pos.z));
+    if (d < 0.9){
+      c.taken = true;
+      c.mesh.visible = false;
+      game.coins += 1;
+      sfx.coin();
+      updateCoinUI();
+    }
+  }
+
+  // --- HUD: show how high you've climbed (replaces the old checkpoint counter) ---
+  const heightNow = Math.max(0, Math.round(game.pos.y));
+  if (heightNow !== game.lastShownHeight){
+    game.lastShownHeight = heightNow;
+    const si = document.getElementById('stageInfo');
+    if (si) si.textContent = '🧗 높이 ' + heightNow + 'm';
+  }
+
+  // --- goal ---
+  if (goalFlag){
+    const d = Math.hypot(game.pos.x - goalFlag.pos.x, game.pos.z - goalFlag.pos.z);
+    const dy = Math.abs(game.pos.y - goalFlag.pos.y);
+    if (d < 2.0 && dy < 3.0){ winGame(); }
+  }
+
+  // --- trails ---
+  updateTrail(dt);
+
+  // --- walk animation phase ---
+  const hspd = Math.hypot(game.vel.x, game.vel.z);
+  game.walkPhase += dt * (hspd * 1.6 + 1);
+}
+
+let jumpHeld = false;
+let descendHeld = false;
+if (isTouch){
+  const jb = document.getElementById('jumpB');
+  jb.addEventListener('touchstart', ()=>{ jumpHeld = true; }, {passive:true});
+  jb.addEventListener('touchend',   ()=>{ jumpHeld = false; }, {passive:true});
+  const db = document.getElementById('descendB');
+  db.addEventListener('touchstart', ()=>{ descendHeld = true; }, {passive:true});
+  db.addEventListener('touchend',   ()=>{ descendHeld = false; }, {passive:true});
+  const slb = document.getElementById('slapB');
+  slb.addEventListener('touchstart', (e) => { e.preventDefault(); performSlap(); }, {passive:false});
+}
+
+function distToSegment(px, pz, x1, z1, x2, z2){
+  const dx = x2-x1, dz = z2-z1;
+  const L2 = dx*dx + dz*dz;
+  if (L2 === 0) return Math.hypot(px-x1, pz-z1);
+  let t = ((px-x1)*dx + (pz-z1)*dz) / L2;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (x1 + t*dx), pz - (z1 + t*dz));
+}
+
+// =================================================================
+// SLAP (Roblox "Slap Battles" style — hit a nearby friend and send them flying)
+// =================================================================
+const SLAP_RANGE = 3.0;
+const SLAP_CONE = 0.55;      // min dot-product between your facing and the direction to the target
+const SLAP_COOLDOWN = 0.7;
+const SLAP_POWER = 15;
+
+// Find the closest remote player within range and roughly in front of you.
+function findSlapTarget(){
+  if (!game) return null;
+  const fx = -Math.sin(game.yaw), fz = -Math.cos(game.yaw);   // matches the movement forward vector
+  let best = null, bestDist = SLAP_RANGE;
+  for (const id of Object.keys(remotePlayers)){
+    const r = remotePlayers[id];
+    if (!r || !r.mesh) continue;
+    const dx = r.mesh.position.x - game.pos.x;
+    const dz = r.mesh.position.z - game.pos.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist > SLAP_RANGE || dist < 0.001) continue;
+    const dot = (dx/dist)*fx + (dz/dist)*fz;
+    if (dot < SLAP_CONE) continue;   // not in front of us
+    if (dist < bestDist){ bestDist = dist; best = id; }
+  }
+  return best;
+}
+
+function performSlap(){
+  if (!game || game.over || game.slapCD > 0) return;
+  if (net.mode === 'solo' || !hasUtil('slap_unlock')){
+    showTip(net.mode === 'solo' ? '👋 슬랩은 온라인 멀티에서만!' : '👋 아이템 상점에서 슬랩을 사고 장착해보세요!');
+    return;
+  }
+  game.slapCD = SLAP_COOLDOWN;
+  sfx.slap();
+  vibrate(30);
+
+  const targetId = findSlapTarget();
+  if (!targetId){
+    return; // whiffed — cooldown still applies, just like the real thing
+  }
+  const r = remotePlayers[targetId];
+  const dx = r.mesh.position.x - game.pos.x;
+  const dz = r.mesh.position.z - game.pos.z;
+  const dist = Math.hypot(dx, dz) || 0.001;
+  const dir = { x: dx/dist, z: dz/dist };
+
+  spawnPuff(new THREE.Vector3(r.mesh.position.x, r.mesh.position.y + 1.2, r.mesh.position.z));
+  showTip('👋 ' + (r.name || '친구') + ' 슬랩!');
+
+  if (net.mode === 'host'){
+    hostSend(targetId, { t:'slap', dir });
+  } else if (net.mode === 'guest'){
+    guestSend({ t:'slap', targetId, dir });
+  }
+}
+
+// Called on the RECEIVING end — you got slapped, go flying.
+function applySlapKnockback(dir){
+  if (!game || game.over) return;
+  game.vel.x = dir.x * SLAP_POWER;
+  game.vel.z = dir.z * SLAP_POWER;
+  game.vel.y = Math.max(game.vel.y, 9);
+  game.grounded = false;
+  game.usedDouble = false;
+  sfx.hurt();
+  vibrate([60,40,90]);
+  spawnPuff(new THREE.Vector3(game.pos.x, game.pos.y + 1.2, game.pos.z));
+  const df = document.getElementById('deathFlash');
+  df.style.background = 'rgba(255,180,60,0.4)';
+  df.style.opacity = '1';
+  setTimeout(()=>{ df.style.opacity = '0'; }, 150);
+}
+
+// =================================================================
+// PARTICLES / TRAILS
+// =================================================================
+const puffs = [];
+// One shared sphere geometry for every landing puff (they used to allocate a fresh
+// geometry per particle, 10 per landing, and never free it).
+const PUFF_GEO = new THREE.SphereGeometry(0.09, 6, 5);
+PUFF_GEO.userData.shared = true;
+function spawnPuff(pos){
+  for (let i=0;i<10;i++){
+    const p = new THREE.Mesh(PUFF_GEO,
+      new THREE.MeshBasicMaterial({color: i%2 ? PINK_L : BLUE_L, transparent:true, opacity:0.85}));
+    p.position.copy(pos);
+    const a = Math.random()*Math.PI*2;
+    scene.add(p);
+    puffs.push({ m:p, v:new THREE.Vector3(Math.cos(a)*2.2, 1.6 + Math.random()*2, Math.sin(a)*2.2), life:0.55 });
+  }
+}
+function updatePuffs(dt){
+  for (let i=puffs.length-1;i>=0;i--){
+    const p = puffs[i];
+    p.m.position.addScaledVector(p.v, dt);
+    p.v.y -= 7*dt;
+    p.life -= dt;
+    p.m.material.opacity = Math.max(0, p.life/0.55) * 0.85;
+    p.m.scale.setScalar(1 + (0.55-p.life));
+    if (p.life <= 0){ scene.remove(p.m); p.m.material.dispose(); puffs.splice(i,1); }
+  }
+}
+
+const trailBits = [];
+let trailTimer = 0;
+function updateTrail(dt){
+  const t = prog.equipped.trail;
+  if (!t || !game || t === 'carpet_rain') return;   // rainbow carpet is real flight now, not a decal
+  const moving = Math.hypot(game.vel.x, game.vel.z) > 1.2;
+  if (!moving) return;
+  trailTimer -= dt;
+  if (trailTimer > 0) return;
+  trailTimer = 0.10;
+
+  let m;
+  if (t === 'trail_star'){
+    m = makeStarMesh(0.10, 0xffe066);
+    m.material = new THREE.MeshBasicMaterial({color:0xffe066, transparent:true, opacity:0.9});
+    m.position.set(game.pos.x + (Math.random()-0.5)*0.5, game.pos.y + 0.35 + Math.random()*0.6, game.pos.z + (Math.random()-0.5)*0.5);
+  } else { // heart
+    const hg = new THREE.Group();
+    const hm = new THREE.MeshBasicMaterial({color:PINK, transparent:true, opacity:0.9});
+    const l = new THREE.Mesh(new THREE.SphereGeometry(0.06,8,6), hm); l.position.x = -0.04; hg.add(l);
+    const r = new THREE.Mesh(new THREE.SphereGeometry(0.06,8,6), hm); r.position.x = 0.04; hg.add(r);
+    const b = new THREE.Mesh(new THREE.ConeGeometry(0.085,0.12,7), hm); b.position.y = -0.07; b.rotation.x = Math.PI; hg.add(b);
+    m = hg;
+    m.position.set(game.pos.x + (Math.random()-0.5)*0.4, game.pos.y + 0.4 + Math.random()*0.5, game.pos.z + (Math.random()-0.5)*0.4);
+  }
+  scene.add(m);
+  trailBits.push({ m, life: 1.0, max: 1.0, rise: true });
+}
+function updateTrailBits(dt){
+  for (let i=trailBits.length-1;i>=0;i--){
+    const b = trailBits[i];
+    b.life -= dt;
+    if (b.rise){
+      b.m.position.y += dt * 0.7;
+      b.m.rotation.y += dt * 3;
+    }
+    const o = Math.max(0, b.life/b.max);
+    b.m.traverse(o2 => { if (o2.material) o2.material.opacity = o * 0.9; });
+    if (b.life <= 0){ scene.remove(b.m); disposeObject3D(b.m); trailBits.splice(i,1); }
+  }
+}
+function clearTrailBits(){
+  for (const b of trailBits){ scene.remove(b.m); disposeObject3D(b.m); }
+  trailBits.length = 0;
+  for (const p of puffs){ scene.remove(p.m); p.m.material.dispose(); }
+  puffs.length = 0;
+}
+
+// =================================================================
+// WORLD ANIMATION
+// =================================================================
+let worldT = 0;
+function animateWorld(dt){
+  worldT += dt;
+
+  // clouds
+  for (const c of clouds){
+    c.position.x += c.userData.spd * dt;
+    if (c.position.x > 100) c.position.x = -100;
+  }
+
+  // platforms
+  for (const p of platforms){
+    if (p.type === 'move'){
+      const d = p.data;
+      d.t += dt * d.spd;
+      const off = Math.sin(d.t) * d.range;
+      let dvx = 0, dvz = 0;
+      if (d.axis === 'custom' && d.dir){ dvx = d.dir.x; dvz = d.dir.z; }
+      else if (d.axis === 'x'){ dvx = 1; }
+      else { dvz = 1; }
+      const px = d.home.x + dvx * off;
+      const pz = d.home.z + dvz * off;
+      p.delta = { x: px - p.mesh.position.x, z: pz - p.mesh.position.z };
+      p.mesh.position.x = px;
+      p.mesh.position.z = pz;
+      updatePlatBox(p);
+    } else if (p.type === 'rot'){
+      p.mesh.rotation.y += p.data.spd * dt;
+    } else if (p.type === 'fade'){
+      const d = p.data;
+      if (d.fading && !d.gone){
+        d.timer -= dt;
+        const blink = Math.sin(worldT * 30) * 0.5 + 0.5;
+        p.mesh.material.opacity = 0.25 + blink * 0.35;
+        if (d.timer <= 0){
+          d.gone = true;
+          p.mesh.visible = false;
+          d.respawn = 2.2;
+        }
+      } else if (d.gone){
+        d.respawn -= dt;
+        if (d.respawn <= 0){
+          d.gone = false; d.fading = false;
+          p.mesh.visible = true;
+          p.mesh.material.opacity = 0.55;
+        }
+      }
+    } else if (p.type === 'conv'){
+      // pulse the (pre-set, shared) emissive — no per-frame Color allocation
+      p.mesh.material.emissiveIntensity = 0.12 + Math.sin(worldT*8)*0.08;
+    }
+  }
+
+  // hazards
+  for (const h of hazards){
+    const d = h.data;
+    if (h.type === 'bear' || h.type === 'cat'){
+      d.t += dt * d.spd;
+      const off = Math.sin(d.t) * d.range;
+      const nx = d.home.x + (d.axis === 'x' ? off : 0);
+      const nz = d.home.z + (d.axis === 'z' ? off : 0);
+      const moving = Math.abs(Math.cos(d.t)) > 0.15;
+      // face direction of travel
+      const dir = Math.cos(d.t);
+      if (d.axis === 'x') h.mesh.rotation.y = dir > 0 ? Math.PI/2 : -Math.PI/2;
+      else h.mesh.rotation.y = dir > 0 ? 0 : Math.PI;
+      h.mesh.position.x = nx;
+      h.mesh.position.z = nz;
+      // bob + leg wiggle
+      h.mesh.position.y = d.home.y + Math.abs(Math.sin(d.t * 3)) * 0.09;
+      if (h.legs){
+        h.legs.forEach((l, i) => {
+          l.position.y = (h.type==='bear' ? 0.14 : 0.14) + Math.sin(d.t*6 + i*1.6) * 0.05;
+        });
+      }
+      if (h.tail) h.tail.rotation.z = Math.sin(d.t*4) * 0.35;
+    } else if (h.type === 'tornado'){
+      d.t += dt;
+      h.rings.forEach((r, i) => {
+        r.rotation.z = d.t * (1.4 + i*0.35) * (i%2 ? 1 : -1);
+        r.position.y = 0.25 + i*0.42 + Math.sin(d.t*2 + i*0.6)*0.07;
+        r.scale.setScalar(1 + Math.sin(d.t*3 + i*0.5)*0.09);
+      });
+      h.swirl.forEach((p, i) => {
+        const a = d.t * 3.2 + (i/h.swirl.length) * Math.PI * 2;
+        const yy = ((d.t * 1.6 + i*0.29) % 1);
+        const rr = 0.35 + yy * 0.85;
+        p.position.set(Math.sin(a)*rr, yy * 3.0, Math.cos(a)*rr);
+        p.material.opacity = 0.85 * (1 - yy);
+      });
+    } else if (h.type === 'spinner'){
+      d.a += d.spd * dt;
+      h.mesh.rotation.y = d.a;
+    } else if (h.type === 'pendulum'){
+      d.a += d.spd * dt;
+      const sw = Math.sin(d.a) * 0.9;
+      if (d.axis === 'x') h.mesh.rotation.z = sw;
+      else h.mesh.rotation.x = sw;
+    }
+  }
+
+  // coins spin
+  for (const c of coins){
+    if (c.taken) continue;
+    c.mesh.rotation.y += dt * 2.4;
+    c.mesh.position.y = c.pos.y + Math.sin(worldT*2.2 + c.pos.x)*0.12;
+  }
+
+  // start pad: bob the arrows so it's easy to spot from across the floor
+  if (startPad){
+    for (let i=0;i<4;i++){
+      const a = startPad.mesh.getObjectByName('startArrow'+i);
+      if (a) a.position.y = 0.75 + Math.sin(worldT*3 + i*0.8)*0.16;
+    }
+  }
+
+  // goal
+  if (goalFlag){
+    goalFlag.star.rotation.y += dt * 1.6;
+    goalFlag.star.position.y = 4.2 + Math.sin(worldT*2)*0.14;
+    goalFlag.ring.rotation.z += dt * 0.8;
+    // wave the flag cloth
+    const g = goalFlag.flag.geometry;
+    const pos = g.attributes.position;
+    for (let i=0;i<pos.count;i++){
+      const ox = pos.getX(i);
+      pos.setZ(i, Math.sin(worldT*4 + ox*3) * 0.12 * ((ox+0.75)/1.5));
+    }
+    pos.needsUpdate = true;
+    goalFlag.mesh.rotation.y = Math.sin(worldT*0.4)*0.1;
+  }
+
+  // avatar cosmetic idle animations
+  if (myAvatar){
+    animateAvatarExtras(myAvatar, worldT);
+  }
+  for (const r of Object.values(remotePlayers)){
+    if (r.mesh) animateAvatarExtras(r.mesh, worldT);
+  }
+}
+
+function animateAvatarExtras(av, t){
+  const halo = av.getObjectByName('halo');
+  if (halo){ halo.rotation.z = t*1.5; halo.position.y = 0.52 + Math.sin(t*2)*0.04; }
+  const wl = av.getObjectByName('wingL'), wr = av.getObjectByName('wingR');
+  if (wl && wr){
+    const f = Math.sin(t*7)*0.35;
+    wl.rotation.y = 0.5 + f;
+    wr.rotation.y = -0.5 - f;
+  }
+  const cape = av.getObjectByName('cape');
+  if (cape){
+    const g = cape.geometry, p = g.attributes.position;
+    for (let i=0;i<p.count;i++){
+      const yy = p.getY(i);
+      p.setZ(i, Math.sin(t*5 + yy*4) * 0.09 * (0.5 - yy));
+    }
+    p.needsUpdate = true;
+  }
+  for (let i=0;i<3;i++){
+    const b = av.getObjectByName('balloon'+i);
+    if (b) b.position.y = 2.45 + Math.sin(t*1.8 + i)*0.10;
+  }
+  const jf = av.getObjectByName('jetflame');
+  if (jf) jf.scale.y = 1 + Math.sin(t*22)*0.35;
+}
+
+function animateAvatarWalk(av, phase, moving, airborne){
+  const p = av.userData.parts;
+  if (!p) return;
+  const sw = moving ? Math.sin(phase*2.2) * 0.55 : 0;
+  if (p.legs){
+    p.legs[0].rotation.x = airborne ? -0.35 : sw;
+    p.legs[1].rotation.x = airborne ? 0.25 : -sw;
+  }
+  if (p.arms){
+    p.arms[0].rotation.x = airborne ? -1.9 : -sw * 0.8;
+    p.arms[1].rotation.x = airborne ? -1.9 : sw * 0.8;
+  }
+  if (p.tail) p.tail.rotation.z = Math.sin(phase*1.8) * 0.25;
+  if (p.head) p.head.rotation.z = moving ? Math.sin(phase*2.2)*0.04 : 0;
+}
+
+// =================================================================
+// CAMERA
+// =================================================================
+const camRay = new THREE.Raycaster();
+function updateCamera(dt){
+  if (!game) return;
+  const head = new THREE.Vector3(game.pos.x, game.pos.y + EYE_H, game.pos.z);
+
+  if (camMode === 1){
+    camera.position.copy(head);
+    camera.rotation.set(game.pitch, game.yaw, 0, 'YXZ');
+    if (myAvatar) myAvatar.visible = false;
+    return;
+  }
+  if (myAvatar) myAvatar.visible = true;
+
+  // third person: orbit behind
+  const dist = 5.2;
+  const back = new THREE.Vector3(
+    Math.sin(game.yaw) * Math.cos(game.pitch),
+    -Math.sin(game.pitch),
+    Math.cos(game.yaw) * Math.cos(game.pitch)
+  ).multiplyScalar(dist);
+  const want = head.clone().add(back).add(new THREE.Vector3(0, 0.6, 0));
+
+  // avoid clipping through platforms
+  const dir = want.clone().sub(head).normalize();
+  camRay.set(head, dir);
+  camRay.far = dist + 1;
+  const meshes = platforms.map(p => p.mesh).filter(m => m.visible);
+  const hits = camRay.intersectObjects(meshes, false);
+  let use = want;
+  if (hits.length > 0 && hits[0].distance < dist){
+    use = head.clone().add(dir.multiplyScalar(Math.max(1.2, hits[0].distance - 0.35)));
+  }
+  camera.position.lerp(use, Math.min(1, 14*dt));
+  camera.lookAt(head.x, head.y + 0.1, head.z);
+}
+
+// =================================================================
+// AVATAR SYNC (position the visible model)
+// =================================================================
+function syncAvatar(dt){
+  if (!myAvatar || !game) return;
+  myAvatar.position.set(game.pos.x, game.pos.y, game.pos.z);
+  const hspd = Math.hypot(game.vel.x, game.vel.z);
+  const moving = hspd > 0.6;
+
+  let target = null;
+  if (shiftLockOn){
+    // shift lock: always face the same direction the camera is looking
+    target = game.yaw;
+  } else if (moving){
+    // default: face the direction you're actually moving
+    target = Math.atan2(game.vel.x, game.vel.z);
+  }
+  if (target !== null){
+    let d = target - myAvatar.rotation.y;
+    while (d > Math.PI) d -= Math.PI*2;
+    while (d < -Math.PI) d += Math.PI*2;
+    myAvatar.rotation.y += d * Math.min(1, 14*dt);
+  }
+  animateAvatarWalk(myAvatar, game.walkPhase, moving, !game.grounded);
+
+  // Keep the visible carpet mesh in sync with the CURRENT equip state every frame.
+  // Previously this was only checked once at spawnAvatar(), so equipping/unequipping
+  // the carpet mid-run from the bag left the mesh missing (or stuck visible) even
+  // though flight physics had already turned on/off — this is what made it "sometimes
+  // invisible".
+  syncCarpetMesh();
+  if (carpetMesh){
+    carpetMesh.position.set(game.pos.x, game.pos.y - 0.12, game.pos.z);
+    carpetMesh.rotation.y = myAvatar.rotation.y;
+    carpetMesh.rotation.z = Math.sin(worldT*1.6) * 0.05;
+    carpetMesh.rotation.x = Math.cos(worldT*1.3) * 0.04;
+    updateCarpetColors(carpetMesh, worldT);
+  }
+}
+
+// =================================================================
+// UI HELPERS
+// =================================================================
+function showScreen(id){
+  for (const s of ['loadScreen','manualScreen','obScreen','homeScreen','profScreen','itemShop','avaShop','mpScreen','winScreen']){
+    const el = document.getElementById(s);
+    if (el) el.classList.toggle('on', s === id);
+  }
+}
+function overlay(id, on){
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('on', !!on);
+}
+function showTip(txt){
+  const t = document.getElementById('checkTip');
+  t.textContent = txt;
+  t.style.display = 'block';
+  clearTimeout(showTip._t);
+  showTip._t = setTimeout(()=>{ t.style.display = 'none'; }, 1600);
+}
+function fmtTime(ms){
+  const s = Math.floor(ms/1000);
+  return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+}
+
+// =================================================================
+// PREVIEW RENDERERS (avatar on home, thumbnails in shops)
+// =================================================================
+// IMPORTANT: every render used to create a brand-new THREE.WebGLRenderer (a new GPU
+// context) and only disposed it 60ms later. Opening a shop list fires off 10-20+ of
+// these almost simultaneously — far past the browser's WebGL context limit — and once
+// that limit is hit, the browser evicts an EXISTING context to make room, which took
+// down either the main game renderer or the home-stage renderer, leaving them blank.
+//
+// Fix: there is now exactly ONE shared WebGL context for the entire UI (thumbnails
+// AND the home avatar stage both use it), on top of the ONE main game-world context.
+// That's 2 GPU contexts, total, no matter how many menus are opened. If WebGL still
+// fails for any reason (very old device, context lost, out of memory), every call
+// below falls back to a simple hand-drawn 2D icon instead of showing nothing/broken.
+let thumbRenderer = null, thumbScene = null, thumbCamera = null, thumbBroken = false;
+function ensureThumbRenderer(){
+  if (thumbRenderer || thumbBroken) return;
+  try{
+    const off = document.createElement('canvas');
+    thumbRenderer = new THREE.WebGLRenderer({ canvas: off, antialias:true, alpha:true, preserveDrawingBuffer:true });
+    thumbRenderer.setPixelRatio(1);
+    thumbRenderer.outputEncoding = THREE.sRGBEncoding;
+    thumbScene = new THREE.Scene();
+    thumbCamera = new THREE.PerspectiveCamera(32, 1, 0.1, 60);
+  } catch(e){
+    console.error('shared UI renderer failed to initialize; falling back to flat icons', e);
+    thumbBroken = true;
+    thumbRenderer = null;
+  }
+}
+
+// Draws a simple, always-works 2D fallback (colored circle + label) so the UI never
+// shows a blank or broken icon even if 3D rendering isn't available at all.
+function drawFallbackIcon(canvasEl, size, color, emoji){
+  canvasEl.width = size; canvasEl.height = size;
+  const ctx = canvasEl.getContext('2d');
+  ctx.clearRect(0, 0, size, size);
+  ctx.fillStyle = color || '#e05aa0';
+  ctx.beginPath();
+  ctx.arc(size/2, size/2, size*0.42, 0, Math.PI*2);
+  ctx.fill();
+  if (emoji){
+    ctx.font = Math.round(size*0.45) + 'px serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(emoji, size/2, size/2 + size*0.03);
+  }
+}
+
+// Render an already-built scene/camera into a target 2D canvas via the shared context.
+// Used both for one-shot thumbnails and for the continuously-animated home stage.
+function renderSceneToCanvas(canvasEl, w, h, scene, camera){
+  ensureThumbRenderer();
+  if (!thumbRenderer){ drawFallbackIcon(canvasEl, Math.max(w,h), '#e05aa0', '🌸'); return; }
+  try{
+    thumbRenderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    thumbRenderer.render(scene, camera);
+    canvasEl.width = w; canvasEl.height = h;
+    const ctx = canvasEl.getContext('2d');
+    ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(thumbRenderer.domElement, 0, 0, w, h);
+  } catch(e){
+    console.error('UI render failed, using flat fallback icon', e);
+    drawFallbackIcon(canvasEl, Math.max(w,h), '#e05aa0', '🌸');
+  }
+}
+
+// One-shot thumbnail: build a fresh scene each time, sharing the same GPU context.
+function renderThumbToCanvas(canvasEl, size, buildScene, placeCamera){
+  ensureThumbRenderer();
+  if (!thumbRenderer){ drawFallbackIcon(canvasEl, size, '#e05aa0', '🌸'); return; }
+  // clear + DISPOSE whatever was in the shared scene from the previous thumbnail —
+  // shop lists build 10-20 throwaway scenes per open, and their geometry/material
+  // buffers used to pile up on the GPU forever.
+  for (let i = thumbScene.children.length - 1; i >= 0; i--){
+    const ch = thumbScene.children[i];
+    thumbScene.remove(ch);
+    disposeObject3D(ch);
+  }
+  buildScene(thumbScene);
+  placeCamera(thumbCamera);
+  renderSceneToCanvas(canvasEl, size, size, thumbScene, thumbCamera);
+}
+
+function renderAvatarThumb(canvasEl, cfg, size){
+  renderThumbToCanvas(canvasEl, size, (s) => {
+    s.add(new THREE.HemisphereLight(0xffe8f8, 0x584070, 1.1));
+    const dl = new THREE.DirectionalLight(0xffffff, 1.3);
+    dl.position.set(2, 5, 4); s.add(dl);
+    const dl2 = new THREE.DirectionalLight(0xff9ad8, 0.6);
+    dl2.position.set(-3, 2, -2); s.add(dl2);
+    const av = buildAvatar(cfg);
+    av.position.y = -1.05;
+    av.rotation.y = 0.5;
+    s.add(av);
+  }, (c) => {
+    c.position.set(0, 0.35, 5.6);
+    c.lookAt(0, 0.05, 0);
+  });
+}
+
+// item icons drawn in 3D too
+function renderItemThumb(canvasEl, id, size){
+  renderThumbToCanvas(canvasEl, size, (s) => {
+    s.add(new THREE.HemisphereLight(0xffffff, 0x584070, 1.2));
+    const dl = new THREE.DirectionalLight(0xffffff, 1.4);
+    dl.position.set(2,4,3); s.add(dl);
+    s.add(buildItemIcon(id));
+  }, (c) => {
+    c.position.set(0, 0.3, 3.2);
+    c.lookAt(0,0,0);
+  });
+}
+
+function buildItemIcon(id){
+  const g = new THREE.Group();
+  if (id === 'coil_speed' || id === 'coil_grav' || id === 'coil_mega'){
+    const col = id==='coil_speed' ? BLUE : (id==='coil_grav' ? PINK : 0xffd24a);
+    // coil spring
+    const pts = [];
+    for (let i=0;i<=60;i++){
+      const t = i/60;
+      const a = t * Math.PI * 8;
+      pts.push(new THREE.Vector3(Math.cos(a)*0.32, -0.5 + t*1.0, Math.sin(a)*0.32));
+    }
+    const curve = new THREE.CatmullRomCurve3(pts);
+    const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 90, 0.075, 6),
+      new THREE.MeshStandardMaterial({color:col, roughness:0.25, metalness:0.7, emissive:col, emissiveIntensity:0.25}));
+    g.add(tube);
+    for (const yy of [-0.55, 0.55]){
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.09,14),
+        new THREE.MeshStandardMaterial({color:0xd8d8e8, roughness:0.3, metalness:0.6}));
+      cap.position.y = yy;
+      g.add(cap);
+    }
+  } else if (id === 'carpet_rain'){
+    for (let i=0;i<7;i++){
+      const col = new THREE.Color().setHSL(i/7, 0.9, 0.58);
+      const b = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.09, 0.16),
+        new THREE.MeshStandardMaterial({color:col, roughness:0.5, emissive:col, emissiveIntensity:0.3}));
+      b.position.set(0, -0.4 + i*0.13, (i-3)*0.06);
+      g.add(b);
+    }
+    g.rotation.x = -0.35;
+  } else if (id === 'trail_star'){
+    for (let i=0;i<4;i++){
+      const st = makeStarMesh(0.20 - i*0.03, 0xffe066);
+      st.position.set((i-1.5)*0.32, (i%2?0.18:-0.14), 0);
+      st.rotation.z = i*0.4;
+      g.add(st);
+    }
+  } else if (id === 'trail_heart'){
+    for (let i=0;i<3;i++){
+      const hg = new THREE.Group();
+      const hm = new THREE.MeshStandardMaterial({color:PINK, roughness:0.4, emissive:PINK, emissiveIntensity:0.25});
+      const l = new THREE.Mesh(new THREE.SphereGeometry(0.14,10,8), hm); l.position.x=-0.09; hg.add(l);
+      const rr = new THREE.Mesh(new THREE.SphereGeometry(0.14,10,8), hm); rr.position.x=0.09; hg.add(rr);
+      const b = new THREE.Mesh(new THREE.ConeGeometry(0.2,0.28,8), hm); b.position.y=-0.16; b.rotation.x=Math.PI; hg.add(b);
+      hg.position.set((i-1)*0.5, (i%2?0.15:-0.1), 0);
+      hg.scale.setScalar(0.8);
+      g.add(hg);
+    }
+  } else if (id === 'glide_wing'){
+    for (const sx of [-1,1]){
+      const wm = new THREE.MeshStandardMaterial({color:0xd8f0ff, roughness:0.3, transparent:true, opacity:0.9,
+        emissive:0x8cd8ff, emissiveIntensity:0.4, side:THREE.DoubleSide});
+      const w = new THREE.Mesh(new THREE.CircleGeometry(0.6, 14, 0, Math.PI), wm);
+      w.position.set(sx*0.28, 0, 0);
+      w.rotation.z = sx>0 ? -0.3 : 0.3;
+      w.rotation.y = sx>0 ? -0.4 : 0.4;
+      g.add(w);
+    }
+  } else if (id === 'double_jump'){
+    for (let i=0;i<2;i++){
+      const a = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.5, 6),
+        new THREE.MeshStandardMaterial({color: i? PINK : BLUE, roughness:0.3, emissive: i?PINK:BLUE, emissiveIntensity:0.35}));
+      a.position.y = -0.35 + i*0.6;
+      g.add(a);
+    }
+  } else if (id === 'slap_unlock'){
+    const skin = new THREE.MeshStandardMaterial({color:0xffd9b8, roughness:0.8});
+    const palm = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 10), skin);
+    palm.scale.set(1, 1.15, 0.55);
+    g.add(palm);
+    for (let i=0;i<4;i++){
+      const fx = (i-1.5)*0.16;
+      const finger = new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.06,0.34,8), skin);
+      finger.position.set(fx, 0.36, 0);
+      g.add(finger);
+    }
+    const thumb = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.065,0.26,8), skin);
+    thumb.position.set(-0.36, 0.02, 0.1);
+    thumb.rotation.z = 0.9;
+    g.add(thumb);
+    // motion streak lines behind the hand
+    for (let i=0;i<3;i++){
+      const line = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.4 - i*0.08, 0.05),
+        new THREE.MeshStandardMaterial({color: i%2?PINK:BLUE, emissive: i%2?PINK:BLUE, emissiveIntensity:0.5}));
+      line.position.set(-0.55 - i*0.16, 0.1 - i*0.05, 0);
+      line.rotation.z = 0.5;
+      g.add(line);
+    }
+  } else if (id === 'magnet_1' || id === 'magnet_5'){
+    const mm = new THREE.MeshStandardMaterial({color:0xe03040, roughness:0.3, metalness:0.6});
+    const arc = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.15, 8, 16, Math.PI), mm);
+    arc.rotation.z = Math.PI;
+    g.add(arc);
+    for (const sx of [-0.42, 0.42]){
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.15,0.3,10),
+        new THREE.MeshStandardMaterial({color:0xd8d8e8, roughness:0.3, metalness:0.7}));
+      leg.position.set(sx, -0.15, 0);
+      g.add(leg);
+    }
+    const coin = new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,0.05,12), M.gold);
+    coin.rotation.x = Math.PI/2;
+    coin.position.set(0, 0.55, 0);
+    g.add(coin);
+  }
+  g.rotation.y = 0.4;
+  return g;
+}
+
+// =================================================================
+// HOME 3D AVATAR STAGE
+// =================================================================
+// IMPORTANT: this used to create its OWN separate WebGLRenderer — a THIRD live GPU
+// context alongside the main game and the shared thumbnail renderer. On memory-limited
+// phones that was enough to tip the browser into losing a context again (this time
+// showing up as a completely blank avatar stage). It now reuses the same single shared
+// renderer as every other UI thumbnail, so there are only ever 2 GPU contexts total,
+// no matter what's on screen.
+let hScene=null, hCam=null, hAva=null, hT=0;
+function initHomeStage(){
+  if (hScene) return;
+  hScene = new THREE.Scene();
+  hScene.add(new THREE.HemisphereLight(0xffe8f8, 0x584070, 1.05));
+  const d1 = new THREE.DirectionalLight(0xffffff, 1.35); d1.position.set(3,6,4); hScene.add(d1);
+  const d2 = new THREE.DirectionalLight(0xff9ad8, 0.7); d2.position.set(-4,2,-3); hScene.add(d2);
+  const d3 = new THREE.DirectionalLight(0x8cd8ff, 0.5); d3.position.set(4,1,-4); hScene.add(d3);
+  hCam = new THREE.PerspectiveCamera(32, 1, 0.1, 60);
+  hCam.position.set(0, 0.5, 6.4);
+  hCam.lookAt(0, 0.1, 0);
+}
+function rebuildHomeAvatar(){
+  initHomeStage();
+  if (hAva){ hScene.remove(hAva); disposeObject3D(hAva); }
+  hAva = buildAvatar(avaCfg());
+  hAva.position.y = -1.15;
+  hScene.add(hAva);
+}
+function renderHomeStage(dt){
+  if (!hAva) return;
+  const cv = document.getElementById('avatarCanvas');
+  if (!cv || !cv.clientWidth || !cv.clientHeight) return;
+  hT += dt;
+  hAva.rotation.y += dt * 0.55;
+  hAva.position.y = -1.15 + Math.sin(hT*1.7)*0.06;
+  animateAvatarExtras(hAva, hT);
+  animateAvatarWalk(hAva, hT*1.5, false, false);
+  renderSceneToCanvas(cv, cv.clientWidth, cv.clientHeight, hScene, hCam);
+}
+function refreshHome(){
+  updateCoinUI();
+  document.getElementById('profName').textContent = prog.name;
+  document.getElementById('stageName').textContent = prog.name + '의 캐릭터';
+  const pp = document.getElementById('profPic');
+  if (pp) renderAvatarThumb(pp, avaCfg(), 84);
+  rebuildHomeAvatar();
+}
+function goHome(){
+  showScreen('homeScreen');
+  document.getElementById('playMenu').classList.remove('on');
+  refreshHome();
+  hideGameUI();
+}
+function hideGameUI(){
+  document.getElementById('hud').style.display = 'none';
+  document.getElementById('touchC').style.display = 'none';
+  document.getElementById('exitB').style.display = 'none';
+  document.getElementById('qc').style.display = 'none';
+  document.getElementById('bagWrap').style.display = 'none';
+  document.getElementById('bagPanel').classList.remove('on');
+  document.getElementById('shiftLockBtn').style.display = 'none';
+  document.getElementById('crossDot').style.display = 'none';
+  document.getElementById('slapB').style.display = 'none';
+  document.exitPointerLock && document.exitPointerLock();
+}
+function showGameUI(){
+  document.getElementById('hud').style.display = 'block';
+  if (isTouch) document.getElementById('touchC').style.display = 'block';
+  document.getElementById('shiftLockBtn').style.display = 'block';
+  document.getElementById('exitB').style.display = 'block';
+  document.getElementById('qc').style.display = 'block';
+  document.getElementById('bagWrap').style.display = 'block';
+  updateBagUI();
+  shiftLockOn = false;
+  updateShiftLockUI();
+  // slapping requires both the item AND other players around
+  if (isTouch) document.getElementById('slapB').style.display = (net.mode !== 'solo' && hasUtil('slap_unlock')) ? 'block' : 'none';
+}
+
+// =================================================================
+// SHOPS
+// =================================================================
+function renderItemShop(){
+  updateCoinUI();
+  const list = document.getElementById('itemList');
+  list.innerHTML = '';
+  for (const it of ITEM_SHOP){
+    const isConsumable = it.slot === 'consumable';
+    const owned = !!prog.owned[it.id];
+    const eq = !isConsumable && prog.equipped[it.slot] === it.id;
+    const row = document.createElement('div');
+    row.className = 'item';
+
+    const cv = document.createElement('canvas');
+    cv.width = 92; cv.height = 92;
+    row.appendChild(cv);
+
+    const txt = document.createElement('div');
+    txt.className = 'txt';
+    let extra = '';
+    if (isConsumable) extra = '<div class="ds" style="color:#ffd978;">보유: ' + prog.magnetCharges + '회</div>';
+    txt.innerHTML = '<div class="nm">'+it.name+'</div><div class="ds">'+it.desc+'</div>' + extra;
+    row.appendChild(txt);
+
+    const btn = document.createElement('button');
+    if (isConsumable){
+      // always buyable — buying adds charges, doesn't "equip"
+      btn.className = 'bBuy';
+      btn.textContent = '🪙 ' + it.cost;
+      btn.disabled = prog.coins < it.cost;
+    } else if (!owned){
+      btn.className = 'bBuy';
+      btn.textContent = '🪙 ' + it.cost;
+      btn.disabled = prog.coins < it.cost;
+    } else if (eq){
+      btn.className = 'bOn'; btn.textContent = '장착중'; btn.disabled = true;
+    } else {
+      btn.className = 'bEquip'; btn.textContent = '장착';
+    }
+    btn.onclick = async () => {
+      if (isConsumable){
+        if (prog.coins < it.cost) return;
+        prog.coins -= it.cost;
+        prog.magnetCharges += it.charges;
+        sfx.buy();
+        await saveProg();
+        renderItemShop();
+        updateBagUI();
+        return;
+      }
+      if (!owned){
+        if (prog.coins < it.cost) return;
+        prog.coins -= it.cost;
+        prog.owned[it.id] = true;
+      }
+      prog.equipped[it.slot] = (prog.equipped[it.slot] === it.id) ? null : it.id;
+      if (!owned) prog.equipped[it.slot] = it.id;
+      sfx.buy();
+      await saveProg();
+      renderItemShop();
+    };
+    row.appendChild(btn);
+    list.appendChild(row);
+    renderItemThumb(cv, it.id, 92);
+  }
+}
+
+let avaCat = 'hair';
+function renderAvaShop(){
+  updateCoinUI();
+  const list = document.getElementById('avaList');
+  list.innerHTML = '';
+  for (const it of AVA_SHOP[avaCat]){
+    const owned = !!prog.owned[it.id];
+    const eq = prog.equipped[avaCat] === it.id;
+    const row = document.createElement('div');
+    row.className = 'item';
+
+    const cv = document.createElement('canvas');
+    cv.width = 92; cv.height = 92;
+    row.appendChild(cv);
+
+    const txt = document.createElement('div');
+    txt.className = 'txt';
+    txt.innerHTML = '<div class="nm">'+it.name+'</div><div class="ds">'+it.desc+'</div>';
+    row.appendChild(txt);
+
+    const btn = document.createElement('button');
+    if (!owned){
+      btn.className = 'bBuy'; btn.textContent = '🪙 ' + it.cost;
+      btn.disabled = prog.coins < it.cost;
+    } else if (eq){
+      btn.className = 'bOn'; btn.textContent = '착용중'; btn.disabled = true;
+    } else {
+      btn.className = 'bEquip'; btn.textContent = '착용';
+    }
+    btn.onclick = async () => {
+      if (!owned){
+        if (prog.coins < it.cost) return;
+        prog.coins -= it.cost;
+        prog.owned[it.id] = true;
+      }
+      prog.equipped[avaCat] = it.id;
+      sfx.buy();
+      await saveProg();
+      renderAvaShop();
+    };
+    row.appendChild(btn);
+    list.appendChild(row);
+
+    // preview: my avatar wearing THIS item
+    const pv = Object.assign({}, avaCfg());
+    pv[avaCat] = it.id;
+    renderAvatarThumb(cv, pv, 92);
+  }
+}
+
+// =================================================================
+// GAME FLOW
+// =================================================================
+let pendingCoins = 0;
+
+function startGame(seed){
+  clearTrailBits();
+  buildTower(seed || 12345);
+  game = newGameState();
+  game.knockCD = 0;
+  spawnAvatar();
+  camera.position.set(0, 3, 8);
+  showScreen(null);
+  showGameUI();
+  updateCoinUI();
+  document.getElementById('stageInfo').textContent = '🧗 높이 0m';
+  initAudio(); startBGM();
+}
+
+function winGame(){
+  if (!game || game.over) return;
+  game.over = true;
+  const elapsed = performance.now() - game.startTime;
+  const timeBonus = Math.max(0, Math.round(60 - elapsed/1000/4));
+  const cpBonus = 0;
+  const total = 25 + game.coins * 2 + timeBonus + cpBonus;
+  pendingCoins = total;
+
+  prog.clears++;
+  if (prog.bestTime === null || elapsed < prog.bestTime) prog.bestTime = elapsed;
+
+  document.getElementById('winDetail').innerHTML =
+    '기록: <b>' + fmtTime(elapsed) + '</b>' +
+    (prog.bestTime === elapsed ? ' 🏅 신기록!' : '') +
+    '<br>코인 ' + game.coins + '개 · 떨어진 횟수 ' + game.falls + '번';
+  document.getElementById('winReward').textContent = '🪙 +' + total + ' 획득 예정';
+
+  sfx.win();
+  vibrate([60,40,60,40,120]);
+  hideGameUI();
+  showScreen('winScreen');
+  if (net.mode === 'host') hostSend('all', {t:'win', name: prog.name});
+  else if (net.mode === 'guest') guestSend({t:'win', name: prog.name});
+}
+
+async function claimCoins(){
+  prog.coins += pendingCoins;
+  pendingCoins = 0;
+  await saveProg();
+  updateCoinUI();
+}
+
+// Coins you physically picked up are ALWAYS yours — even if you quit halfway.
+// (Previously exitToHome() just discarded game.coins, so leaving mid-run lost them.)
+// NOTE: an identical duplicate of this function (bankRunCoins) was removed —
+// exitToHome() below already banks the coins, so callers don't need to pre-bank.
+async function bankCollectedCoins(){
+  if (!game || !game.coins) return 0;
+  const got = game.coins;
+  prog.coins += got;
+  game.coins = 0;
+  await saveProg();
+  updateCoinUI();
+  return got;
+}
+
+async function exitToHome(){
+  await bankCollectedCoins();
+  game = null;
+  if (myAvatar){ scene.remove(myAvatar); disposeObject3D(myAvatar); myAvatar = null; }
+  if (carpetMesh){ scene.remove(carpetMesh); disposeObject3D(carpetMesh); carpetMesh = null; }
+  clearTower();
+  clearTrailBits();
+  clearRemotePlayers();
+  net.mode = 'solo'; net.code = null; net.guests = [];
+  teardownChannel();
+  goHome();
+}
+
+// =================================================================
+// MULTIPLAYER (Supabase Realtime)
+// =================================================================
+const SB_URL = 'https://cpxyozkhijzlaukbybrz.supabase.co';
+const SB_KEY = 'sb_publishable_Ex7i1023EL3Qmy4ApZzP-A_iExrPqBR';
+const sb = (typeof supabase !== 'undefined') ? supabase.createClient(SB_URL, SB_KEY) : null;
+
+const net = { mode:'solo', code:null, id:null, guests:[] };
+let mpCh = null;
+const remotePlayers = {};   // id -> { mesh, name, target, tag }
+
+function rid(){ return Math.random().toString(36).slice(2,9); }
+function code4(){ return String(Math.floor(1000+Math.random()*9000)); }
+
+function chSend(to, msg){
+  if (!mpCh) return;
+  // NOTE: `to` must be applied LAST so it always wins. When the host relays a
+  // guest's message it passes the original payload straight through, and that
+  // payload still carries the old `to:'host'`. If that stale value overrode the
+  // new routing target, every guest would filter the relay out and remote players
+  // would never show up.
+  mpCh.send({ type:'broadcast', event:'m', payload: Object.assign({}, msg, { to }) });
+}
+function hostSend(to, msg){ chSend(to, Object.assign({ from:'host' }, msg)); }
+function guestSend(msg){ chSend('host', Object.assign({}, msg, { from: net.id })); }
+
+function onChMsg(p){
+  if (net.mode === 'host'){
+    if (p.to !== 'host' && p.to !== 'all') return;
+    if (p.t === 'hello'){
+      if (!net.guests.find(g => g.id === p.from)){
+        net.guests.push({id:p.from, name:p.name || '친구', cfg:p.cfg});
+        updateMpList();
+        // tell the new guest the tower seed if a game is running
+        if (game) hostSend(p.from, {t:'start', seed: net.seed, players: rosterForNet()});
+        // broadcast updated roster
+        hostSend('all', {t:'roster', players: rosterForNet()});
+      } else {
+        // A hello from a KNOWN guest means they reconnected after a drop — their
+        // channel was rebuilt, so re-send the current state just to them.
+        if (game) hostSend(p.from, {t:'start', seed: net.seed, players: rosterForNet()});
+        else hostSend(p.from, {t:'roster', players: rosterForNet()});
+      }
+      return;
+    }
+    if (p.t === 'pos'){
+      updateRemote(p.from, p);
+      // relay to other guests
+      hostSend('all', Object.assign({}, p, {except: p.from}));
+      return;
+    }
+    if (p.t === 'chat'){
+      const g = net.guests.find(x => x.id === p.from);
+      showBubble(p.from, p.msg);
+      hostSend('all', {t:'chat', from:p.from, msg:p.msg, name:(g&&g.name)||'친구', except:p.from});
+      sfx.chat();
+      return;
+    }
+    if (p.t === 'win'){
+      showTip('🏆 ' + (p.name||'친구') + ' 클리어!');
+      hostSend('all', {t:'win', name:p.name, except:p.from});
+      return;
+    }
+    if (p.t === 'slap'){
+      // guests can't message each other directly, so they route slaps through the
+      // host: if the slap is aimed at the host itself, apply it locally; otherwise
+      // forward it on to the specific guest who got slapped.
+      if (p.targetId === 'host'){
+        applySlapKnockback(p.dir);
+      } else if (p.targetId){
+        hostSend(p.targetId, { t:'slap', dir:p.dir, from:p.from });
+      }
+      return;
+    }
+  } else if (net.mode === 'guest'){
+    if (p.to !== net.id && p.to !== 'all') return;
+    if (p.except && p.except === net.id) return;
+    if (p.t === 'start'){
+      // If we're ALREADY mid-run on this same tower (host re-sent 'start' because our
+      // channel reconnected), just refresh the roster — don't rebuild the tower and
+      // teleport ourselves back to the start.
+      if (game && !game.over && net.seed === p.seed){
+        applyRoster(p.players);
+        return;
+      }
+      net.seed = p.seed;
+      applyRoster(p.players);
+      startGame(p.seed);
+      return;
+    }
+    if (p.t === 'roster'){ applyRoster(p.players); return; }
+    if (p.t === 'left'){
+      if (remotePlayers[p.id]){ removeRemotePlayer(p.id); showTip('👋 ' + (p.name||'친구') + ' 님이 나갔어요'); }
+      return;
+    }
+    if (p.t === 'pos'){ updateRemote(p.from, p); return; }
+    if (p.t === 'chat'){ showBubble(p.from, p.msg); sfx.chat(); return; }
+    if (p.t === 'win'){ showTip('🏆 ' + (p.name||'친구') + ' 클리어!'); return; }
+    if (p.t === 'slap'){ applySlapKnockback(p.dir); return; }
+  }
+}
+
+function rosterForNet(){
+  const arr = [{id:'host', name:prog.name, cfg:avaCfg()}];
+  for (const g of net.guests) arr.push({id:g.id, name:g.name, cfg:g.cfg});
+  return arr;
+}
+function applyRoster(players){
+  if (!players) return;
+  for (const pl of players){
+    if (net.mode === 'guest' && pl.id === net.id) continue;
+    if (net.mode === 'host' && pl.id === 'host') continue;
+    if (!remotePlayers[pl.id]){
+      const mesh = buildAvatar(pl.cfg || {type:'cat'});
+      scene.add(mesh);
+      const tag = document.createElement('div');
+      tag.className = 'nameTag';
+      tag.textContent = pl.name || '친구';
+      document.getElementById('chatLayer').appendChild(tag);
+      remotePlayers[pl.id] = { mesh, name: pl.name, tag,
+        target:new THREE.Vector3(), yaw:0, phase:0, moving:false, air:false, last: performance.now() };
+    }
+  }
+}
+function updateRemote(id, p){
+  let r = remotePlayers[id];
+  if (!r){
+    const mesh = buildAvatar(p.cfg || {type:'cat'});
+    scene.add(mesh);
+    const tag = document.createElement('div');
+    tag.className = 'nameTag';
+    tag.textContent = p.name || '친구';
+    document.getElementById('chatLayer').appendChild(tag);
+    r = remotePlayers[id] = { mesh, name:p.name, tag,
+      target:new THREE.Vector3(), yaw:0, phase:0, moving:false, air:false, last: performance.now() };
+  }
+  r.target.set(p.x, p.y, p.z);
+  r.yaw = p.yaw;
+  r.moving = !!p.mv;
+  r.air = !!p.air;
+  r.last = performance.now();
+}
+function removeRemotePlayer(id){
+  const r = remotePlayers[id];
+  if (!r) return;
+  scene.remove(r.mesh);
+  disposeObject3D(r.mesh);
+  if (r.tag && r.tag.parentNode) r.tag.parentNode.removeChild(r.tag);
+  delete remotePlayers[id];
+}
+function clearRemotePlayers(){
+  for (const k of Object.keys(remotePlayers)) removeRemotePlayer(k);
+}
+// A player whose position hasn't arrived in a while has really disconnected
+// (closed the tab, lost signal, phone slept). Remove the ghost so it doesn't
+// stand frozen in the tower forever; the host also drops them from the roster.
+const REMOTE_STALE_MS = 12000;
+function pruneStaleRemotes(){
+  const now = performance.now();
+  for (const id of Object.keys(remotePlayers)){
+    const r = remotePlayers[id];
+    if (r.last && (now - r.last) > REMOTE_STALE_MS){
+      const nm = r.name || '친구';
+      removeRemotePlayer(id);
+      if (net.mode === 'host'){
+        const gi = net.guests.findIndex(g => g.id === id);
+        if (gi >= 0) net.guests.splice(gi, 1);
+        updateMpList();
+        hostSend('all', {t:'left', id, name:nm});
+      }
+      showTip('👋 ' + nm + ' 님이 나갔어요');
+    }
+  }
+}
+let pruneTimer = 0;
+function updateRemotePlayers(dt){
+  // only prune mid-game — in the lobby nobody sends positions yet
+  if (game && !game.over && net.mode !== 'solo'){
+    pruneTimer += dt;
+    if (pruneTimer > 2){ pruneTimer = 0; pruneStaleRemotes(); }
+  }
+  const proj = new THREE.Vector3();
+  for (const id of Object.keys(remotePlayers)){
+    const r = remotePlayers[id];
+    r.mesh.position.lerp(r.target, Math.min(1, 12*dt));
+    let d = r.yaw - r.mesh.rotation.y;
+    while (d > Math.PI) d -= Math.PI*2;
+    while (d < -Math.PI) d += Math.PI*2;
+    r.mesh.rotation.y += d * Math.min(1, 12*dt);
+    r.phase += dt * (r.moving ? 5 : 1);
+    animateAvatarWalk(r.mesh, r.phase, r.moving, r.air);
+    // name tag
+    proj.copy(r.mesh.position); proj.y += 2.3;
+    proj.project(camera);
+    if (proj.z > 1 || !game){ r.tag.style.display = 'none'; continue; }
+    r.tag.style.display = 'block';
+    r.tag.style.left = ((proj.x*0.5+0.5)*innerWidth) + 'px';
+    r.tag.style.top  = ((-proj.y*0.5+0.5)*innerHeight) + 'px';
+  }
+}
+
+let netTimer = 0;
+function netTick(dt){
+  if (net.mode === 'solo' || !game || game.over) return;
+  netTimer += dt;
+  if (netTimer < 1/INPUT_HZ) return;
+  netTimer = 0;
+  const mv = Math.hypot(game.vel.x, game.vel.z) > 0.6;
+  const msg = { t:'pos', x:game.pos.x, y:game.pos.y, z:game.pos.z, yaw: myAvatar ? myAvatar.rotation.y : 0,
+                mv, air: !game.grounded, name: prog.name, cfg: avaCfg() };
+  if (net.mode === 'host'){ hostSend('all', msg); }
+  else { guestSend(msg); }
+}
+
+// chat bubbles
+const bubbles = [];
+function showBubble(who, msg){
+  const el = document.createElement('div');
+  el.className = 'bub';
+  el.textContent = msg;
+  document.getElementById('chatLayer').appendChild(el);
+  const getPos = () => {
+    if (who === 'me') return game ? new THREE.Vector3(game.pos.x, game.pos.y, game.pos.z) : null;
+    const r = remotePlayers[who];
+    return r ? r.mesh.position : null;
+  };
+  bubbles.push({ el, getPos, life:3.0 });
+}
+function updateBubbles(dt){
+  const v = new THREE.Vector3();
+  for (let i=bubbles.length-1;i>=0;i--){
+    const b = bubbles[i];
+    b.life -= dt;
+    if (b.life <= 0){ if (b.el.parentNode) b.el.parentNode.removeChild(b.el); bubbles.splice(i,1); continue; }
+    const p = b.getPos();
+    if (!p){ b.el.style.display = 'none'; continue; }
+    v.copy(p); v.y += 2.6;
+    v.project(camera);
+    if (v.z > 1){ b.el.style.display = 'none'; continue; }
+    b.el.style.display = 'block';
+    b.el.style.left = ((v.x*0.5+0.5)*innerWidth) + 'px';
+    b.el.style.top  = ((-v.y*0.5+0.5)*innerHeight) + 'px';
+    b.el.style.opacity = Math.min(1, b.life);
+  }
+}
+function sendChat(msg){
+  if (!game || game.over) return;
+  showBubble('me', msg);
+  sfx.chat();
+  if (net.mode === 'host') hostSend('all', {t:'chat', from:'host', msg, name:prog.name});
+  else if (net.mode === 'guest') guestSend({t:'chat', msg, name:prog.name});
+}
+
+// ---- channel lifecycle: one connector for host + guest, with auto-reconnect ----
+// Mobile reality: backgrounding the tab, switching Wi-Fi↔LTE, or the phone sleeping
+// silently kills the Realtime websocket. Without recovery the room just goes dead.
+// Here every drop (CHANNEL_ERROR / TIMED_OUT / CLOSED after we joined) tears the
+// channel down and rebuilds it with backoff; a reconnected guest re-sends 'hello'
+// so the host re-syncs them (see the hello handler above).
+let mpReconnectT = null, mpAttempts = 0, mpEverJoined = false;
+
+function teardownChannel(){
+  if (mpReconnectT){ clearTimeout(mpReconnectT); mpReconnectT = null; }
+  if (mpCh && sb){ try{ sb.removeChannel(mpCh); }catch(e){} }
+  mpCh = null;
+}
+
+function openChannel(code, onFirstJoin, onFail){
+  teardownChannel();
+  mpCh = sb.channel('bpt-'+code, {config:{broadcast:{self:false}}});
+  mpCh.on('broadcast', {event:'m'}, m => onChMsg(m.payload));
+  const ch = mpCh;   // capture: ignore late status events from channels we've replaced
+  let settled = false;
+  mpCh.subscribe(st => {
+    if (mpCh !== ch) return;
+    if (st === 'SUBSCRIBED'){
+      mpAttempts = 0;
+      mpEverJoined = true;
+      // guests must announce themselves on every (re)join so the host re-syncs them
+      if (net.mode === 'guest') guestSend({t:'hello', name: prog.name, cfg: avaCfg()});
+      if (!settled){ settled = true; if (onFirstJoin) onFirstJoin(); }
+      return;
+    }
+    if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT' || st === 'CLOSED'){
+      if (!settled && !mpEverJoined){
+        // never managed to connect at all — report failure to the caller
+        settled = true;
+        if (onFail) onFail(new Error(st));
+        return;
+      }
+      // we were connected and lost it — reconnect with backoff (max ~8s between tries)
+      scheduleReconnect();
+    }
+  });
+}
+
+function scheduleReconnect(){
+  if (net.mode === 'solo' || !net.code || mpReconnectT) return;
+  mpAttempts++;
+  const wait = Math.min(8000, 800 * Math.pow(2, Math.min(mpAttempts, 4)));
+  showTip('📶 연결이 끊겼어요... 다시 연결 중');
+  mpReconnectT = setTimeout(() => {
+    mpReconnectT = null;
+    if (net.mode === 'solo' || !net.code) return;
+    openChannel(net.code,
+      () => showTip('✅ 다시 연결됐어요!'),
+      () => scheduleReconnect());
+  }, wait);
+}
+
+// When the phone comes back from sleep / tab switch, check the socket right away
+// instead of waiting for a timeout to notice.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  initAudio(); // also resume a suspended AudioContext
+  if (net.mode !== 'solo' && net.code && mpCh && mpCh.state !== 'joined' && !mpReconnectT){
+    scheduleReconnect();
+  }
+});
+
+function netAvailable(){
+  return !!sb;
+}
+
+function hostRoom(){
+  if (!netAvailable()) return null;
+  net.mode = 'host';
+  net.code = code4();
+  net.id = 'host';
+  net.guests = [];
+  net.seed = Math.floor(Math.random()*90000) + 10000;
+  mpEverJoined = false; mpAttempts = 0;
+  openChannel(net.code, null, () => {
+    showTip('❌ 온라인 연결에 실패했어요');
+  });
+  return net.code;
+}
+function joinRoom(code){
+  if (!netAvailable()) return Promise.reject(new Error('NO_NET'));
+  net.mode = 'guest';
+  net.code = code;
+  net.id = rid();
+  mpEverJoined = false; mpAttempts = 0;
+  return new Promise((res, rej) => {
+    openChannel(code, res, rej);
+  });
+}
+function updateMpList(){
+  const el = document.getElementById('mpList');
+  if (!el) return;
+  el.textContent = net.guests.length === 0
+    ? '친구를 기다리는 중...'
+    : '접속: ' + net.guests.map(g=>g.name).join(', ') + ' (' + net.guests.length + '명)';
+}
+
+// =================================================================
+// SCREEN WIRING
+// =================================================================
+// loading
+(function(){
+  const bar = document.getElementById('loadBar');
+  const txt = document.getElementById('loadTxt');
+  const msgs = ['타워를 세우는 중...','핑크 곰을 깨우는 중...','파란 고양이 밥 주는 중...','회오리를 부르는 중...','코인 뿌리는 중...'];
+  let p = 0;
+  const iv = setInterval(() => {
+    p += 7 + Math.random()*13;
+    if (p > 100) p = 100;
+    bar.style.width = p + '%';
+    if (Math.random() < 0.4) txt.textContent = msgs[Math.floor(Math.random()*msgs.length)];
+    if (p >= 100){ clearInterval(iv); setTimeout(()=>showScreen('manualScreen'), 350); }
+  }, 170);
+})();
+
+// TESTER UNLOCK — for checking whether items work correctly.
+// Only ever applies to the profile literally named "꼬리"; every other player's
+// save is completely untouched.
+async function applyTesterUnlockIfNeeded(){
+  if (prog.name !== '꼬리') return;
+  prog.coins = 99999;
+  for (const it of ITEM_SHOP) prog.owned[it.id] = true;
+  for (const cat of Object.keys(AVA_SHOP)) for (const it of AVA_SHOP[cat]) prog.owned[it.id] = true;
+  await saveProg();
+  updateCoinUI();
+}
+
+document.getElementById('manualOk').onclick = async () => {
+  initAudio(); startBGM();
+  await loadProg();
+  await applyTesterUnlockIfNeeded();
+  if (prog.onboarded) goHome();
+  else startOnboard();
+};
+
+// onboarding
+let obTmp = { name:'', type:'cat' };
+function startOnboard(){
+  showScreen('obScreen');
+  obTmp = { name:'', type:'cat' };
+  document.getElementById('obS1').style.display = 'block';
+  document.getElementById('obS2').style.display = 'none';
+  document.getElementById('obName').value = '';
+  buildCharPicker(document.getElementById('obChars'), obTmp.type, t => { obTmp.type = t; });
+}
+function buildCharPicker(container, sel, onPick){
+  container.innerHTML = '';
+  for (const ct of CHAR_TYPES){
+    const d = document.createElement('div');
+    d.className = 'charOpt' + (ct.id === sel ? ' sel' : '');
+    const cv = document.createElement('canvas');
+    cv.width = 140; cv.height = 140;
+    d.appendChild(cv);
+    const nm = document.createElement('div');
+    nm.className = 'cname';
+    nm.textContent = ct.name;
+    d.appendChild(nm);
+    d.onclick = () => { onPick(ct.id); buildCharPicker(container, ct.id, onPick); };
+    container.appendChild(d);
+    renderAvatarThumb(cv, {type:ct.id, hair:'hair_none', shirt:'shirt_basic', pants:'pants_basic',
+      band:'band_none', face:'face_smile', bag:'bag_none', shoes:'shoes_basic'}, 140);
+  }
+}
+document.getElementById('obN1').onclick = () => {
+  const v = document.getElementById('obName').value.trim();
+  if (!v){ alert('이름을 입력해주세요!'); return; }
+  obTmp.name = v;
+  document.getElementById('obS1').style.display = 'none';
+  document.getElementById('obS2').style.display = 'block';
+};
+document.getElementById('obN2').onclick = async () => {
+  prog.name = obTmp.name;
+  prog.charType = obTmp.type;
+  prog.onboarded = true;
+  await saveProg();
+  await applyTesterUnlockIfNeeded();
+  goHome();
+};
+
+// profile
+document.getElementById('profChip').onclick = () => {
+  overlay('profScreen', true);
+  document.getElementById('pfName').value = prog.name;
+  buildCharPicker(document.getElementById('pfChars'), prog.charType, t => { prog.charType = t; });
+};
+document.getElementById('pfSave').onclick = async () => {
+  const v = document.getElementById('pfName').value.trim();
+  if (v) prog.name = v;
+  await saveProg();
+  await applyTesterUnlockIfNeeded();
+  overlay('profScreen', false);
+  showScreen('homeScreen');
+  refreshHome();
+};
+document.getElementById('pfClose').onclick = () => {
+  overlay('profScreen', false);
+  showScreen('homeScreen');
+  refreshHome();
+};
+
+// play menu
+document.getElementById('playB').onclick = () => {
+  initAudio(); startBGM();
+  document.getElementById('playMenu').classList.toggle('on');
+};
+document.getElementById('playCancelB').onclick = () => {
+  document.getElementById('playMenu').classList.remove('on');
+};
+document.getElementById('playSoloB').onclick = () => {
+  net.mode = 'solo';
+  startGame(12345);
+};
+document.getElementById('playOnB').onclick = () => {
+  document.getElementById('playMenu').classList.remove('on');
+  showScreen('mpScreen');
+  document.getElementById('mpChoice').style.display = 'block';
+  document.getElementById('mpHostP').style.display = 'none';
+  document.getElementById('mpJoinP').style.display = 'none';
+};
+
+// shops
+document.getElementById('itemShopB').onclick = () => { overlay('itemShop', true); renderItemShop(); };
+document.getElementById('itemClose').onclick = () => { overlay('itemShop', false); showScreen('homeScreen'); refreshHome(); };
+document.getElementById('avaShopB').onclick = () => { overlay('avaShop', true); renderAvaShop(); };
+document.getElementById('avaClose').onclick = () => { overlay('avaShop', false); showScreen('homeScreen'); refreshHome(); };
+document.querySelectorAll('#avaTabs .tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('#avaTabs .tab').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    avaCat = t.dataset.c;
+    renderAvaShop();
+  };
+});
+
+// multiplayer screens
+document.getElementById('mpBack1').onclick = () => goHome();
+document.getElementById('mpBack2').onclick = () => {
+  document.getElementById('mpHostP').style.display = 'none';
+  document.getElementById('mpChoice').style.display = 'block';
+};
+document.getElementById('mpBack3').onclick = () => {
+  document.getElementById('mpJoinP').style.display = 'none';
+  document.getElementById('mpChoice').style.display = 'block';
+};
+document.getElementById('mpHostB').onclick = () => {
+  const c = hostRoom();
+  if (!c){
+    // supabase-js failed to load (offline / CDN blocked) — don't crash, explain
+    showTip('❌ 온라인 기능을 사용할 수 없어요. 인터넷 연결을 확인해주세요');
+    return;
+  }
+  document.getElementById('mpCode').textContent = c;
+  document.getElementById('mpChoice').style.display = 'none';
+  document.getElementById('mpHostP').style.display = 'block';
+  updateMpList();
+};
+document.getElementById('mpJoinShowB').onclick = () => {
+  document.getElementById('mpChoice').style.display = 'none';
+  document.getElementById('mpJoinP').style.display = 'block';
+};
+document.getElementById('mpStartB').onclick = () => {
+  hostSend('all', {t:'start', seed: net.seed, players: rosterForNet()});
+  applyRoster(rosterForNet());
+  startGame(net.seed);
+};
+document.getElementById('mpJoinB').onclick = async () => {
+  const c = document.getElementById('mpCodeIn').value.trim();
+  if (!c){ document.getElementById('mpStatus').textContent = '코드를 입력해주세요'; return; }
+  document.getElementById('mpStatus').textContent = '연결 중...';
+  try{
+    await joinRoom(c);
+    document.getElementById('mpStatus').textContent = '✅ 연결됨! 방장이 시작하길 기다리는 중...';
+  } catch(e){
+    document.getElementById('mpStatus').textContent = '❌ 연결 실패. 코드를 확인해주세요.';
+  }
+};
+
+// win screen
+document.getElementById('winClaimB').onclick = async () => {
+  await claimCoins();
+  exitToHome();
+};
+document.getElementById('winRetryB').onclick = async () => {
+  await claimCoins();
+  startGame(net.mode === 'solo' ? 12345 : net.seed);
+};
+
+// exit
+document.getElementById('exitB').onclick = async () => {
+  const got = (game && game.coins) ? game.coins : 0;
+  const msg = got > 0
+    ? '게임을 나갈까요?\n\n지금까지 모은 🪙 ' + got + '개는 그대로 받아요!'
+    : '게임을 나갈까요?';
+  if (!confirm(msg)) return;
+  exitToHome();               // exitToHome() banks the collected coins itself
+};
+
+// mute
+document.getElementById('muteB').onclick = () => {
+  musicOn = !musicOn;
+  document.getElementById('muteB').textContent = musicOn ? '🔊' : '🔇';
+};
+
+// quick chat
+const qcM = document.getElementById('qcM');
+document.getElementById('qcT').onclick = e => { e.stopPropagation(); qcM.classList.toggle('on'); };
+document.querySelectorAll('.qcO').forEach(b => {
+  b.onclick = e => { e.stopPropagation(); sendChat(b.dataset.m); qcM.classList.remove('on'); };
+});
+document.addEventListener('click', e => { if (!e.target.closest('#qc')) qcM.classList.remove('on'); });
+
+// bag (consumable items)
+const bagPanel = document.getElementById('bagPanel');
+document.getElementById('bagBtn').onclick = e => {
+  e.stopPropagation();
+  initAudio();
+  updateBagUI();
+  bagPanel.classList.toggle('on');
+};
+document.getElementById('bagMagnetUse').onclick = e => {
+  e.stopPropagation();
+  useMagnetCharge();
+};
+document.addEventListener('click', e => { if (!e.target.closest('#bagWrap')) bagPanel.classList.remove('on'); });
+
+// =================================================================
+// MAIN LOOP
+// =================================================================
+const clock = new THREE.Clock();
+function loop(){
+  requestAnimationFrame(loop);
+  const dt = Math.min(clock.getDelta(), 0.05);
+
+  // home stage preview
+  const homeOn = document.getElementById('homeScreen').classList.contains('on');
+  if (homeOn) renderHomeStage(dt);
+
+  animateWorld(dt);
+  updatePuffs(dt);
+  updateTrailBits(dt);
+
+  if (game && !game.over){
+    if (game.knockCD > 0) game.knockCD -= dt;
+    updatePlayer(dt);
+    syncAvatar(dt);
+    updateCamera(dt);
+    netTick(dt);
+    const el = performance.now() - game.startTime;
+    document.getElementById('timerBox').textContent = fmtTime(el);
+  }
+
+  updateRemotePlayers(dt);
+  updateBubbles(dt);
+
+  renderer.render(scene, camera);
+}
+loop();
+
+})();
+</script>
+</body>
+</html>

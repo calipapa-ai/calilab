@@ -28,7 +28,7 @@ body{
     radial-gradient(ellipse at 75% 75%, rgba(65,132,199,0.25) 0%, transparent 55%),
     radial-gradient(ellipse at 50% 100%, rgba(45,35,88,0.6) 0%, transparent 70%),
     linear-gradient(180deg, var(--void) 0%, var(--night) 45%, var(--night-deep) 100%);}
-.star{position:absolute; background:var(--gold-bright); border-radius:50%; opacity:0.7; animation:twinkle 3s ease-in-out infinite;}
+#starfield .star{position:absolute; background:var(--gold-bright); border-radius:50%; opacity:0.7; animation:twinkle 3s ease-in-out infinite;}
 @keyframes twinkle{0%,100%{opacity:0.2; transform:scale(0.8);} 50%{opacity:1; transform:scale(1.3);}}
 
 .page{position:relative; z-index:1; width:100%; max-width:920px; padding:36px 20px 64px;
@@ -104,15 +104,74 @@ body{
 .art-antopia .leaf.l2{right:6%; bottom:4%; transform:rotate(15deg) scaleX(-1);}
 @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg);} 50%{transform:translateY(-12px) rotate(3deg);}}
 
-.art-dotoring{background:linear-gradient(180deg,#4a9fe0 0%,#bfe8f5 42%,#5a9c4a 42%,#3E6E28 100%);}
+.art-dotoring{background:linear-gradient(180deg,#3f97dd 0%,#6fb8e8 26%,#a9ddf2 40%,#5a9c4a 42%,#3E6E28 100%);}
 .art-dotoring .fog{position:absolute; inset:0; background:radial-gradient(ellipse at 60% 70%, rgba(255,255,255,0.25) 0%, transparent 55%);}
+.art-dotoring .sun{position:absolute; right:12%; top:8%; width:64px; height:64px; border-radius:50%;
+  background:radial-gradient(circle,#FFF7D0,#FFE08A); box-shadow:0 0 44px rgba(255,225,140,0.85);}
+.art-dotoring .cloud{position:absolute; border-radius:40px; background:rgba(255,255,255,0.85);
+  animation:drift 22s ease-in-out infinite alternate;}
+.art-dotoring .cloud.c1{width:74px; height:22px; left:12%; top:12%;}
+.art-dotoring .cloud.c2{width:56px; height:18px; left:44%; top:7%; animation-delay:-8s;}
+@keyframes drift{from{transform:translateX(-12px);} to{transform:translateX(14px);}}
 .art-dotoring .tree{position:absolute; bottom:14%; font-size:56px; filter:drop-shadow(0 8px 14px rgba(0,0,0,0.3));}
 .art-dotoring .tree.t1{right:34%; font-size:70px;}
 .art-dotoring .tree.t2{right:12%; bottom:10%;}
 .art-dotoring .tree.t3{right:52%; bottom:18%; font-size:44px; opacity:0.85;}
+.art-dotoring .cake{position:absolute; right:44%; bottom:44%; font-size:30px; animation:cakeFall 2.6s ease-in-out infinite;
+  filter:drop-shadow(0 6px 10px rgba(0,0,0,0.3));}
+@keyframes cakeFall{0%,100%{transform:translateY(-10px);} 50%{transform:translateY(6px);}}
 .art-dotoring .acorn{position:absolute; right:22%; bottom:20%; font-size:64px; filter:drop-shadow(0 8px 16px rgba(0,0,0,0.35)); animation:hop 1.6s ease-in-out infinite;}
-@media(max-width:640px){ .art-dotoring .acorn{right:18%; bottom:30%; font-size:54px;} .art-dotoring .tree.t1{font-size:56px;} }
+@media(max-width:640px){ .art-dotoring .acorn{right:18%; bottom:30%; font-size:54px;} .art-dotoring .tree.t1{font-size:56px;} .art-dotoring .cake{bottom:52%;} }
 @keyframes hop{0%,100%{transform:translateY(0);} 40%{transform:translateY(-18px);}}
+
+/* 블루핑크 타워 아트 */
+.art-bluepink{background:linear-gradient(180deg,#87CEEB 0%,#B8E0F5 40%,#FFB6D9 70%,#FF8AC2 100%);}
+.art-bluepink .towerA{position:absolute; left:24%; bottom:0; width:56px; height:72%;
+  background:linear-gradient(180deg,#5AA9E6,#3D7FC1); border-radius:10px 10px 0 0; box-shadow:0 0 24px rgba(90,169,230,0.6);}
+.art-bluepink .towerB{position:absolute; right:24%; bottom:0; width:56px; height:58%;
+  background:linear-gradient(180deg,#FF8AC2,#E85D9E); border-radius:10px 10px 0 0; box-shadow:0 0 24px rgba(255,138,194,0.6);}
+.art-bluepink .plat{position:absolute; width:44px; height:10px; border-radius:6px; background:#fff; box-shadow:0 4px 10px rgba(0,0,0,0.2); animation:bob 3s ease-in-out infinite;}
+.art-bluepink .plat.p1{left:38%; bottom:38%;}
+.art-bluepink .plat.p2{left:48%; bottom:56%; animation-delay:-1s;}
+.art-bluepink .plat.p3{left:40%; bottom:74%; animation-delay:-2s;}
+.art-bluepink .climber{position:absolute; left:46%; bottom:60%; font-size:40px; animation:hop 1.8s ease-in-out infinite; filter:drop-shadow(0 8px 14px rgba(0,0,0,0.3));}
+@media(max-width:640px){ .art-bluepink .climber{font-size:34px;} }
+
+/* 겟 더 스타 아트 */
+.art-star{background:linear-gradient(180deg,#7EC8E3 0%,#A8E6CF 55%,#56A845 100%);}
+.art-star .bigstar{position:absolute; left:50%; top:34%; transform:translateX(-50%); font-size:80px;
+  animation:starPulse 2.2s ease-in-out infinite; filter:drop-shadow(0 0 26px rgba(255,220,80,0.9));}
+@keyframes starPulse{0%,100%{transform:translateX(-50%) scale(1) rotate(-6deg);} 50%{transform:translateX(-50%) scale(1.15) rotate(6deg);}}
+.art-star .runnerB{position:absolute; left:22%; bottom:16%; font-size:44px; animation:hop 1.4s ease-in-out infinite; filter:drop-shadow(0 6px 12px rgba(0,0,0,0.3));}
+.art-star .runnerP{position:absolute; right:22%; bottom:16%; font-size:44px; animation:hop 1.4s ease-in-out infinite; animation-delay:-0.7s; transform:scaleX(-1); filter:drop-shadow(0 6px 12px rgba(0,0,0,0.3));}
+.art-star .banana{position:absolute; left:44%; bottom:12%; font-size:26px; transform:rotate(-18deg);}
+@media(max-width:640px){ .art-star .bigstar{font-size:64px;} .art-star .runnerB,.art-star .runnerP{font-size:36px;} }
+
+/* 가챠가쟈 일본가자 아트 */
+.art-gacha{background:linear-gradient(180deg,#1a0d38 0%,#3d1f6e 55%,#ff2d95 140%);}
+.art-gacha .neon{position:absolute; inset:0;
+  background:radial-gradient(ellipse at 30% 25%, rgba(255,45,149,0.35) 0%, transparent 55%),
+             radial-gradient(ellipse at 72% 60%, rgba(0,229,255,0.3) 0%, transparent 55%);}
+.art-gacha .machine{position:absolute; bottom:8%; width:52px; height:88px; border-radius:9px;
+  background:linear-gradient(180deg,#f4f4f4 0%,#f4f4f4 46%,#e8e8e8 46%,#dcdcdc 100%);
+  box-shadow:0 8px 20px rgba(0,0,0,0.4);}
+.art-gacha .machine::before{content:''; position:absolute; top:7px; left:7px; right:7px; height:32px; border-radius:5px;
+  background:linear-gradient(135deg,#ffd166,#ff2d95);}
+.art-gacha .machine::after{content:''; position:absolute; bottom:20px; left:50%; margin-left:-9px; width:18px; height:18px;
+  border-radius:50%; background:#f0f0f0; border:3px solid #999;}
+.art-gacha .machine.m1{left:16%;} .art-gacha .machine.m2{left:16%; bottom:calc(8% + 92px); height:80px;}
+.art-gacha .machine.m3{right:16%;} .art-gacha .machine.m4{right:16%; bottom:calc(8% + 92px); height:80px;}
+.art-gacha .capsule{position:absolute; left:50%; top:30%; font-size:64px; transform:translateX(-50%);
+  animation:capsuleBob 2.4s ease-in-out infinite; filter:drop-shadow(0 0 22px rgba(255,45,149,0.8));}
+@keyframes capsuleBob{0%,100%{transform:translateX(-50%) translateY(0) rotate(-8deg);} 50%{transform:translateX(-50%) translateY(-14px) rotate(8deg);}}
+.art-gacha .torii{position:absolute; left:50%; bottom:8%; transform:translateX(-50%); font-size:40px; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.4));}
+@media(max-width:640px){ .art-gacha .capsule{font-size:52px;} .art-gacha .machine{width:42px; height:72px;} .art-gacha .machine.m2,.art-gacha .machine.m4{bottom:calc(8% + 76px); height:64px;} }
+
+.feature-pills{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px;}
+.pill{font-size:10.5px; font-weight:700; padding:4px 10px; border-radius:20px;
+  background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.3); color:#fff;
+  backdrop-filter:blur(4px); white-space:nowrap;}
+@media(max-width:640px){ .feature-pills{gap:5px; margin-bottom:12px;} .pill{font-size:9.5px; padding:3px 8px;} }
 
 /* game cards */
 .section-label{align-self:flex-start; margin:44px 4px 16px; font-family:'Nanum Myeongjo',serif;
@@ -121,7 +180,8 @@ body{
 @media(max-width:640px){ .cards{grid-template-columns:1fr;} }
 
 .card{position:relative; text-decoration:none; color:var(--ink); border-radius:20px; overflow:hidden;
-  border:1.5px solid var(--line); background:rgba(20,16,43,0.55); transition:transform .15s, box-shadow .15s;}
+  border:1.5px solid var(--line); background:rgba(20,16,43,0.55); transition:transform .15s, box-shadow .15s;
+  animation:none; opacity:1; transform:none;}
 .card:active{transform:scale(0.97);}
 .card-thumb{position:relative; width:100%; aspect-ratio:16/10; overflow:hidden;}
 .card-thumb .badge{position:absolute; top:10px; left:10px; z-index:3; font-size:10px; font-weight:800;
@@ -137,9 +197,21 @@ body{
 .card.antopia .badge{background:var(--ant);} .card.antopia .card-name{color:#FFD9A0;} .card.antopia .card-play{color:#FFD9A0;}
 .card.dotoring{border-color:rgba(120,180,90,0.5);} .card.dotoring:active{box-shadow:0 0 26px rgba(120,180,90,0.4);}
 .card.dotoring .badge{background:var(--dot);} .card.dotoring .card-name{color:#D4EBB0;} .card.dotoring .card-play{color:#D4EBB0;}
+.card.bluepink{border-color:rgba(90,169,230,0.5);} .card.bluepink:active{box-shadow:0 0 26px rgba(255,138,194,0.45);}
+.card.bluepink .badge{background:linear-gradient(90deg,#5AA9E6,#FF8AC2);} .card.bluepink .card-name{color:#BFE0FF;} .card.bluepink .card-play{color:#FFB6D9;}
+.card.star{border-color:rgba(255,215,80,0.5);} .card.star:active{box-shadow:0 0 26px rgba(255,215,80,0.4);}
+.card.star .badge{background:#E8A020;} .card.star .card-name{color:#FFE9A8;} .card.star .card-play{color:#FFE9A8;}
+.card.gacha{border-color:rgba(255,45,149,0.5);} .card.gacha:active{box-shadow:0 0 26px rgba(255,45,149,0.45);}
+.card.gacha .badge{background:#ff2d95;} .card.gacha .card-name{color:#FF9ECF;} .card.gacha .card-play{color:#FF9ECF;}
 
 .card .card-thumb .thumb-emoji{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:52px; z-index:2;
   filter:drop-shadow(0 6px 12px rgba(0,0,0,0.4));}
+/* shrink hero-sized art bits when reused inside the small card thumbnails */
+.card .card-thumb .sun{width:30px; height:30px; right:10%; top:10%; box-shadow:0 0 20px rgba(255,225,140,0.8);}
+.card .card-thumb .cloud, .card .card-thumb .cake, .card .card-thumb .tree, .card .card-thumb .grid, .card .card-thumb .parrot, .card .card-thumb .leaf,
+.card .card-thumb .towerA, .card .card-thumb .towerB, .card .card-thumb .plat, .card .card-thumb .climber,
+.card .card-thumb .bigstar, .card .card-thumb .runnerB, .card .card-thumb .runnerP, .card .card-thumb .banana,
+.card .card-thumb .machine, .card .card-thumb .capsule, .card .card-thumb .torii{display:none;}
 
 .footer-note{margin-top:52px; text-align:center; font-size:11px; color:var(--ink-dim); letter-spacing:0.5px;}
 .footer-note .heart{color:var(--gold-dim);}
@@ -195,19 +267,97 @@ body{
 
       <div class="slide" data-i="2">
         <div class="slide-art art-dotoring">
+          <div class="sun"></div>
+          <div class="cloud c1"></div>
+          <div class="cloud c2"></div>
           <div class="fog"></div>
           <div class="tree t3">🌲</div>
           <div class="tree t1">🌳</div>
           <div class="tree t2">🌲</div>
+          <div class="cake">🍰</div>
           <div class="acorn">🌰</div>
         </div>
         <div class="slide-content">
           <span class="slide-tag" style="background:var(--dot);">3D Action</span>
           <div class="slide-title">도토링 런</div>
-          <div class="slide-desc">숲속 미로에서 펼쳐지는 3D 술래잡기 슈터. 친구와 온라인으로 도토링 vs 유리우다다 대결!</div>
+          <div class="slide-desc">숲속 미로 3D 술래잡기! 도토링 6명 vs 유리우다다 2명. 감옥에서 팀원을 구출하고, 케이크로 회복하고, 친구와 온라인 대결까지.</div>
+          <div class="feature-pills">
+            <span class="pill">🎨 캐릭터 꾸미기</span>
+            <span class="pill">🛍️ 상점</span>
+            <span class="pill">💬 퀵챗</span>
+            <span class="pill">👥 온라인</span>
+          </div>
           <a class="slide-btn" href="dotoringrun.html">지금 플레이 <span class="arr">→</span></a>
         </div>
       </div>
+      <div class="slide" data-i="3">
+        <div class="slide-art art-bluepink">
+          <div class="towerA"></div>
+          <div class="towerB"></div>
+          <div class="plat p1"></div>
+          <div class="plat p2"></div>
+          <div class="plat p3"></div>
+          <div class="climber">🧗</div>
+        </div>
+        <div class="slide-content">
+          <span class="slide-tag" style="background:linear-gradient(90deg,#5AA9E6,#FF8AC2);">3D Obby</span>
+          <div class="slide-title">블루핑크 타워</div>
+          <div class="slide-desc">로블록스 스타일 타워 오르기! 곰·고양이 발판을 딛고 나선형 탑 꼭대기까지. 무지개 카펫 비행과 아바타 꾸미기까지.</div>
+          <div class="feature-pills">
+            <span class="pill">🧗 점프맵</span>
+            <span class="pill">🌈 카펫 비행</span>
+            <span class="pill">👕 아바타샵</span>
+            <span class="pill">👥 온라인</span>
+          </div>
+          <a class="slide-btn" href="bluepink-tower.html">지금 플레이 <span class="arr">→</span></a>
+        </div>
+      </div>
+
+      <div class="slide" data-i="4">
+        <div class="slide-art art-star">
+          <div class="bigstar">⭐</div>
+          <div class="runnerB">🏃</div>
+          <div class="runnerP">🏃</div>
+          <div class="banana">🍌</div>
+        </div>
+        <div class="slide-content">
+          <span class="slide-tag" style="background:#E8A020;">Team Battle · NEW</span>
+          <div class="slide-title">겟 더 스타</div>
+          <div class="slide-desc">파랑 vs 핑크! 미로 한가운데 별을 차지하고 60초를 버텨라. 바나나 껍질과 미끌미끌공으로 상대를 방해하세요.</div>
+          <div class="feature-pills">
+            <span class="pill">⭐ 별 쟁탈전</span>
+            <span class="pill">🍌 함정 아이템</span>
+            <span class="pill">💬 퀵챗</span>
+            <span class="pill">👥 온라인</span>
+          </div>
+          <a class="slide-btn" href="get-that-star.html">지금 플레이 <span class="arr">→</span></a>
+        </div>
+      </div>
+
+      <div class="slide" data-i="5">
+        <div class="slide-art art-gacha">
+          <div class="neon"></div>
+          <div class="machine m1"></div>
+          <div class="machine m2"></div>
+          <div class="machine m3"></div>
+          <div class="machine m4"></div>
+          <div class="capsule">🔮</div>
+          <div class="torii">⛩️</div>
+        </div>
+        <div class="slide-content">
+          <span class="slide-tag" style="background:#ff2d95;">3D Arcade · NEW</span>
+          <div class="slide-title">가챠가쟈 일본 가자</div>
+          <div class="slide-desc">네온 가득한 일본 가챠 아케이드! 동전 넣고 다이얼 돌려 피규어 뽑기, 조준해서 잡는 인형뽑기, 키캡 키링까지. 친구들과 함께 랭킹 경쟁!</div>
+          <div class="feature-pills">
+            <span class="pill">🎰 가챠 뽑기</span>
+            <span class="pill">🕹️ 인형뽑기</span>
+            <span class="pill">🏆 랭킹</span>
+            <span class="pill">👥 온라인</span>
+          </div>
+          <a class="slide-btn" href="gacha-japan.html">지금 플레이 <span class="arr">→</span></a>
+        </div>
+      </div>
+
     </div>
 
     <button class="hero-btn prev" aria-label="이전">‹</button>
@@ -216,6 +366,9 @@ body{
       <div class="dot active" data-i="0"></div>
       <div class="dot" data-i="1"></div>
       <div class="dot" data-i="2"></div>
+      <div class="dot" data-i="3"></div>
+      <div class="dot" data-i="4"></div>
+      <div class="dot" data-i="5"></div>
     </div>
   </div>
 
@@ -250,12 +403,50 @@ body{
     <a class="card dotoring" href="dotoringrun.html">
       <div class="card-thumb art-dotoring">
         <span class="badge">3D</span>
+        <div class="sun"></div>
         <div class="fog"></div>
         <div class="thumb-emoji">🌰</div>
       </div>
       <div class="card-body">
         <div class="card-name">도토링 런</div>
-        <div class="card-desc">숲속 3D 술래잡기. 온라인 대전!</div>
+        <div class="card-desc">숲속 3D 술래잡기. 꾸미기 · 상점 · 온라인!</div>
+        <div class="card-play">플레이 →</div>
+      </div>
+    </a>
+
+    <a class="card bluepink" href="bluepink-tower.html">
+      <div class="card-thumb art-bluepink">
+        <span class="badge">OBBY · NEW</span>
+        <div class="thumb-emoji">🧗</div>
+      </div>
+      <div class="card-body">
+        <div class="card-name">블루핑크 타워</div>
+        <div class="card-desc">나선형 탑 오르기. 카펫 비행 · 아바타샵 · 온라인!</div>
+        <div class="card-play">플레이 →</div>
+      </div>
+    </a>
+
+    <a class="card star" href="get-that-star.html">
+      <div class="card-thumb art-star">
+        <span class="badge">BATTLE · NEW</span>
+        <div class="thumb-emoji">⭐</div>
+      </div>
+      <div class="card-body">
+        <div class="card-name">겟 더 스타</div>
+        <div class="card-desc">파랑 vs 핑크 별 쟁탈전. 미로 · 함정 · 온라인!</div>
+        <div class="card-play">플레이 →</div>
+      </div>
+    </a>
+
+    <a class="card gacha" href="gacha-japan.html">
+      <div class="card-thumb art-gacha">
+        <span class="badge">3D · NEW</span>
+        <div class="neon"></div>
+        <div class="thumb-emoji">🔮</div>
+      </div>
+      <div class="card-body">
+        <div class="card-name">가챠가쟈 일본 가자</div>
+        <div class="card-desc">네온 가챠 아케이드. 뽑기 · 인형뽑기 · 랭킹!</div>
         <div class="card-play">플레이 →</div>
       </div>
     </a>
