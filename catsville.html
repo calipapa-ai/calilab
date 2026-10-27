@@ -266,6 +266,7 @@ input.txt{flex:1;min-width:0;border:1px solid var(--line);background:var(--sheet
 .dm-line span{max-width:78%;background:#fff;border-radius:12px 12px 12px 4px;padding:6px 10px;font-size:13.5px;line-height:1.4;word-break:break-word;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .dm-line.me{justify-content:flex-end}
 .dm-line.me span{background:linear-gradient(180deg,#FFE08A,#F2C94C);border-radius:12px 12px 4px 12px}
+#sndBtn{position:absolute;right:0;top:0;pointer-events:auto;width:36px;height:36px;border-radius:50%;background:var(--chip);border:1px solid rgba(255,215,94,.35);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;backdrop-filter:blur(4px)}
 </style>
 </head>
 <body>
@@ -280,6 +281,7 @@ input.txt{flex:1;min-width:0;border:1px solid var(--line);background:var(--sheet
     <div class="chips" id="chips"></div>
     <div class="place" id="place"></div>
     <button id="evBtn" type="button"></button>
+    <button id="sndBtn" type="button" aria-label="소리"></button>
   </div>
 
   <div class="pick-title" id="pickTitle" style="display:none"></div>
@@ -484,7 +486,7 @@ function cond(c){
 const SB_URL = "https://cpxyozkhijzlaukbybrz.supabase.co";
 const SB_KEY = "sb_publishable_Ex7i1023EL3Qmy4ApZzP-A_iExrPqBR";
 const SB_JS  = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.52.1/dist/umd/supabase.js";
-const MAKER_HASH = "414b16246afcb867";
+const MAKER_HASH = "94cf1eb7c9927aa8";
 function mkHash(str){
   let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
   for (let i=0; i<str.length; i++){ const c = str.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }
@@ -611,7 +613,7 @@ let DB = null, UID = null, others = [], mailIn = [], mailOut = [], dmIn = [], dm
       const fr = new Set(friendsList().map(f=> f.id));
       const fresh = dmIn.filter(m=> !prev.has(m.id) && fr.has(m.from) && (m.at||0) > dmSeenT);
       if (sheetKind==="dm") renderDM();
-      else if (fresh.length && dmSeenT) toast(`${fresh[fresh.length-1].fromName||"친구"}: ${safeText(fresh[fresh.length-1].text).slice(0,24)}`);
+      else if (fresh.length && dmSeenT) SND.sfx("ding"), toast(`${fresh[fresh.length-1].fromName||"친구"}: ${safeText(fresh[fresh.length-1].text).slice(0,24)}`);
       dmSeenT = Math.max(dmSeenT || 0, Date.now() - 1000);
     }, ()=>{});
     DB.collection("dm").where("from","==",UID).onSnapshot(snap=>{ dmOut = snap.docs.map(d=>({ id:d.id, ...d.data() })).filter(m=> m && typeof m.text==="string"); if (sheetKind==="dm") renderDM(); }, ()=>{});
@@ -946,11 +948,14 @@ function openBag(){
     <div class="row" style="margin-top:12px"><button class="btn gold" id="toShop">상점에서 먹이 사기</button><button class="btn" id="toNest">부화소 열기</button><button class="btn" id="toMail">우편함 · 친구</button></div>
     ${eventActive() ? '<button class="btn" id="toEvent" style="width:100%;margin-top:8px">진행 중인 이벤트 보기</button>' : ''}
     ${isCreator ? '<button class="btn gold" id="toMaker" style="width:100%;margin-top:8px">제작자 메뉴 · 이벤트 열기</button>' : ''}
+    <div class="row" style="margin-top:8px"><button class="btn" id="tgMusic">배경음악 ${S.music!==false ? "켜짐" : "꺼짐"}</button><button class="btn" id="tgSfx">효과음 ${S.sfxOn!==false ? "켜짐" : "꺼짐"}</button></div>
     <div class="row" style="margin-top:8px"><button class="btn" id="replayStory">스토리 다시 보기</button><button class="btn danger" id="resetGame">처음부터 다시 하기</button></div>`);
   $("toShop").onclick = openShop; $("toNest").onclick = openNest; $("toMail").onclick = openMail;
   const tm = $("toMaker"); if (tm) tm.onclick = openMaker;
   const te = $("toEvent"); if (te) te.onclick = openEvent;
   $("replayStory").onclick = ()=>{ closeSheet(); startStory(); };
+  $("tgMusic").onclick = ()=>{ S.music = S.music===false; save(); SND.init(); SND.apply(); renderSndBtn(); $("tgMusic").textContent = "배경음악 " + (S.music!==false ? "켜짐" : "꺼짐"); };
+  $("tgSfx").onclick = ()=>{ S.sfxOn = S.sfxOn===false; save(); SND.init(); SND.apply(); renderSndBtn(); $("tgSfx").textContent = "효과음 " + (S.sfxOn!==false ? "켜짐" : "꺼짐"); };
   $("resetGame").onclick = ()=>{
     modal(`<h3>처음부터 다시 할까요?</h3><p class="muted" style="margin:0 0 14px">고양이, 알, 골드, 도감이 모두 사라지고 스토리부터 다시 시작해요. 되돌릴 수 없어요.</p><div class="row"><button class="btn" id="rsNo">취소</button><button class="btn danger" id="rsYes">처음부터</button></div>`);
     $("rsNo").onclick = closeModal;
@@ -1644,7 +1649,7 @@ setInterval(()=>{
     if (c.weak >= WEAK_LIMIT) lost = c;
   });
   if (lost){
-    S.cats = S.cats.filter(x=>x!==lost); S.lost = (S.lost||0)+1; changed = true;
+    S.cats = S.cats.filter(x=>x!==lost); S.lost = (S.lost||0)+1; SND.sfx("sad"); changed = true;
     if (sel===lost.did) closeSheet();
     modal(`<img src="${A.cats[lost.cid]}" alt="" style="opacity:.45"><h3>${esc(lost.name)}${iga(esc(lost.name))} 둥지를 떠났어요</h3><p class="muted" style="margin:0 0 14px">배고픔과 지저분함을 너무 오래 견뎠어요. 도감 기록은 남아 있어요.</p><button class="btn" style="width:100%" id="mok">확인</button>`);
     $("mok").onclick = closeModal;
@@ -1870,6 +1875,157 @@ function askMakerCode(then){
   };
 }
 
+/* ===================== 소리 (배경음악 · 효과음) ===================== */
+const TRACKS = {};
+TRACKS.plaza = { bpm:116, inst:"lead", perc:"shaker",
+  chords:[[48,52,55],[43,47,50],[45,48,52],[41,45,48],[48,52,55],[43,47,50],[45,48,52],[41,45,48]],
+  mel:[[72,null,76,null,79,76,74,null],[74,null,71,null,74,76,74,null],[72,null,69,null,72,74,76,null],[77,76,74,null,72,null,null,null],
+       [79,null,76,null,72,76,79,81],[79,null,74,null,71,74,79,null],[76,null,72,null,69,72,76,77],[76,null,74,null,72,null,null,null]] };
+TRACKS.home = { bpm:76, inst:"box", perc:null,
+  chords:[[53,57,60],[50,53,57],[46,50,53],[48,52,55],[53,57,60],[50,53,57],[46,50,53],[48,52,55]],
+  mel:[[81,77,72,77,81,null,84,null],[81,77,74,77,81,null,77,null],[79,77,74,70,74,null,77,null],[76,72,67,72,76,79,77,76],
+       [77,null,81,null,84,null,81,77],[74,null,77,null,81,null,77,74],[74,77,79,null,77,74,70,null],[72,null,76,null,79,null,null,null]] };
+TRACKS.explore = { bpm:100, inst:"flute", perc:"drum",
+  chords:[[50,53,57],[48,52,55],[46,50,53],[48,52,55],[50,53,57],[48,52,55],[46,50,53],[48,52,55]],
+  mel:[[74,null,77,79,81,null,79,77],[76,null,72,null,76,77,79,null],[77,null,74,null,70,72,74,null],[76,null,79,null,76,null,null,null],
+       [81,null,84,null,81,79,77,null],[79,null,76,null,72,76,79,null],[77,79,81,null,79,77,74,null],[76,null,72,null,74,null,null,null]] };
+TRACKS.story = { bpm:64, inst:"bell", perc:null, padVol:1.6,
+  chords:[[45,48,52],[41,45,48],[48,52,55],[43,47,50],[45,48,52],[41,45,48],[48,52,55],[43,47,50]],
+  mel:[[76,null,null,null,72,null,null,null],[77,null,null,null,76,null,72,null],[79,null,null,null,76,null,null,null],[74,null,71,null,74,null,null,null],
+       [81,null,null,null,79,null,76,null],[77,null,null,null,72,null,null,null],[76,null,79,null,84,null,null,null],[83,null,null,null,null,null,null,null]] };
+TRACKS["plaza-winter"]    = { ...TRACKS.plaza, bpm:104, inst:"bell", perc:"jingle" };
+TRACKS["plaza-rani-bday"] = { ...TRACKS.plaza, bpm:120, inst:"box", perc:"shaker" };
+TRACKS["plaza-spring"]    = { ...TRACKS.plaza, bpm:108, inst:"flute", perc:"shaker" };
+TRACKS["plaza-summer"]    = { ...TRACKS.plaza, bpm:128, inst:"lead", perc:"drum" };
+TRACKS["plaza-autumn"]    = { ...TRACKS.plaza, bpm:100, inst:"pluck", perc:"shaker" };
+TRACKS["plaza-halloween"] = { ...TRACKS.explore, bpm:96, inst:"pluck", perc:"drum", transpose:-2 };
+
+const SND = (()=>{
+  let ctx = null, master, mus, fx, nbuf, cur = null, want = null, step = 0, nextT = 0, swT = null, lastMeow = 0;
+  const MV = .34, FV = .55;
+  const musOn = ()=> S.music !== false, fxOn = ()=> S.sfxOn !== false;
+  const mf = m=> 440 * Math.pow(2, (m-69)/12);
+  function init(){
+    if (ctx){ if (ctx.state==="suspended" && !document.hidden) ctx.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    try { ctx = new AC(); } catch(e){ return; }
+    master = ctx.createGain(); master.gain.value = .9; master.connect(ctx.destination);
+    mus = ctx.createGain(); mus.gain.value = 0; mus.connect(master);
+    fx = ctx.createGain(); fx.gain.value = fxOn() ? FV : 0; fx.connect(master);
+    nbuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); const d = nbuf.getChannelData(0); for (let i=0; i<d.length; i++) d[i] = Math.random()*2-1;
+    setInterval(tick, 25);
+    if (want){ const w = want; want = null; music(w); }
+  }
+  function env(g, t, a, peak, dec){ g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(.0002, peak), t+a); g.gain.exponentialRampToValueAtTime(.0001, t+a+dec); }
+  function tone(type, f, t, dec, peak, dest, a, f2, filt){
+    const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.setValueAtTime(f, t);
+    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + (a||.005) + dec);
+    env(g, t, a||.005, peak, dec);
+    if (filt){ const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = filt; o.connect(lp); lp.connect(g); } else o.connect(g);
+    g.connect(dest); o.start(t); o.stop(t + (a||.005) + dec + .05); return o;
+  }
+  function noise(t, dur, peak, dest, type, freq, q){
+    const src = ctx.createBufferSource(); src.buffer = nbuf; const f = ctx.createBiquadFilter(); f.type = type||"highpass"; f.frequency.value = freq||6000; if (q) f.Q.value = q;
+    const g = ctx.createGain(); env(g, t, .003, peak, dur); src.connect(f); f.connect(g); g.connect(dest); src.start(t, Math.random()*.5); src.stop(t+dur+.05);
+  }
+  const INST = {
+    box:(m,t,d,o)=>{ tone("sine", mf(m), t, 1.1, .42, o); tone("sine", mf(m)*4, t, .25, .06, o); },
+    bell:(m,t,d,o)=>{ tone("sine", mf(m), t, 1.5, .34, o); tone("sine", mf(m)*2.76, t, .6, .08, o); },
+    lead:(m,t,d,o)=>{ tone("square", mf(m), t, Math.max(.12, d*.9), .13, o, .01, null, 2200); tone("triangle", mf(m), t, Math.max(.12, d*.9), .18, o, .01); },
+    flute:(m,t,d,o)=>{ const os = tone("sine", mf(m), t, Math.max(.2, d*1.1), .34, o, .05); const l = ctx.createOscillator(), lg = ctx.createGain(); l.frequency.value = 5.2; lg.gain.value = mf(m)*.012; l.connect(lg); lg.connect(os.frequency); l.start(t); l.stop(t+d+.4); },
+    pluck:(m,t,d,o)=>{ tone("triangle", mf(m), t, .38, .4, o); tone("sine", mf(m)*2, t, .12, .08, o); },
+  };
+  function pad(ch, t, d, vol){
+    ch.forEach((m,k)=>{ [-.07,.07].forEach(det=>{
+      const o = ctx.createOscillator(), g = ctx.createGain(), lp = ctx.createBiquadFilter();
+      o.type = "sawtooth"; o.frequency.value = mf(m+12) * Math.pow(2, det/12); lp.type = "lowpass"; lp.frequency.value = 900;
+      const v = .016 * (vol||1);
+      g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(v, t+.35); g.gain.setValueAtTime(v, t+d-.25); g.gain.linearRampToValueAtTime(.0001, t+d+.35);
+      o.connect(lp); lp.connect(g); g.connect(mus); o.start(t); o.stop(t+d+.4);
+    }); });
+  }
+  function schedule(n, t){
+    const c = cur, sd = 60/c.bpm/2, tr = c.transpose||0, bi = Math.floor(n/8) % c.chords.length, i = n % 8;
+    const ch = c.chords[bi].map(x=> x+tr);
+    if (i===0) pad(ch, t, sd*8, c.padVol);
+    if (i===0 || i===4) tone("triangle", mf(ch[0]), t, Math.min(.5, sd*3.5), .34, mus, .01, null, 700);
+    const m = c.mel[bi][i];
+    if (m!=null){ let len = 1; while (i+len < 8 && c.mel[bi][i+len]==null && len < 3) len++; INST[c.inst](m+tr, t, sd*len, mus); }
+    if (c.perc==="shaker" && i%2===1) noise(t, .05, .05, mus);
+    if (c.perc==="drum"){ if (i===0 || i===4) tone("sine", 130, t, .14, .5, mus, .003, 45); if (i===2 || i===6) noise(t, .07, .07, mus); }
+    if (c.perc==="jingle" && i%2===0){ noise(t, .08, .05, mus, "bandpass", 7500, 3); noise(t+.04, .06, .03, mus, "bandpass", 9000, 3); }
+  }
+  function tick(){ if (!ctx || !cur || ctx.state!=="running") return; while (nextT < ctx.currentTime + .15){ schedule(step, nextT); nextT += 60/cur.bpm/2; step++; } }
+  function music(name){
+    if (!TRACKS[name]) name = "plaza";
+    if (name===want && cur) return; want = name;
+    if (!ctx) return;
+    clearTimeout(swT);
+    mus.gain.cancelScheduledValues(ctx.currentTime); mus.gain.setValueAtTime(mus.gain.value, ctx.currentTime); mus.gain.linearRampToValueAtTime(0, ctx.currentTime + .4);
+    swT = setTimeout(()=>{ cur = TRACKS[want]; step = 0; nextT = ctx.currentTime + .08; mus.gain.cancelScheduledValues(ctx.currentTime); mus.gain.setValueAtTime(0, ctx.currentTime); mus.gain.linearRampToValueAtTime(musOn() ? MV : 0, ctx.currentTime + 1.2); }, cur ? 450 : 0);
+  }
+  const SFX = {
+    tap:  t=> tone("sine", 880, t, .06, .18, fx, .003, 1320),
+    knock:t=>{ tone("triangle", 260, t, .09, .5, fx, .002, 160); noise(t, .04, .12, fx, "bandpass", 1800, 1); },
+    hatch:t=>{ [84,88,91,96].forEach((m,k)=> INST.bell(m, t+k*.09, .3, fx)); noise(t+.3, .5, .06, fx, "highpass", 8000); },
+    feed: t=>{ tone("triangle", 520, t, .09, .35, fx); tone("triangle", 680, t+.1, .12, .35, fx); },
+    boing:t=> tone("sine", 260, t, .32, .4, fx, .005, 760),
+    bubble:t=>{ for (let k=0; k<5; k++) tone("sine", 600+Math.random()*700, t+k*.06, .07, .22, fx, .003, 1400+Math.random()*600); },
+    whoosh:t=> noise(t, .35, .22, fx, "bandpass", 1200, .8),
+    sleep:t=>{ tone("sine", 660, t, .3, .25, fx); tone("sine", 494, t+.28, .5, .22, fx); },
+    meow: t=>{ const o = ctx.createOscillator(), g = ctx.createGain(), bp = ctx.createBiquadFilter(); o.type = "sawtooth"; bp.type = "bandpass"; bp.Q.value = 4;
+      const b = 520 + Math.random()*160; o.frequency.setValueAtTime(b, t); o.frequency.linearRampToValueAtTime(b*1.45, t+.14); o.frequency.linearRampToValueAtTime(b*.85, t+.42);
+      bp.frequency.setValueAtTime(900, t); bp.frequency.linearRampToValueAtTime(1800, t+.15); bp.frequency.linearRampToValueAtTime(700, t+.42);
+      g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.28, t+.05); g.gain.setValueAtTime(.28, t+.3); g.gain.linearRampToValueAtTime(.0001, t+.45);
+      o.connect(bp); bp.connect(g); g.connect(fx); o.start(t); o.stop(t+.5); },
+    gift: t=>{ [79,84,88,91].forEach((m,k)=> INST.bell(m, t+k*.11, .3, fx)); },
+    evolve:t=>{ [72,76,79,84,88].forEach((m,k)=> INST.box(m, t+k*.08, .3, fx)); noise(t+.4, .6, .05, fx, "highpass", 9000); },
+    chime:t=>{ INST.bell(84, t, .3, fx); INST.bell(91, t+.12, .3, fx); },
+    sparkle:t=>{ [96,100,103].forEach((m,k)=> tone("sine", mf(m), t+k*.05, .25, .12, fx)); },
+    ding: t=>{ tone("sine", 1047, t, .25, .25, fx); tone("sine", 1319, t+.12, .35, .22, fx); },
+    pop:  t=> tone("sine", 500, t, .08, .3, fx, .003, 900),
+    sad:  t=>{ [69,65,62].forEach((m,k)=> tone("triangle", mf(m), t+k*.22, .4, .3, fx)); },
+  };
+  function sfx(name){ if (!ctx || !fxOn() || !SFX[name] || ctx.state!=="running") return; if (name==="meow"){ if (Date.now()-lastMeow < 500) return; lastMeow = Date.now(); } try { SFX[name](ctx.currentTime + .01); } catch(e){} }
+  function apply(){ if (!ctx) return; mus.gain.cancelScheduledValues(ctx.currentTime); mus.gain.setTargetAtTime(musOn() && cur ? MV : 0, ctx.currentTime, .1); fx.gain.setTargetAtTime(fxOn() ? FV : 0, ctx.currentTime, .05); }
+  document.addEventListener("visibilitychange", ()=>{ if (!ctx) return; if (document.hidden) ctx.suspend(); else ctx.resume(); });
+  return { init, music, sfx, apply };
+})();
+["pointerdown","keydown","touchstart"].forEach(ev=> window.addEventListener(ev, ()=> SND.init(), { capture:true, passive:true }));
+function musicFor(){
+  const st = $("story").classList;
+  if ($("prologue").classList.contains("on") || (st.contains("on") && !st.contains("talk"))) return "story";
+  if (view==="plaza") return (eventActive() && TRACKS["plaza-"+curEvent.kind]) ? "plaza-"+curEvent.kind : "plaza";
+  if (view==="home") return "home";
+  return "explore";
+}
+setInterval(()=> SND.music(musicFor()), 700);
+document.addEventListener("pointerdown", e=>{
+  const t = e.target;
+  if (t.closest(".actor")) return SND.sfx("meow");
+  if (t.closest(".egg-cell") || t.closest("#pick") || t.closest("#stPick")) return;
+  if (t.closest("button, .tb, .hot, .cell, .list-item")) SND.sfx("tap");
+}, true);
+{ const _act = act; act = function(did, kind){ const c0 = S.cats.find(x=> x.did===did), st0 = c0 ? c0.stage : 0; const r = _act.apply(this, arguments);
+    const c = S.cats.find(x=> x.did===did);
+    if (c){ SND.sfx({ feed:"feed", play:"boing", wash:"bubble", train:"whoosh", sleep:"sleep" }[kind] || "pop"); if (c.stage > st0) setTimeout(()=> SND.sfx("evolve"), 250); }
+    return r; }; }
+{ const _tap = tapEgg; tapEgg = function(eid){ const had = S.eggs.some(x=> x.eid===eid); const r = _tap.apply(this, arguments); if (had) SND.sfx(S.eggs.some(x=> x.eid===eid) ? "knock" : "hatch"); return r; }; }
+{ const _pick = pickEgg; pickEgg = function(){ const was = expo && !expo.done; const r = _pick.apply(this, arguments); if (was && expo && expo.done) SND.sfx("sparkle"); return r; }; }
+{ const _claim = claimEvent; claimEvent = function(){ const n = S.eggs.length; const r = _claim.apply(this, arguments); if (S.eggs.length > n) SND.sfx("gift"); return r; }; }
+{ const _send = sendDM; sendDM = function(){ SND.sfx("pop"); return _send.apply(this, arguments); }; }
+{ const _ban = banner; banner = function(){ SND.sfx("chime"); return _ban.apply(this, arguments); }; }
+function soundIcon(on){ return on
+  ? `<svg viewBox="0 0 16 16" width="18" height="18" shape-rendering="crispEdges"><path fill="#FFE08A" d="M2 6h3l4-3h1v10H9L5 10H2z"/><path fill="#FFE08A" d="M11 6h1v4h-1zM13 4h1v8h-1z"/></svg>`
+  : `<svg viewBox="0 0 16 16" width="18" height="18" shape-rendering="crispEdges"><path fill="#BFB3D6" d="M2 6h3l4-3h1v10H9L5 10H2z"/><path fill="#FF8FA8" d="M11 6h1v1h-1zM12 7h1v1h-1zM13 8h1v1h-1zM13 6h1v1h-1zM11 9h1v1h-1z"/></svg>`; }
+function renderSndBtn(){ const b = $("sndBtn"); if (!b) return; const on = S.music!==false || S.sfxOn!==false; b.innerHTML = soundIcon(on); b.setAttribute("aria-label", on ? "소리 끄기" : "소리 켜기"); }
+$("sndBtn").addEventListener("click", ()=>{
+  const on = S.music!==false || S.sfxOn!==false;
+  S.music = !on; S.sfxOn = !on; save(); SND.init(); SND.apply(); renderSndBtn();
+  toast(on ? "소리를 껐어요" : "소리를 켰어요");
+});
+renderSndBtn();
+
 /* ===================== 컴퓨터: 마우스로 끌기 · 휠 · 방향키 ===================== */
 document.addEventListener("dragstart", e=> e.preventDefault());
 document.querySelectorAll(".scene").forEach(sc=>{
@@ -1981,6 +2137,7 @@ function stShow(){
   $("stPick").classList.remove("on","item");
   if (s.item==="dia"){ const pk = $("stPick"); pk.innerHTML = `<div class="st-item"><img src="${A.dia}" alt=""><span>다이아 부화장치 획득!</span></div>`; pk.classList.add("on","item"); }
   if (s.item==="berry"){ const pk = $("stPick"); pk.innerHTML = `<div class="st-item"><span>숲열매 30개 획득!</span></div>`; pk.classList.add("on","item"); }
+  if (s.item) SND.sfx("gift");
   if (s.give && !S.tutBerry){ S.bag = S.bag || {}; S.bag.berry = (S.bag.berry||0) + 30; S.tutBerry = true; save(); }
   el.dataset.scene = s.scene; el.dataset.cat = s.cat || "";
   if (s.eyes){ el.classList.remove("open"); void el.offsetWidth; el.classList.add("open"); }
