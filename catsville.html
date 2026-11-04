@@ -504,11 +504,11 @@ function mkHash(str){
   h2 = Math.imul(h2 ^ (h2>>>16), 2246822507) ^ Math.imul(h1 ^ (h1>>>13), 3266489909);
   return (h2>>>0).toString(16).padStart(8,"0") + (h1>>>0).toString(16).padStart(8,"0");
 }
-let RT_ON = false;
+let RT_ON = false, RT_STATE = "연결 중", RT_ERR = "";
 function loadScript(src){ return new Promise((res, rej)=>{ const t = document.createElement("script"); t.src = src; t.onload = res; t.onerror = rej; document.head.appendChild(t); }); }
 async function makeRT(){
-  if (!window.supabase){ try { await loadScript(SB_JS); } catch(e){ return null; } }
-  if (!window.supabase || !window.supabase.createClient) return null;
+  if (!window.supabase){ try { await loadScript(SB_JS); } catch(e){ RT_STATE = "SCRIPT"; return null; } }
+  if (!window.supabase || !window.supabase.createClient){ RT_STATE = "SCRIPT"; return null; }
   let uid = null; try { uid = localStorage.getItem("catsville:uid"); } catch(e){}
   if (!uid){ uid = "u" + Math.random().toString(36).slice(2,10) + Date.now().toString(36); try { localStorage.setItem("catsville:uid", uid); } catch(e){} }
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
@@ -522,7 +522,7 @@ async function makeRT(){
   const persist = ()=>{ clearTimeout(persistT); persistT = setTimeout(()=>{ try { localStorage.setItem("catsville:rt", JSON.stringify(store)); } catch(e){} }, 300); };
   const docSnap = (id, data)=> ({ id, exists: !!data, data: ()=> data ? { ...data } : undefined });
   const mine = (coll, d)=> (coll!=="mail" && coll!=="dm") || d.to===uid || d.from===uid;
-  const plazaAll = ()=> ({ ...store.plaza, ...online });
+  const plazaAll = ()=>{ const t = Date.now(), on = {}; for (const [k,d] of Object.entries(online)) on[k] = { ...d, at:t, live:true }; return { ...store.plaza, ...on }; };
   const collData = coll=> coll==="plaza" ? plazaAll() : store[coll] || {};
   const makerId = ()=>{ const all = plazaAll(); let best = null; for (const [id,d] of Object.entries(all)) if (d && d.maker && (!best || (d.at||0) > (all[best].at||0))) best = id; return best; };
   function notify(coll){ subs.forEach(sb=>{ if (sb.coll===coll || (sb.doc && sb.doc.startsWith(coll+"/"))) sb.fire(); }); }
@@ -539,7 +539,7 @@ async function makeRT(){
   ch.on("broadcast", { event:"batch" }, ({ payload })=>{ (payload && payload.items || []).slice(0,100).forEach(x=> applyPut(x.coll, x.id, x.data, payload.by)); });
   ch.on("presence", { event:"sync" }, ()=>{
     const st = ch.presenceState(), now = {};
-    for (const [k, arr] of Object.entries(st)){ const d = arr && arr[arr.length-1]; if (d && d.name){ const { presence_ref, ...rest } = d; now[k] = rest; store.plaza[k] = rest; } }
+    for (const [k, arr] of Object.entries(st)){ const d = arr && arr[arr.length-1]; if (d && d.name){ const { presence_ref, ...rest } = d; now[k] = rest; store.plaza[k] = { ...rest, at:Date.now() }; } }
     online = now; trim("plaza"); persist();
     for (const d of Object.values(now)) if (d.maker && d.ev && d.ev.kind) applyPut("event", "current", d.ev, Object.keys(now).find(k=> now[k]===d));
     notify("plaza"); notify("creator");
@@ -555,7 +555,7 @@ async function makeRT(){
     if (ids[0]===uid) mk.filter(([,d])=> d.status==="open" && d.seller!==uid).slice(0,60).forEach(([id,d])=> items.push({ coll:"market", id, data:d }));
     for (let k=0; k<items.length; k+=60) ch.send({ type:"broadcast", event:"batch", payload:{ by:uid, items: items.slice(k, k+60) } });
   });
-  await new Promise(res=>{ let done = false; const fin = ()=>{ if (!done){ done = true; res(); } }; ch.subscribe(status=>{ if (status==="SUBSCRIBED"){ RT_ON = true; if (myPres) ch.track(myPres); fin(); } }); setTimeout(fin, 6000); });
+  await new Promise(res=>{ let done = false; const fin = ()=>{ if (!done){ done = true; res(); } }; ch.subscribe((status, err)=>{ RT_STATE = status; RT_ERR = err ? String(err.message||err).slice(0,80) : ""; if (status==="SUBSCRIBED"){ RT_ON = true; if (myPres) ch.track(myPres); fin(); if (typeof presence==="function") setTimeout(()=> presence(true), 300); } else if (status==="CHANNEL_ERROR" || status==="TIMED_OUT" || status==="CLOSED"){ RT_ON = false; } if (sheetKind==="find") renderFind(); }); setTimeout(fin, 6000); });
   async function write(coll, id, data){
     if (coll==="plaza"){ if (id!==uid) throw new Error("denied"); myPres = { ...data, maker: !!S.makerOk, ev: (S.makerOk && store.event.current) ? store.event.current : null }; store.plaza[uid] = myPres; online[uid] = myPres; persist(); try { await ch.track(myPres); } catch(e){} notify("plaza"); return; }
     if (coll==="creator"){ if (!S.makerOk) throw new Error("denied"); if (myPres){ myPres.maker = true; try { await ch.track(myPres); } catch(e){} } notify("creator"); return; }
@@ -610,7 +610,8 @@ let DB = null, UID = null, others = [], mailIn = [], mailOut = [], dmIn = [], dm
     try { const u = await window.claude.use("user"); if (u) UID = await u.id(); } catch(e){}
     try { DB = await window.claude.use("db"); } catch(e){ DB = null; }
   } else {
-    try { const r = await makeRT(); if (r){ DB = r.db; UID = r.uid; } } catch(e){ DB = null; }
+    try { const r = await makeRT(); if (r){ DB = r.db; UID = r.uid; } } catch(e){ DB = null; RT_STATE = "ERR"; RT_ERR = String(e && e.message || e).slice(0,80); }
+    document.addEventListener("visibilitychange", ()=>{ if (!document.hidden && DB) setTimeout(()=> presence(true), 800); });
   }
   if (!DB || !UID) return;
   startMarket();
@@ -625,7 +626,7 @@ let DB = null, UID = null, others = [], mailIn = [], mailOut = [], dmIn = [], dm
       const prev = new Set(dmIn.map(m=> m.id));
       dmIn = snap.docs.map(d=>({ id:d.id, ...d.data() })).filter(m=> m && typeof m.text==="string" && !blocked(m.from));
       const fr = new Set(friendsList().map(f=> f.id));
-      const fresh = dmIn.filter(m=> !prev.has(m.id) && fr.has(m.from) && (m.at||0) > dmSeenT);
+      const fresh = dmIn.filter(m=> !prev.has(m.id) && fr.has(m.from));
       if (sheetKind==="dm") renderDM();
       else if (fresh.length && dmSeenT) SND.sfx("ding"), toast(`${fresh[fresh.length-1].fromName||"친구"}: ${safeText(fresh[fresh.length-1].text).slice(0,24)}`);
       dmSeenT = Math.max(dmSeenT || 0, Date.now() - 1000);
@@ -2295,15 +2296,16 @@ async function openFind(){
 }
 function renderFind(){
   const box = $("fdList"); if (!box) return;
-  if (!DB){ box.innerHTML = `<p class="muted" style="margin:0">인터넷에 연결돼야 다른 집사를 찾을 수 있어요.</p>`; return; }
+  const stTxt = window.claude ? "" : RT_ON ? `<p style="margin:0 0 6px;font-size:12px;color:var(--mint)">● 온라인 연결됨</p>` : `<p style="margin:0 0 6px;font-size:12px;color:var(--red)">● 온라인 연결 안 됨 (${esc(RT_STATE)}${RT_ERR ? " · " + esc(RT_ERR) : ""}) <button class="btn" style="padding:2px 8px;font-size:11px" onclick="location.reload()">다시 연결</button></p>`;
+  if (!DB){ box.innerHTML = stTxt + `<p class="muted" style="margin:0">인터넷에 연결돼야 다른 집사를 찾을 수 있어요.</p>`; return; }
   const raw = ($("fdq").value||"").trim(), q = norm(raw);
   const fr = new Set(friendsList().map(f=> f.id));
   const rows = findList.filter(p=> !blocked(p.id) && (!q || norm(p.name).includes(q) || String(p.name||"").includes(raw)))
     .map(p=>({ p, on: Date.now()-(p.at||0) < 180e3 }))
     .sort((a,b)=> (b.on-a.on) || (fr.has(b.p.id)-fr.has(a.p.id)) || ((b.p.at||0)-(a.p.at||0))).slice(0,60);
   const onN = rows.filter(r=> r.on).length;
-  if (!rows.length){ box.innerHTML = `<p class="muted" style="margin:0">${q ? "그 이름의 집사를 못 찾았어요." : "아직 다른 집사가 없어요."}</p>`; return; }
-  box.innerHTML = `<p class="muted" style="margin:0 0 6px">지금 접속 중 ${onN}명 · 모두 ${rows.length}명</p>` + rows.map(({p,on},i)=>{
+  if (!rows.length){ box.innerHTML = stTxt + `<p class="muted" style="margin:0">${q ? "그 이름의 집사를 못 찾았어요." : "아직 다른 집사가 없어요."}</p>`; return; }
+  box.innerHTML = stTxt + `<p class="muted" style="margin:0 0 6px">지금 접속 중 ${onN}명 · 모두 ${rows.length}명</p>` + rows.map(({p,on},i)=>{
     const st = onlineText(p), sent = mailOut.find(m=> m.to===p.id), isFr = fr.has(p.id), mk = p.id===creatorUid;
     const req = isFr ? `<button class="btn" disabled>친구</button>` : sent ? `<button class="btn" disabled>${sent.status==="declined"?"거절됨":"요청함"}</button>` : `<button class="btn mint" data-fq="${i}">친구 요청</button>`;
     return `<div class="list-item"><img src="${A.cats[p.cid]}" alt=""><div class="grow"><div class="j">${mk ? '<span class="lim" style="background:#E8B53A;color:#2B2238">제작자</span> ' : ''}${esc(p.name||"집사")}${isFr ? ' <span class="lim" style="background:#3FB8A4">친구</span>' : ''}</div><div class="muted" style="color:${on?'var(--mint)':'var(--dim)'}">${on ? st.t : "오프라인 · " + agoText(p.at)}</div></div>
