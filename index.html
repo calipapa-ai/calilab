@@ -203,6 +203,74 @@ body{
 .card.star .badge{background:#E8A020;} .card.star .card-name{color:#FFE9A8;} .card.star .card-play{color:#FFE9A8;}
 .card.gacha{border-color:rgba(255,45,149,0.5);} .card.gacha:active{box-shadow:0 0 26px rgba(255,45,149,0.45);}
 .card.gacha .badge{background:#ff2d95;} .card.gacha .card-name{color:#FF9ECF;} .card.gacha .card-play{color:#FF9ECF;}
+.card.quack{border-color:rgba(255,210,122,0.55);} .card.quack:active{box-shadow:0 0 26px rgba(255,210,122,0.45);}
+.card.quack .badge{background:linear-gradient(90deg,#FFD27A,#9BE8A0);} .card.quack .card-name{color:#FFE9B8;} .card.quack .card-play{color:#FFE9B8;}
+
+/* 코코 방 배경 (창문 + 바다) */
+.art-coco{background:linear-gradient(180deg,#8f9fd8 0%,#a9a2d6 48%,#d9c2cc 100%);}
+.art-coco .window{position:absolute; left:22%; top:12%; width:56%; height:52%;
+  background:linear-gradient(180deg,#8ec7f0 0%,#bcdcf4 52%,#5f9ad4 53%,#3f7cc0 100%);
+  border:6px solid #f4f0e6; border-radius:4px;}
+.art-coco .window::after{content:""; position:absolute; left:50%; top:0; bottom:0; width:5px;
+  background:#f4f0e6; transform:translateX(-50%);}
+.art-coco .hill{position:absolute; left:58%; top:30%; width:30%; height:20%;
+  background:#6e8fc4; border-radius:50% 50% 0 0;}
+.art-coco .sill{position:absolute; left:16%; top:62%; width:68%; height:7%;
+  background:#efe6d6; border-radius:3px;}
+.art-coco .floor{position:absolute; left:0; right:0; bottom:0; height:22%;
+  background:linear-gradient(180deg,#e7c89a,#cfa877);}
+.art-coco .crate{position:absolute; bottom:20%; width:11%; aspect-ratio:1/1;
+  background:#9a7049; border:3px solid #5f4428; border-radius:3px;}
+.art-coco .crate.c1{left:10%;} .art-coco .crate.c2{right:12%;}
+.art-coco .spikes{position:absolute; bottom:20%; left:46%; width:16%; height:7%;
+  background:repeating-linear-gradient(90deg,transparent 0 3px,#cfd3e6 3px 9px,transparent 9px 12px);
+  border-bottom:4px solid #8d93b0;}
+
+/* 코코 (직접 그린 캐릭터) */
+.coco{position:absolute; width:22%; aspect-ratio:1/1; z-index:3;}
+.coco .cbody{position:absolute; inset:10% 8% 8% 10%; background:#fdf8ef;
+  border-radius:54% 46% 48% 52%; box-shadow:inset -7px -9px 0 rgba(90,70,60,.08), 0 7px 16px rgba(0,0,0,.28);}
+.coco .cwing{position:absolute; left:2%; top:44%; width:46%; height:32%;
+  background:#ece2d2; border-radius:62% 38% 52% 48%; transform:rotate(-14deg);}
+.coco .ctail{position:absolute; left:-10%; top:54%; width:28%; height:15%;
+  background:#f4ede1; border-radius:40% 60% 60% 40%; transform:rotate(16deg);}
+.coco .ceye{position:absolute; right:27%; top:29%; width:11%; height:14%;
+  background:#2b2230; border-radius:50%;}
+.coco .cbeak{position:absolute; right:7%; top:37%; width:17%; height:15%;
+  background:#e8a09a; border-radius:46% 64% 60% 40%;}
+.coco .ccheek{position:absolute; right:31%; top:46%; width:15%; height:9%;
+  background:rgba(255,150,175,.6); border-radius:50%;}
+.coco .cfoot{position:absolute; bottom:1%; width:9%; height:9%; background:#d98f84; border-radius:40%;}
+.coco .cfoot.f1{left:34%;} .coco .cfoot.f2{left:50%;}
+
+/* 깃털 */
+.gfeather{position:absolute; width:7%; aspect-ratio:1/2.4; z-index:2;
+  background:linear-gradient(140deg,#ffe08a,#f6b63c); border-radius:60% 10% 60% 10%;
+  box-shadow:0 0 12px rgba(255,210,122,.75); transform:rotate(26deg);}
+
+/* 소리 파동 */
+.wave{position:absolute; border:4px solid rgba(255,255,255,.85); border-right-color:transparent;
+  border-bottom-color:transparent; border-radius:50%; transform:rotate(45deg); z-index:4;}
+
+/* 슬라이드 크기 */
+.slide-art.art-coco .coco{left:16%; bottom:26%; width:19%;}
+.slide-art.art-coco .gfeather.g1{left:36%; top:34%;}
+.slide-art.art-coco .gfeather.g2{left:48%; top:48%;}
+.slide-art.art-coco .gfeather.g3{left:62%; top:30%;}
+.slide-art.art-coco .wave.w1{left:30%; bottom:44%; width:9%; aspect-ratio:1/1;}
+.slide-art.art-coco .wave.w2{left:32%; bottom:41%; width:14%; aspect-ratio:1/1; opacity:.6;}
+.slide-art.art-coco .wave.w3{left:34%; bottom:38%; width:19%; aspect-ratio:1/1; opacity:.33;}
+
+/* 카드 썸네일 크기 */
+.card-thumb.art-coco .coco{left:12%; bottom:24%; width:28%;}
+.card-thumb.art-coco .gfeather{width:9%;}
+.card-thumb.art-coco .gfeather.g1{left:48%; top:28%;}
+.card-thumb.art-coco .gfeather.g2{left:66%; top:42%;}
+.card-thumb.art-coco .gfeather.g3{display:none;}
+.card-thumb.art-coco .wave.w1{left:38%; bottom:40%; width:13%; aspect-ratio:1/1;}
+.card-thumb.art-coco .wave.w2{left:41%; bottom:36%; width:20%; aspect-ratio:1/1; opacity:.55;}
+.card-thumb.art-coco .wave.w3{display:none;}
+.card-thumb.art-coco .crate{display:none;}
 
 .card .card-thumb .thumb-emoji{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:52px; z-index:2;
   filter:drop-shadow(0 6px 12px rgba(0,0,0,0.4));}
@@ -391,6 +459,27 @@ body{
         </div>
       </div>
 
+      <div class="slide" data-i="7">
+        <div class="slide-art art-coco">
+          <div class="window"><div class="hill"></div></div><div class="sill"></div><div class="floor"></div><div class="crate c1"></div><div class="crate c2"></div><div class="spikes"></div>
+          <div class="wave w1"></div><div class="wave w2"></div><div class="wave w3"></div>
+          <div class="gfeather g1"></div><div class="gfeather g2"></div><div class="gfeather g3"></div>
+          <div class="coco"><div class="ctail"></div><div class="cbody"></div><div class="cwing"></div><div class="ceye"></div><div class="cbeak"></div><div class="ccheek"></div><div class="cfoot f1"></div><div class="cfoot f2"></div></div>
+        </div>
+        <div class="slide-content">
+          <span class="slide-tag" style="background:linear-gradient(90deg,#FFD27A,#9BE8A0);">Voice · NEW</span>
+          <div class="slide-title">코코 꽥!</div>
+          <div class="slide-desc">목소리로 하는 게임! 작게 &ldquo;꼬꼬&rdquo; 하면 걷고, 크게 &ldquo;꽥!&rdquo; 하면 점프. 무너지는 발판 · 천장 가시 · 굴러오는 상자를 피해 150m까지.</div>
+          <div class="feature-pills">
+            <span class="pill">마이크 조작</span>
+            <span class="pill">함정 8종</span>
+            <span class="pill">무너지는 발판</span>
+            <span class="pill">150m 완주</span>
+          </div>
+          <a class="slide-btn" href="coco-scream.html">지금 플레이 <span class="arr">→</span></a>
+        </div>
+      </div>
+
     </div>
 
     <button class="hero-btn prev" aria-label="이전">‹</button>
@@ -403,6 +492,7 @@ body{
       <div class="dot" data-i="4"></div>
       <div class="dot" data-i="5"></div>
       <div class="dot" data-i="6"></div>
+      <div class="dot" data-i="7"></div>
     </div>
   </div>
 
@@ -494,6 +584,21 @@ body{
       <div class="card-body">
         <div class="card-name">캣츠빌</div>
         <div class="card-desc">고양이 수집 · 육성. 광장 · 친구 대화 · 이벤트!</div>
+        <div class="card-play">플레이 →</div>
+      </div>
+    </a>
+
+    <a class="card quack" href="coco-scream.html">
+      <div class="card-thumb art-coco">
+        <span class="badge">VOICE · NEW</span>
+        <div class="window"><div class="hill"></div></div><div class="sill"></div><div class="floor"></div><div class="crate c1"></div><div class="crate c2"></div><div class="spikes"></div>
+        <div class="wave w1"></div><div class="wave w2"></div>
+        <div class="gfeather g1"></div><div class="gfeather g2"></div>
+        <div class="coco"><div class="ctail"></div><div class="cbody"></div><div class="cwing"></div><div class="ceye"></div><div class="cbeak"></div><div class="ccheek"></div><div class="cfoot f1"></div><div class="cfoot f2"></div></div>
+      </div>
+      <div class="card-body">
+        <div class="card-name">코코 꽥!</div>
+        <div class="card-desc">목소리로 걷고 뛰는 게임. 함정 8종 · 150m 완주!</div>
         <div class="card-play">플레이 →</div>
       </div>
     </a>
