@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<script>/* CALILAB 포인트 · 쿠폰 (calilab.art 모든 게임이 함께 쓰는 지갑) */
+window.CL = window.CL || (function(){
+  var K = "calilab:wallet", CAP = 60;
+  function get(){ try { var w = JSON.parse(localStorage.getItem(K)); if (w && typeof w === "object") { w.p = w.p||0; w.c = w.c||[]; w.h = w.h||[]; w.d = w.d||{}; return w; } } catch(e){} return {p:0,c:[],h:[],d:{}}; }
+  function put(w){ try { localStorage.setItem(K, JSON.stringify(w)); } catch(e){} }
+  function today(){ return new Date().toDateString(); }
+  function toast(t){
+    var el = document.getElementById("clToast");
+    if (!el){ el = document.createElement("div"); el.id = "clToast";
+      el.style.cssText = "position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:2147483647;background:linear-gradient(90deg,#B07CFF,#FF8FB8);color:#fff;font:700 14px/1.35 sans-serif;padding:10px 18px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.35);pointer-events:none;opacity:0;transition:opacity .3s;max-width:90vw;text-align:center";
+      document.body.appendChild(el); }
+    el.textContent = t; el.style.opacity = "1"; clearTimeout(el._t); el._t = setTimeout(function(){ el.style.opacity = "0"; }, 2800);
+  }
+  function award(game, n, why){
+    var w = get(), dk = game + "@" + today(), got = w.d[dk] || 0, add = Math.max(0, Math.min(n, CAP - got));
+    Object.keys(w.d).forEach(function(k){ if (k.slice(-today().length) !== today()) delete w.d[k]; });
+    if (!add){ toast("오늘 이 게임에서 받을 수 있는 포인트는 다 받았어요"); return 0; }
+    w.d[dk] = got + add; w.p += add; w.h.unshift({ g:game, n:add, why:why||"승리", at:Date.now() }); w.h = w.h.slice(0,30); put(w);
+    toast("CALILAB 포인트 +" + add + "  (모은 포인트 " + w.p + "P)"); return add;
+  }
+  function redeem(game, apply){
+    var w = get(), done = [];
+    w.c.forEach(function(c){ if (c.g === game && !c.used){ var ok = false; try { ok = apply(c) !== false; } catch(e){ ok = false; } if (ok){ c.used = Date.now(); done.push(c.label); } } });
+    if (done.length){ put(w); toast("쿠폰을 받았어요! " + done.join(", ")); }
+    return w.c.some(function(c){ return c.g === game && !c.used; });
+  }
+  function redeemWhen(game, apply){ var n = 0; (function tick(){ var left = redeem(game, apply); if (left && ++n < 90) setTimeout(tick, 2000); })(); }
+  return { award: award, redeem: redeem, redeemWhen: redeemWhen, get: get };
+})();
+</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>케이크 층 쌓기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#4a2f3a; --panel:#fff8f0; --accent:#ff7fa3; --accent-dark:#c9567b;
+  color-scheme:light; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --ink:#fbeef3; --panel:#3a2530; color-scheme:dark; }
+}
+:root[data-theme="dark"]{ --ink:#fbeef3; --panel:#3a2530; color-scheme:dark; }
+html,body{height:100%;margin:0;overflow:hidden}
+body{background:#f7d6e0;font-family:'Jua',system-ui,-apple-system,sans-serif;color:var(--ink);
+  touch-action:none;user-select:none;-webkit-user-select:none}
+canvas{display:block;position:fixed;inset:0}
+#score{position:fixed;top:calc(env(safe-area-inset-top,0px) + 20px);left:0;right:0;text-align:center;
+  font-size:64px;color:#fff;text-shadow:0 4px 0 rgba(74,47,58,.35);pointer-events:none}
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 108px);transform:translateX(-50%) scale(.7);
+  opacity:0;font-size:28px;color:#fff;background:var(--accent);padding:6px 18px;border-radius:999px;
+  pointer-events:none;transition:opacity .2s,transform .2s;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) scale(1)}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:var(--panel);border-radius:28px;padding:28px 24px;max-width:330px;width:100%;
+  text-align:center;box-shadow:0 10px 0 rgba(74,47,58,.25)}
+.card h1{font-size:40px;margin:0 0 10px;font-weight:400;line-height:1.1}
+.card p{margin:6px 0;font-size:17px;line-height:1.5}
+.card .small{font-size:15px;opacity:.75}
+.big{margin-top:18px;font:inherit;font-size:22px;background:var(--accent);color:#fff;border:0;
+  border-radius:18px;padding:12px 30px;box-shadow:0 5px 0 var(--accent-dark);cursor:pointer}
+.big:active{transform:translateY(3px);box-shadow:0 2px 0 var(--accent-dark)}
+button:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.hidden{display:none!important}
+#pointToast{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%) scale(.6);opacity:0;pointer-events:none;
+  font-size:42px;color:#ffd84d;white-space:nowrap;
+  text-shadow:0 3px 0 #c9567b,0 0 2px #c9567b,2px 0 0 #c9567b,-2px 0 0 #c9567b;transition:transform .25s ease-out,opacity .25s}
+#pointToast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+</style>
+</head>
+<body>
+<div id="score" class="hidden">0</div>
+<div id="toast">딱 맞아!</div>
+<div id="pointToast">5point earned!</div>
+<div id="overlay">
+  <div class="card" id="card">
+    <h1>케이크 층 쌓기</h1>
+    <p>움직이는 케이크 층을 눌러서 내려놔.</p>
+    <p>삐져나온 부분은 잘려 나가니까 딱 맞춰 쌓아야 높이 올라가.</p>
+    <p class="small">화면 터치, 클릭, 스페이스 모두 돼</p>
+    <button class="big" id="startBtn">시작하기</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+document.body.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+const bgCv = document.createElement('canvas'); bgCv.width = 2; bgCv.height = 256;
+const bg = bgCv.getContext('2d'); const gr = bg.createLinearGradient(0, 0, 0, 256);
+gr.addColorStop(0, '#ffc1d4'); gr.addColorStop(1, '#ffe9c9');
+bg.fillStyle = gr; bg.fillRect(0, 0, 2, 256);
+scene.background = new THREE.CanvasTexture(bgCv);
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0xd9a3b8, 0.7));
+const sun = new THREE.DirectionalLight(0xffffff, 0.65); sun.position.set(4, 10, 6); scene.add(sun);
+
+let view = 10;
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 200);
+function fitCamera() {
+  const a = innerWidth / innerHeight;
+  view = a < 1 ? 13 : 10;
+  camera.left = -view * a / 2; camera.right = view * a / 2;
+  camera.top = view / 2; camera.bottom = -view / 2;
+  camera.updateProjectionMatrix();
+}
+fitCamera();
+
+// 접시
+const plate = new THREE.Mesh(new THREE.CylinderGeometry(3.8, 3.4, 0.3, 48), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+plate.position.y = -0.4; scene.add(plate);
+const plateRim = new THREE.Mesh(new THREE.TorusGeometry(3.75, 0.08, 8, 48), new THREE.MeshLambertMaterial({ color: 0xff9db4 }));
+plateRim.rotation.x = Math.PI / 2; plateRim.position.y = -0.25; scene.add(plateRim);
+
+// 케이크 층 색: 스펀지, 크림, 딸기, 초코, 말차, 크림
+const COLORS = [0xf6d08a, 0xfff3e6, 0xff9db4, 0x8a5a44, 0xa8d39a, 0xfff3e6, 0xffc46b];
+const H = 0.5;
+const layers = [], falling = [];
+let moving = null, axis = 'x', dir = 1, score = 0, combo = 0, state = 'menu', camY = 0;
+
+function makeLayer(w, d, idx) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, H, d), new THREE.MeshLambertMaterial({ color: COLORS[idx % COLORS.length] }));
+  scene.add(m); return { mesh: m, w, d };
+}
+function top() { return layers[layers.length - 1]; }
+
+function reset() {
+  [...layers, ...falling].forEach(l => scene.remove(l.mesh));
+  if (moving) scene.remove(moving.mesh);
+  layers.length = 0; falling.length = 0; moving = null;
+  const base = makeLayer(4, 4, 0); base.mesh.position.set(0, 0, 0); layers.push(base);
+  score = 0; combo = 0; camY = 0;
+}
+
+function spawn() {
+  const p = top();
+  axis = layers.length % 2 ? 'x' : 'z';
+  moving = makeLayer(p.w, p.d, layers.length);
+  moving.mesh.position.set(p.mesh.position.x, p.mesh.position.y + H, p.mesh.position.z);
+  moving.mesh.position[axis] = -6.5;
+  dir = 1;
+}
+
+// 소리
+let ac = null;
+function beep(f, d, type = 'sine', v = 0.12, delay = 0) {
+  if (!ac) return;
+  const t = ac.currentTime + delay, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t + d);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + d);
+}
+
+const scoreEl = document.getElementById('score'), toastEl = document.getElementById('toast');
+const overlay = document.getElementById('overlay'), card = document.getElementById('card');
+let toastTimer = null;
+function toast(text) {
+  toastEl.textContent = text; toastEl.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove('show'), 900);
+}
+
+function place() {
+  if (state !== 'play' || !moving) return;
+  const p = top(), cur = moving;
+  const size = axis === 'x' ? cur.w : cur.d;
+  const delta = cur.mesh.position[axis] - p.mesh.position[axis];
+  const ad = Math.abs(delta);
+
+  if (ad < 0.12) {
+    cur.mesh.position[axis] = p.mesh.position[axis];
+    combo++;
+    toast(combo >= 2 ? `딱 맞아! ${combo}연속` : '딱 맞아!');
+    beep(660 + combo * 80, 0.15, 'triangle', 0.13);
+  } else {
+    const overlap = size - ad;
+    if (overlap <= 0) {
+      falling.push({ mesh: cur.mesh, vy: 0, rx: Math.random() - 0.5, rz: Math.random() - 0.5 });
+      moving = null; gameOver(); return;
+    }
+    combo = 0;
+    const center = p.mesh.position[axis] + delta / 2;
+    if (axis === 'x') cur.w = overlap; else cur.d = overlap;
+    cur.mesh.geometry.dispose();
+    cur.mesh.geometry = new THREE.BoxGeometry(cur.w, H, cur.d);
+    cur.mesh.position[axis] = center;
+
+    const fw = axis === 'x' ? ad : cur.w, fd = axis === 'x' ? cur.d : ad;
+    const piece = new THREE.Mesh(new THREE.BoxGeometry(fw, H, fd), cur.mesh.material);
+    piece.position.copy(cur.mesh.position);
+    piece.position[axis] = center + Math.sign(delta) * (overlap / 2 + ad / 2);
+    scene.add(piece);
+    falling.push({ mesh: piece, vy: 0, rx: (Math.random() - 0.5) * 2, rz: (Math.random() - 0.5) * 2 });
+    beep(440, 0.1, 'sine', 0.1);
+  }
+  layers.push(cur); moving = null;
+  score++; scoreEl.textContent = score;
+  if (score % 10 === 0) showPoint();
+  spawn();
+}
+
+const pointEl = document.getElementById('pointToast'); let pointTimer = null;
+function showPoint() {
+  try { CL.award('cake', 5, '케이크 10층'); } catch (e) {}
+  pointEl.classList.add('show');
+  clearTimeout(pointTimer); pointTimer = setTimeout(() => pointEl.classList.remove('show'), 1500);
+  beep(784, 0.12, 'triangle', 0.12); beep(988, 0.12, 'triangle', 0.12, 0.1); beep(1319, 0.25, 'triangle', 0.12, 0.2);
+}
+
+function getBest() { try { return +localStorage.getItem('cake-stack-best') || 0; } catch (e) { return 0; } }
+function setBest(v) { try { localStorage.setItem('cake-stack-best', v); } catch (e) {} }
+
+function start() {
+  if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (ac && ac.state === 'suspended') ac.resume();
+  reset(); spawn(); pointEl.classList.remove('show');
+  state = 'play'; overlay.classList.add('hidden'); scoreEl.classList.remove('hidden'); scoreEl.textContent = 0;
+}
+
+function gameOver() {
+  state = 'over';
+  const prev = getBest(), best = Math.max(prev, score); setBest(best);
+  beep(300, 0.2, 'square', 0.07); beep(220, 0.35, 'square', 0.07, 0.18);
+  setTimeout(() => {
+    card.innerHTML = `<h1>와르르!</h1><p>${score}층까지 쌓았어</p><p class="small">${score > prev ? '새 최고 기록이야!' : `최고 기록 ${best}층`}</p><button class="big" id="againBtn">다시 하기</button>`;
+    overlay.classList.remove('hidden');
+    const b = document.getElementById('againBtn');
+    b.addEventListener('click', e => { e.stopPropagation(); start(); }); b.focus();
+  }, 700);
+}
+
+document.getElementById('startBtn').addEventListener('click', e => { e.stopPropagation(); start(); });
+renderer.domElement.addEventListener('pointerdown', place);
+addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); if (state === 'play') place(); else if (!overlay.classList.contains('hidden')) start(); }
+});
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+
+  if (state === 'play' && moving) {
+    const speed = Math.min(5 + score * 0.18, 12);
+    moving.mesh.position[axis] += dir * speed * dt;
+    if (moving.mesh.position[axis] > 6.5) { moving.mesh.position[axis] = 6.5; dir = -1; }
+    if (moving.mesh.position[axis] < -6.5) { moving.mesh.position[axis] = -6.5; dir = 1; }
+  }
+  if (state === 'menu') scene.rotation.y += dt * 0.3; else scene.rotation.y = 0;
+
+  for (let i = falling.length - 1; i >= 0; i--) {
+    const f = falling[i];
+    f.vy -= 22 * dt; f.mesh.position.y += f.vy * dt;
+    f.mesh.rotation.x += f.rx * dt; f.mesh.rotation.z += f.rz * dt;
+    if (f.mesh.position.y < camY - 20) { scene.remove(f.mesh); f.mesh.geometry.dispose(); falling.splice(i, 1); }
+  }
+
+  const targetY = layers.length ? top().mesh.position.y : 0;
+  camY += (targetY - camY) * (1 - Math.pow(0.01, dt));
+  camera.position.set(8, camY + 8, 8);
+  camera.lookAt(0, camY - 1, 0);
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+reset();
+requestAnimationFrame(loop);
+
+addEventListener('resize', () => { fitCamera(); renderer.setSize(innerWidth, innerHeight); });
+})();
+</script>
+</body>
+</html>

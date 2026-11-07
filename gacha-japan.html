@@ -1,6 +1,37 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<script>/* CALILAB 포인트 · 쿠폰 (calilab.art 모든 게임이 함께 쓰는 지갑) */
+window.CL = window.CL || (function(){
+  var K = "calilab:wallet", CAP = 60;
+  function get(){ try { var w = JSON.parse(localStorage.getItem(K)); if (w && typeof w === "object") { w.p = w.p||0; w.c = w.c||[]; w.h = w.h||[]; w.d = w.d||{}; return w; } } catch(e){} return {p:0,c:[],h:[],d:{}}; }
+  function put(w){ try { localStorage.setItem(K, JSON.stringify(w)); } catch(e){} }
+  function today(){ return new Date().toDateString(); }
+  function toast(t){
+    var el = document.getElementById("clToast");
+    if (!el){ el = document.createElement("div"); el.id = "clToast";
+      el.style.cssText = "position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:2147483647;background:linear-gradient(90deg,#B07CFF,#FF8FB8);color:#fff;font:700 14px/1.35 sans-serif;padding:10px 18px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.35);pointer-events:none;opacity:0;transition:opacity .3s;max-width:90vw;text-align:center";
+      document.body.appendChild(el); }
+    el.textContent = t; el.style.opacity = "1"; clearTimeout(el._t); el._t = setTimeout(function(){ el.style.opacity = "0"; }, 2800);
+  }
+  function award(game, n, why){
+    var w = get(), dk = game + "@" + today(), got = w.d[dk] || 0, add = Math.max(0, Math.min(n, CAP - got));
+    Object.keys(w.d).forEach(function(k){ if (k.slice(-today().length) !== today()) delete w.d[k]; });
+    if (!add){ toast("오늘 이 게임에서 받을 수 있는 포인트는 다 받았어요"); return 0; }
+    w.d[dk] = got + add; w.p += add; w.h.unshift({ g:game, n:add, why:why||"승리", at:Date.now() }); w.h = w.h.slice(0,30); put(w);
+    toast("CALILAB 포인트 +" + add + "  (모은 포인트 " + w.p + "P)"); return add;
+  }
+  function redeem(game, apply){
+    var w = get(), done = [];
+    w.c.forEach(function(c){ if (c.g === game && !c.used){ var ok = false; try { ok = apply(c) !== false; } catch(e){ ok = false; } if (ok){ c.used = Date.now(); done.push(c.label); } } });
+    if (done.length){ put(w); toast("쿠폰을 받았어요! " + done.join(", ")); }
+    return w.c.some(function(c){ return c.g === game && !c.used; });
+  }
+  function redeemWhen(game, apply){ var n = 0; (function tick(){ var left = redeem(game, apply); if (left && ++n < 90) setTimeout(tick, 2000); })(); }
+  return { award: award, redeem: redeem, redeemWhen: redeemWhen, get: get };
+})();
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>가챠가쟈 일본 가자 🎏</title>
@@ -2188,6 +2219,7 @@ function animatePlushFall(mesh){
 }
 
 function finishClaw(success, best, delay){
+  try { if (success) CL.award("gacha", 2, "인형뽑기 성공"); } catch(e){}
   clawState = 'idle';
   setTimeout(()=>{
     clawMiniRunning = false;
